@@ -34,6 +34,8 @@ public class Brick : MonoBehaviour
     public float maxVerticalSnap = 0.008f;
     [Tooltip("How far the brick can be tilted relative to the other brick and still snap.")]
     [Range(0f, 90f)] public float maxTiltDegrees = 35f;
+    [Tooltip("How close (in meters) the brick must be to a real table or floor to set down on it.")]
+    public float maxSurfaceSnap = 0.03f;
 
     [Header("Preview")]
     [Tooltip("A transparent material that shows where the brick will land while it's held. Leave empty for no preview.")]
@@ -300,7 +302,31 @@ public class Brick : MonoBehaviour
             }
         }
 
-        return bestScore < float.MaxValue;
+        if (bestScore < float.MaxValue)
+            return true;
+
+        // No brick to connect to: try setting it down on a real table or the floor instead.
+        return FindSurfaceSnap(out bestPosition, out bestRotation);
+    }
+
+    // Stands the brick upright on the nearest real surface below or slightly above it, keeping its heading.
+    bool FindSurfaceSnap(out Vector3 position, out Quaternion rotation)
+    {
+        position = default;
+        rotation = default;
+
+        if (Vector3.Angle(transform.up, Vector3.up) > maxTiltDegrees)
+            return false;
+        if (!RoomSurfaces.TryFindSurface(transform.position, maxSurfaceSnap, out Vector3 surfacePoint))
+            return false;
+
+        Vector3 heading = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+        if (heading.sqrMagnitude < 1e-6f)
+            heading = Vector3.ProjectOnPlane(transform.up, Vector3.up);
+
+        position = surfacePoint;
+        rotation = Quaternion.LookRotation(heading, Vector3.up);
+        return !WouldOverlapOthers(position, rotation);
     }
 
     // Moves a center coordinate so this brick's studs line up with the other brick's studs on one axis.
