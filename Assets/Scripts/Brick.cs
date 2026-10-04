@@ -3,10 +3,11 @@ using Oculus.Interaction;
 using UnityEngine;
 
 /// <summary>
-/// A real-scale brick. Builds its own mesh (body + studs) from its size, and when the
-/// player lets go of it, snaps it onto the stud grid of the nearest brick above or below.
+/// A real-scale brick. Its shape comes from an imported LDraw part, or is generated from a simple size.
+/// When the player lets go of it, it snaps so one of its studs plugs into another brick (or one of the
+/// other brick's studs plugs into it), or sets down on a real table or floor.
 /// A trigger/pinch grab takes just this brick; a grip/whole-hand grab takes every brick connected to it.
-/// The pivot is at the bottom-center of the brick and the transform scale must stay at 1.
+/// The transform scale must stay at 1.
 /// </summary>
 [ExecuteAlways]
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
@@ -19,14 +20,21 @@ public class Brick : MonoBehaviour
     const float StudHeight = 0.0017f;
     const float SideGap = 0.0001f; // real bricks are slightly undersized so neighbors don't touch
     const int StudSegments = 16;
+    const float ConnectedTolerance = 0.0005f;
 
     static readonly List<Brick> AllBricks = new List<Brick>();
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    static readonly Collider[] OverlapResults = new Collider[32];
 
+    [Tooltip("An imported LDraw part. When set, its shape and studs are used instead of the simple size below.")]
+    public BrickPartData part;
+
+    [Header("Simple brick (used when no part is set)")]
     [Min(1)] public int studsX = 2;
     [Min(1)] public int studsZ = 4;
     [Tooltip("3 for a brick, 1 for a plate.")]
     [Min(1)] public int heightInPlates = 3;
+
     public Color color = new Color(0.8f, 0.1f, 0.1f);
 
     [Header("Snapping")]
@@ -41,15 +49,26 @@ public class Brick : MonoBehaviour
     [Tooltip("A transparent material that shows where the brick will land while it's held. Leave empty for no preview.")]
     public Material ghostMaterial;
 
-    public float Height => heightInPlates * PlateHeight;
+    /// <summary>Bounds of the brick without its studs, in local space.</summary>
+    public Bounds BodyBounds => _body;
 
-    static readonly Collider[] OverlapResults = new Collider[32];
+    // Shape and connection points, in local space. Filled by Rebuild().
+    Mesh _activeMesh;
+    Mesh _generatedMesh;
+    readonly List<Vector3> _studs = new List<Vector3>();
+    readonly List<Vector3> _antiStuds = new List<Vector3>();
+    Bounds _body;
 
-    Mesh _mesh;
     bool _dirty = true;
     PointableElement _grabbable;
     GameObject _ghost;
     readonly List<(Brick brick, Transform originalParent)> _carried = new List<(Brick, Transform)>();
+
+    // While carrying a group: the group's unused connection points, in this brick's local space.
+    readonly List<Vector3> _groupStuds = new List<Vector3>();
+    readonly List<Vector3> _groupAntiStuds = new List<Vector3>();
+    List<Vector3> SnapStuds => _carried.Count > 0 ? _groupStuds : _studs;
+    List<Vector3> SnapAntiStuds => _carried.Count > 0 ? _groupAntiStuds : _antiStuds;
 
     void OnEnable()
     {
@@ -67,9 +86,8 @@ public class Brick : MonoBehaviour
     void OnDisable()
     {
         AllBricks.Remove(this);
+        HideGhosts();
         PutDownStack();
-        if (_ghost != null)
-            _ghost.SetActive(false);
         if (_grabbable != null)
             _grabbable.WhenPointerEventRaised -= OnPointerEvent;
     }
@@ -84,52 +102,21 @@ public class Brick : MonoBehaviour
             UpdateGhost();
     }
 
-    // While held, shows a see-through copy of the brick where it would snap if released now.
-    void UpdateGhost()
-    {
-        bool held = _grabbable != null && _grabbable.SelectingPointsCount > 0;
-        if (held && ghostMaterial != null && FindSnap(out Vector3 position, out Quaternion rotation))
-        {
-            if (_ghost == null)
-                CreateGhost();
-            _ghost.transform.SetPositionAndRotation(position, rotation);
-            _ghost.SetActive(true);
-        }
-        else if (_ghost != null)
-        {
-            _ghost.SetActive(false);
-        }
-    }
-
-    void CreateGhost()
-    {
-        _ghost = new GameObject(name + " Ghost");
-        _ghost.AddComponent<MeshFilter>().sharedMesh = _mesh;
-
-        MeshRenderer ghostRenderer = _ghost.AddComponent<MeshRenderer>();
-        ghostRenderer.sharedMaterial = ghostMaterial;
-        ghostRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-        // Brick's color, with the ghost material's transparency.
-        Color tint = color;
-        tint.a = ghostMaterial.color.a;
-        var block = new MaterialPropertyBlock();
-        block.SetColor(BaseColorId, tint);
-        ghostRenderer.SetPropertyBlock(block);
-    }
-
     void OnDestroy()
     {
         if (_ghost != null)
             Destroy(_ghost);
 
-        if (_mesh == null)
+        // Only the generated mesh belongs to this brick; imported part meshes are shared assets.
+        if (_generatedMesh == null)
             return;
         if (Application.isPlaying)
-            Destroy(_mesh);
+            Destroy(_generatedMesh);
         else
-            DestroyImmediate(_mesh);
+            DestroyImmediate(_generatedMesh);
     }
+
+    // ---------- Grabbing ----------
 
     void OnPointerEvent(PointerEvent evt)
     {
@@ -143,6 +130,7 @@ public class Brick : MonoBehaviour
                  && _grabbable.SelectingPointsCount == 0)
         {
             // Only snap once every hand has let go.
+            HideGhosts();
             TrySnap();
             PutDownStack();
         }
@@ -171,6 +159,46 @@ public class Brick : MonoBehaviour
             _carried.Add((group[i], t.parent));
             t.SetParent(transform, worldPositionStays: true);
         }
+
+        BuildGroupConnections(group);
+    }
+
+    // Collects every member's connection points into this brick's space, leaving out the ones
+    // already plugged into another member, so only the group's exposed studs and sockets can snap.
+    void BuildGroupConnections(List<Brick> group)
+    {
+        var studs = new List<Vector3>();
+        var antiStuds = new List<Vector3>();
+        foreach (Brick member in group)
+        {
+            foreach (Vector3 stud in member._studs)
+                studs.Add(transform.InverseTransformPoint(member.transform.TransformPoint(stud)));
+            foreach (Vector3 antiStud in member._antiStuds)
+                antiStuds.Add(transform.InverseTransformPoint(member.transform.TransformPoint(antiStud)));
+        }
+
+        _groupStuds.Clear();
+        _groupAntiStuds.Clear();
+        foreach (Vector3 stud in studs)
+        {
+            if (!ContainsPoint(antiStuds, stud))
+                _groupStuds.Add(stud);
+        }
+        foreach (Vector3 antiStud in antiStuds)
+        {
+            if (!ContainsPoint(studs, antiStud))
+                _groupAntiStuds.Add(antiStud);
+        }
+    }
+
+    static bool ContainsPoint(List<Vector3> points, Vector3 point)
+    {
+        foreach (Vector3 p in points)
+        {
+            if ((p - point).sqrMagnitude < ConnectedTolerance * ConnectedTolerance)
+                return true;
+        }
+        return false;
     }
 
     void PutDownStack()
@@ -181,6 +209,8 @@ public class Brick : MonoBehaviour
                 brick.transform.SetParent(originalParent, worldPositionStays: true);
         }
         _carried.Clear();
+        _groupStuds.Clear();
+        _groupAntiStuds.Clear();
     }
 
     bool IsCarrying(Brick brick)
@@ -193,40 +223,170 @@ public class Brick : MonoBehaviour
         return false;
     }
 
-    /// <summary>True when this brick is snapped onto the top of the given brick.</summary>
+    /// <summary>True when one of the lower brick's studs is plugged into this brick's underside.</summary>
     public bool RestsOn(Brick lower)
     {
-        Transform lt = lower.transform;
-        Quaternion relative = Quaternion.Inverse(lt.rotation) * transform.rotation;
+        Quaternion relative = Quaternion.Inverse(lower.transform.rotation) * transform.rotation;
         if (Vector3.Angle(relative * Vector3.up, Vector3.up) > 2f)
             return false;
 
-        Vector3 local = lt.InverseTransformPoint(transform.position);
-        if (Mathf.Abs(local.y - lower.Height) > 0.0005f)
+        foreach (Vector3 antiStud in _antiStuds)
+        {
+            Vector3 socket = transform.TransformPoint(antiStud);
+            foreach (Vector3 stud in lower._studs)
+            {
+                if ((lower.transform.TransformPoint(stud) - socket).sqrMagnitude < ConnectedTolerance * ConnectedTolerance)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    // ---------- Snapping ----------
+
+    public bool TrySnap()
+    {
+        // Make sure overlap checks see where every brick is right now.
+        Physics.SyncTransforms();
+        if (!FindSnap(out Vector3 position, out Quaternion rotation))
+            return false;
+        transform.SetPositionAndRotation(position, rotation);
+        return true;
+    }
+
+    /// <summary>Finds the closest pose that plugs this brick onto, or under, another brick.</summary>
+    public bool FindSnap(out Vector3 bestPosition, out Quaternion bestRotation)
+    {
+        bestPosition = default;
+        bestRotation = default;
+        float bestScore = float.MaxValue;
+
+        foreach (Brick other in AllBricks)
+        {
+            if (other == this || !other.isActiveAndEnabled || IsCarrying(other))
+                continue;
+
+            // Work in the other brick's local space. Bricks only connect upright to each other,
+            // turned in quarter turns.
+            Transform ot = other.transform;
+            Quaternion relative = Quaternion.Inverse(ot.rotation) * transform.rotation;
+            if (Vector3.Angle(relative * Vector3.up, Vector3.up) > maxTiltDegrees)
+                continue;
+
+            Vector3 forward = relative * Vector3.forward;
+            float quarterTurns = Mathf.Round(Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg / 90f);
+            Quaternion turn = Quaternion.Euler(0f, quarterTurns * 90f, 0f);
+            Vector3 current = ot.InverseTransformPoint(transform.position);
+
+            // On top: our underside onto their studs. Underneath: our studs into their underside.
+            float score = float.MaxValue;
+            Vector3 target = default;
+            FindClosestPairing(SnapAntiStuds, other._studs, turn, current, ref score, ref target);
+            FindClosestPairing(SnapStuds, other._antiStuds, turn, current, ref score, ref target);
+            if (score >= bestScore)
+                continue;
+
+            Vector3 worldPosition = ot.TransformPoint(target);
+            Quaternion worldRotation = ot.rotation * turn;
+            if (WouldOverlapOthers(worldPosition, worldRotation))
+                continue;
+
+            bestScore = score;
+            bestPosition = worldPosition;
+            bestRotation = worldRotation;
+        }
+
+        if (bestScore < float.MaxValue)
+            return true;
+
+        // No brick to connect to: try setting it down on a real table or the floor instead.
+        return FindSurfaceSnap(out bestPosition, out bestRotation);
+    }
+
+    // Tries every way of lining up one of our connection points with one of theirs, and keeps the
+    // position that needs the smallest move from where the brick is now.
+    void FindClosestPairing(List<Vector3> ours, List<Vector3> theirs, Quaternion turn, Vector3 current,
+                            ref float bestScore, ref Vector3 bestTarget)
+    {
+        foreach (Vector3 mine in ours)
+        {
+            Vector3 turned = turn * mine;
+            foreach (Vector3 point in theirs)
+            {
+                Vector3 target = point - turned;
+                Vector3 move = target - current;
+                if (Mathf.Abs(move.y) > maxVerticalSnap)
+                    continue;
+                if (move.x * move.x + move.z * move.z > StudPitch * StudPitch)
+                    continue;
+
+                float score = move.sqrMagnitude;
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    bestTarget = target;
+                }
+            }
+        }
+    }
+
+    // Stands the brick upright on the nearest real surface below or slightly above it, keeping its heading.
+    bool FindSurfaceSnap(out Vector3 position, out Quaternion rotation)
+    {
+        position = default;
+        rotation = default;
+
+        if (Vector3.Angle(transform.up, Vector3.up) > maxTiltDegrees)
             return false;
 
-        GetFootprint(relative, out int footprintX, out int footprintZ, out _);
-        return Overlaps(local.x, lower.studsX, footprintX) && Overlaps(local.z, lower.studsZ, footprintZ);
+        Vector3 bottom = LowestBottomPoint();
+        if (!RoomSurfaces.TryFindSurface(transform.TransformPoint(bottom), maxSurfaceSnap, out Vector3 surfacePoint))
+            return false;
+
+        Vector3 heading = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+        if (heading.sqrMagnitude < 1e-6f)
+            heading = Vector3.ProjectOnPlane(transform.up, Vector3.up);
+
+        rotation = Quaternion.LookRotation(heading, Vector3.up);
+        position = surfacePoint - rotation * bottom;
+        return !WouldOverlapOthers(position, rotation);
     }
 
-    // This brick's size measured along another brick's axes, given the rotation between them.
-    void GetFootprint(Quaternion relative, out int footprintX, out int footprintZ, out int quarterTurns)
+    // Bottom-center of the lowest brick in the group being held, in this brick's local space.
+    Vector3 LowestBottomPoint()
     {
-        Vector3 forward = relative * Vector3.forward;
-        quarterTurns = Mathf.RoundToInt(Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg / 90f);
-        quarterTurns = ((quarterTurns % 4) + 4) % 4;
-        bool turnedSideways = quarterTurns % 2 == 1;
-        footprintX = turnedSideways ? studsZ : studsX;
-        footprintZ = turnedSideways ? studsX : studsZ;
+        Vector3 lowest = new Vector3(_body.center.x, _body.min.y, _body.center.z);
+        foreach ((Brick member, Transform _) in _carried)
+        {
+            Transform t = member.transform;
+            Bounds b = member._body;
+            Vector3 bottom = t.localPosition + t.localRotation * new Vector3(b.center.x, b.min.y, b.center.z);
+            if (bottom.y < lowest.y)
+                lowest = bottom;
+        }
+        return lowest;
     }
 
-    // True if this brick placed at the given pose would cut into a brick it isn't carrying.
+    // True if this brick (and everything it's carrying) placed at the given pose would cut into another brick.
     bool WouldOverlapOthers(Vector3 position, Quaternion rotation)
     {
+        if (BodyOverlapsOthers(_body, position, rotation))
+            return true;
+
+        foreach ((Brick member, Transform _) in _carried)
+        {
+            Transform t = member.transform;
+            if (BodyOverlapsOthers(member._body, position + rotation * t.localPosition, rotation * t.localRotation))
+                return true;
+        }
+        return false;
+    }
+
+    bool BodyOverlapsOthers(Bounds body, Vector3 position, Quaternion rotation)
+    {
         // Shrink slightly so bricks that merely touch (stacked or side by side) don't count.
-        Vector3 halfExtents = new Vector3(studsX * StudPitch, Height, studsZ * StudPitch) * 0.5f
-                              - Vector3.one * 0.001f;
-        Vector3 center = position + rotation * new Vector3(0f, Height * 0.5f, 0f);
+        Vector3 halfExtents = body.extents - Vector3.one * 0.001f;
+        Vector3 center = position + rotation * body.center;
 
         int count = Physics.OverlapBoxNonAlloc(center, halfExtents, OverlapResults, rotation,
                                                Physics.AllLayers, QueryTriggerInteraction.Ignore);
@@ -239,126 +399,101 @@ public class Brick : MonoBehaviour
         return false;
     }
 
-    public bool TrySnap()
+    // ---------- Preview ----------
+
+    // While held, shows see-through copies of the brick (and the group it's carrying)
+    // where they would snap if released now.
+    void UpdateGhost()
     {
-        // Make sure overlap checks see where every brick is right now.
-        Physics.SyncTransforms();
+        bool held = _grabbable != null && _grabbable.SelectingPointsCount > 0;
+        if (!held)
+            return;
+
         if (!FindSnap(out Vector3 position, out Quaternion rotation))
-            return false;
-        transform.SetPositionAndRotation(position, rotation);
-        return true;
-    }
-
-    /// <summary>Finds the closest pose that sits this brick on top of, or underneath, another brick.</summary>
-    public bool FindSnap(out Vector3 bestPosition, out Quaternion bestRotation)
-    {
-        bestPosition = default;
-        bestRotation = default;
-        float bestScore = float.MaxValue;
-
-        foreach (Brick other in AllBricks)
         {
-            if (other == this || !other.isActiveAndEnabled)
-                continue;
-
-            Transform ot = other.transform;
-
-            // Work in the other brick's local space, where its studs lie on a simple grid.
-            Quaternion relative = Quaternion.Inverse(ot.rotation) * transform.rotation;
-            if (Vector3.Angle(relative * Vector3.up, Vector3.up) > maxTiltDegrees)
-                continue;
-
-            if (IsCarrying(other))
-                continue;
-
-            GetFootprint(relative, out int footprintX, out int footprintZ, out int quarterTurns);
-
-            Vector3 local = ot.InverseTransformPoint(transform.position);
-
-            // Candidate heights: resting on top of the other brick, or hanging underneath it.
-            foreach (float targetY in new[] { other.Height, -Height })
-            {
-                if (Mathf.Abs(local.y - targetY) > maxVerticalSnap)
-                    continue;
-
-                float x = SnapAxis(local.x, other.studsX, footprintX);
-                float z = SnapAxis(local.z, other.studsZ, footprintZ);
-                if (!Overlaps(x, other.studsX, footprintX) || !Overlaps(z, other.studsZ, footprintZ))
-                    continue;
-
-                Vector3 target = new Vector3(x, targetY, z);
-                float score = (target - local).sqrMagnitude;
-                if (score >= bestScore)
-                    continue;
-
-                Vector3 worldPosition = ot.TransformPoint(target);
-                Quaternion worldRotation = ot.rotation * Quaternion.Euler(0f, quarterTurns * 90f, 0f);
-                if (WouldOverlapOthers(worldPosition, worldRotation))
-                    continue;
-
-                bestScore = score;
-                bestPosition = worldPosition;
-                bestRotation = worldRotation;
-            }
+            HideGhosts();
+            return;
         }
 
-        if (bestScore < float.MaxValue)
-            return true;
-
-        // No brick to connect to: try setting it down on a real table or the floor instead.
-        return FindSurfaceSnap(out bestPosition, out bestRotation);
+        ShowGhost(position, rotation);
+        foreach ((Brick member, Transform _) in _carried)
+        {
+            Transform t = member.transform;
+            member.ShowGhost(position + rotation * t.localPosition, rotation * t.localRotation);
+        }
     }
 
-    // Stands the brick upright on the nearest real surface below or slightly above it, keeping its heading.
-    bool FindSurfaceSnap(out Vector3 position, out Quaternion rotation)
+    void ShowGhost(Vector3 position, Quaternion rotation)
     {
-        position = default;
-        rotation = default;
-
-        if (Vector3.Angle(transform.up, Vector3.up) > maxTiltDegrees)
-            return false;
-        if (!RoomSurfaces.TryFindSurface(transform.position, maxSurfaceSnap, out Vector3 surfacePoint))
-            return false;
-
-        Vector3 heading = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
-        if (heading.sqrMagnitude < 1e-6f)
-            heading = Vector3.ProjectOnPlane(transform.up, Vector3.up);
-
-        position = surfacePoint;
-        rotation = Quaternion.LookRotation(heading, Vector3.up);
-        return !WouldOverlapOthers(position, rotation);
+        if (ghostMaterial == null)
+            return;
+        if (_ghost == null)
+            CreateGhost();
+        _ghost.transform.SetPositionAndRotation(position, rotation);
+        _ghost.SetActive(true);
     }
 
-    // Moves a center coordinate so this brick's studs line up with the other brick's studs on one axis.
-    static float SnapAxis(float center, int otherStuds, int myStuds)
+    void HideGhosts()
     {
-        float otherFirstStud = -(otherStuds - 1) * 0.5f * StudPitch;
-        float myFirstStud = center - (myStuds - 1) * 0.5f * StudPitch;
-        float snappedFirstStud = otherFirstStud + Mathf.Round((myFirstStud - otherFirstStud) / StudPitch) * StudPitch;
-        return snappedFirstStud + (myStuds - 1) * 0.5f * StudPitch;
+        if (_ghost != null)
+            _ghost.SetActive(false);
+        foreach ((Brick member, Transform _) in _carried)
+        {
+            if (member != null && member._ghost != null)
+                member._ghost.SetActive(false);
+        }
     }
 
-    // True when the two footprints share at least one row of studs on this axis.
-    static bool Overlaps(float center, int otherStuds, int myStuds)
+    void CreateGhost()
     {
-        return Mathf.Abs(center) < (otherStuds + myStuds) * 0.5f * StudPitch - StudPitch * 0.5f;
+        _ghost = new GameObject(name + " Ghost");
+        _ghost.AddComponent<MeshFilter>().sharedMesh = _activeMesh;
+
+        MeshRenderer ghostRenderer = _ghost.AddComponent<MeshRenderer>();
+        ghostRenderer.sharedMaterial = ghostMaterial;
+        ghostRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        // Brick's color, with the ghost material's transparency.
+        Color tint = color;
+        tint.a = ghostMaterial.color.a;
+        var block = new MaterialPropertyBlock();
+        block.SetColor(BaseColorId, tint);
+        ghostRenderer.SetPropertyBlock(block);
     }
 
-    /// <summary>Regenerates the mesh, collider, and color from the current size settings.</summary>
+    // ---------- Shape ----------
+
+    /// <summary>Applies the part (or simple size) and color: mesh, connection points, and collider.</summary>
     public void Rebuild()
     {
         _dirty = false;
+        _studs.Clear();
+        _antiStuds.Clear();
 
-        if (_mesh == null)
-            _mesh = new Mesh { name = "Brick", hideFlags = HideFlags.DontSave };
-        BuildMesh(_mesh);
-        GetComponent<MeshFilter>().sharedMesh = _mesh;
+        if (part != null && part.mesh != null)
+        {
+            _activeMesh = part.mesh;
+            _studs.AddRange(part.studs);
+            _antiStuds.AddRange(part.antiStuds);
+            _body = part.bodyBounds;
+        }
+        else
+        {
+            if (_generatedMesh == null)
+                _generatedMesh = new Mesh { name = "Brick", hideFlags = HideFlags.DontSave };
+            BuildSimpleBrick(_generatedMesh);
+            _activeMesh = _generatedMesh;
+        }
+
+        GetComponent<MeshFilter>().sharedMesh = _activeMesh;
+        if (_ghost != null)
+            _ghost.GetComponent<MeshFilter>().sharedMesh = _activeMesh;
 
         BoxCollider box = GetComponent<BoxCollider>();
         if (box != null)
         {
-            box.center = new Vector3(0f, Height * 0.5f, 0f);
-            box.size = new Vector3(studsX * StudPitch, Height, studsZ * StudPitch);
+            box.center = _body.center;
+            box.size = _body.size;
         }
 
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
@@ -368,13 +503,16 @@ public class Brick : MonoBehaviour
         meshRenderer.SetPropertyBlock(block);
     }
 
-    void BuildMesh(Mesh mesh)
+    // A plain rectangular brick with its pivot at the bottom center.
+    void BuildSimpleBrick(Mesh mesh)
     {
-        var builder = new MeshBuilder();
+        float height = heightInPlates * PlateHeight;
+        _body = new Bounds(new Vector3(0f, height * 0.5f, 0f), new Vector3(studsX * StudPitch, height, studsZ * StudPitch));
 
+        var builder = new MeshBuilder();
         float halfW = studsX * StudPitch * 0.5f - SideGap;
         float halfD = studsZ * StudPitch * 0.5f - SideGap;
-        builder.AddBox(new Vector3(-halfW, 0f, -halfD), new Vector3(halfW, Height, halfD));
+        builder.AddBox(new Vector3(-halfW, 0f, -halfD), new Vector3(halfW, height, halfD));
 
         for (int i = 0; i < studsX; i++)
         {
@@ -382,7 +520,9 @@ public class Brick : MonoBehaviour
             {
                 float x = (i - (studsX - 1) * 0.5f) * StudPitch;
                 float z = (j - (studsZ - 1) * 0.5f) * StudPitch;
-                builder.AddCylinder(new Vector3(x, Height, z), StudRadius, StudHeight, StudSegments);
+                builder.AddCylinder(new Vector3(x, height, z), StudRadius, StudHeight, StudSegments);
+                _studs.Add(new Vector3(x, height, z));
+                _antiStuds.Add(new Vector3(x, 0f, z));
             }
         }
 

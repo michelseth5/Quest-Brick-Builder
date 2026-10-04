@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 3023b
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 3023b
+  description: Plate 1 x 2
+  mesh: {fileID: 4300000, guid: ff9825e3de52c0e4b9b040c62283a57c, type: 2}
+  studs:
+  - {x: -0.0039999997, y: -0, z: 0}
+  - {x: 0.0039999997, y: -0, z: 0}
+  antiStuds:
+  - {x: -0.0039999997, y: -0.0032, z: 0}
+  - {x: 0.0039999997, y: -0.0032, z: 0}
+  bodyBounds:
+    m_Center: {x: 0, y: -0.0016, z: 0}
+    m_Extent: {x: 0.007999999, y: 0.0016, z: 0.0039999997}

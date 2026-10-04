@@ -315,7 +315,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BrickTray
   brickPrefab: {fileID: 2195673924386441590, guid: 0991988071506f1468173a0f12d99704, type: 3}
+  catalog: {fileID: 11400000, guid: ee4d075bcb91ab54fb8aee08016195f1, type: 2}
+  palette:
+  - {r: 0.8, g: 0.1, b: 0.1, a: 1}
+  - {r: 0.1, g: 0.35, b: 0.8, a: 1}
+  - {r: 0.95, g: 0.8, b: 0.1, a: 1}
+  - {r: 0.15, g: 0.6, b: 0.2, a: 1}
+  - {r: 0.95, g: 0.95, b: 0.95, a: 1}
+  - {r: 0.2, g: 0.2, b: 0.2, a: 1}
   spacing: 0.02
+  maxRowWidth: 0.35
   bricks:
   - studsX: 2
     studsZ: 4
