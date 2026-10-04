@@ -15,7 +15,24 @@ namespace LDrawImport
         public string Description = "";
         public readonly List<Vector3> Vertices = new List<Vector3>();
         public readonly List<Vector3> Normals = new List<Vector3>();
-        public readonly List<int> Triangles = new List<int>();
+
+        /// <summary>
+        /// Triangles grouped by color, one list per submesh. SubmeshColors gives each one's LDraw color code;
+        /// MainColor (16) means "the brick's color". The main-color submesh comes first when present.
+        /// </summary>
+        public readonly List<List<int>> Submeshes = new List<List<int>>();
+        public readonly List<int> SubmeshColors = new List<int>();
+
+        public int TriangleCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (List<int> submesh in Submeshes)
+                    count += submesh.Count / 3;
+                return count;
+            }
+        }
 
         /// <summary>Where studs sit on top of the part (the base of each stud).</summary>
         public readonly List<Vector3> Studs = new List<Vector3>();
@@ -36,6 +53,11 @@ namespace LDrawImport
     public sealed class LDrawParser
     {
         public const float MetersPerLdu = 0.0004f;
+
+        /// <summary>LDraw's "use the current color" code; at the top level, the brick's own color.</summary>
+        public const int MainColor = 16;
+        const int EdgeColor = 24;
+
         const float StudPitchLdu = 20f;
         const float SmoothingAngleDegrees = 35f;
         const int MaxDepth = 32;
@@ -45,6 +67,7 @@ namespace LDrawImport
 
         // Per-part working state, in LDraw coordinates (-Y up, LDU).
         readonly List<Vector3> _corners = new List<Vector3>();
+        readonly List<int> _triangleColors = new List<int>();
         readonly List<Vector3> _studs = new List<Vector3>();
         readonly HashSet<string> _missing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         bool _hasBody;
@@ -76,13 +99,24 @@ namespace LDrawImport
                 throw new FileNotFoundException($"LDraw part '{partId}' was not found in {_root}.");
 
             _corners.Clear();
+            _triangleColors.Clear();
             _studs.Clear();
             _missing.Clear();
             _hasBody = false;
 
-            ProcessFile(fileName, Matrix4x4.Identity, inverted: false, allowBfc: true, lowRes: false, inStud: false, depth: 0);
+            ProcessFile(fileName, Matrix4x4.Identity, MainColor, inverted: false, allowBfc: true, lowRes: false, inStud: false, depth: 0);
 
-            var data = new LDrawMeshData { Description = ReadDescription(lines) };
+            // Renumbered parts are stubs saying "~Moved to X": use X's description instead.
+            string description = ReadDescription(lines);
+            for (int hops = 0; hops < 4 && description.StartsWith("~Moved to ", StringComparison.OrdinalIgnoreCase); hops++)
+            {
+                string[] target = Load(ToFileName(description.Substring(10)), lowRes: false);
+                if (target == null)
+                    break;
+                description = ReadDescription(target);
+            }
+
+            var data = new LDrawMeshData { Description = description };
             data.MissingFiles.AddRange(_missing);
             BuildMesh(data);
             BuildConnections(data);
@@ -159,7 +193,15 @@ namespace LDrawImport
             return lines;
         }
 
-        void ProcessFile(string name, Matrix4x4 transform, bool inverted, bool allowBfc, bool lowRes, bool inStud, int depth)
+        // A line's color: 16 (and 24, edges) mean "whatever color this file is being drawn in".
+        static int ResolveColor(string token, int current)
+        {
+            if (!int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out int code))
+                return current;
+            return code == MainColor || code == EdgeColor ? current : code;
+        }
+
+        void ProcessFile(string name, Matrix4x4 transform, int color, bool inverted, bool allowBfc, bool lowRes, bool inStud, int depth)
         {
             if (depth > MaxDepth)
                 return;
@@ -203,14 +245,14 @@ namespace LDrawImport
                     case "1":
                         if (t.Length >= 15)
                         {
-                            ProcessReference(t, transform, inverted ^ invertNext, certified, lowRes, inStud, depth);
+                            ProcessReference(t, transform, ResolveColor(t[1], color), inverted ^ invertNext, certified, lowRes, inStud, depth);
                         }
                         invertNext = false;
                         break;
 
                     case "3":
                         if (t.Length >= 11)
-                            AddPolygon(transform, certified, ccw ^ inverted, inStud, P(t, 2), P(t, 5), P(t, 8));
+                            AddPolygon(transform, ResolveColor(t[1], color), certified, ccw ^ inverted, inStud, P(t, 2), P(t, 5), P(t, 8));
                         break;
 
                     case "4":
@@ -218,15 +260,16 @@ namespace LDrawImport
                         {
                             Vector3 a = P(t, 2), b = P(t, 5), c = P(t, 8), d = P(t, 11);
                             bool front = ccw ^ inverted;
-                            AddPolygon(transform, certified, front, inStud, a, b, c);
-                            AddPolygon(transform, certified, front, inStud, a, c, d);
+                            int polygonColor = ResolveColor(t[1], color);
+                            AddPolygon(transform, polygonColor, certified, front, inStud, a, b, c);
+                            AddPolygon(transform, polygonColor, certified, front, inStud, a, c, d);
                         }
                         break;
                 }
             }
         }
 
-        void ProcessReference(string[] t, Matrix4x4 parent, bool inverted, bool certified, bool lowRes, bool inStud, int depth)
+        void ProcessReference(string[] t, Matrix4x4 parent, int color, bool inverted, bool certified, bool lowRes, bool inStud, int depth)
         {
             float x = F(t[2]), y = F(t[3]), z = F(t[4]);
             float a = F(t[5]), b = F(t[6]), c = F(t[7]);
@@ -254,11 +297,12 @@ namespace LDrawImport
                     _studs.Add(Vector3.Transform(Vector3.Zero, world));
             }
 
-            ProcessFile(file, world, childInverted, certified, lowRes || isStud, inStud || isStud, depth + 1);
+            ProcessFile(file, world, color, childInverted, certified, lowRes || isStud, inStud || isStud, depth + 1);
         }
 
-        void AddPolygon(Matrix4x4 transform, bool certified, bool frontAsListed, bool inStud, Vector3 a, Vector3 b, Vector3 c)
+        void AddPolygon(Matrix4x4 transform, int color, bool certified, bool frontAsListed, bool inStud, Vector3 a, Vector3 b, Vector3 c)
         {
+            int before = _corners.Count;
             a = Vector3.Transform(a, transform);
             b = Vector3.Transform(b, transform);
             c = Vector3.Transform(c, transform);
@@ -278,6 +322,9 @@ namespace LDrawImport
             {
                 AddTriangle(a, b, c);
             }
+
+            for (int added = (_corners.Count - before) / 3; added > 0; added--)
+                _triangleColors.Add(color);
 
             if (!inStud)
             {
@@ -345,6 +392,11 @@ namespace LDrawImport
             float minDot = (float)Math.Cos(SmoothingAngleDegrees * Math.PI / 180.0);
             var vertexIndex = new Dictionary<(long, long, long, long, long, long), int>();
 
+            // One submesh per color, with the brick's own color first.
+            var submeshForColor = new Dictionary<int, List<int>>();
+            if (_triangleColors.Contains(MainColor))
+                AddSubmesh(data, submeshForColor, MainColor);
+
             for (int corner = 0; corner < positions.Length; corner++)
             {
                 if (!valid[corner / 3])
@@ -370,8 +422,141 @@ namespace LDrawImport
                     data.Normals.Add(normal);
                     vertexIndex[key] = index;
                 }
-                data.Triangles.Add(index);
+
+                int color = _triangleColors[corner / 3];
+                if (!submeshForColor.TryGetValue(color, out List<int> submesh))
+                    submesh = AddSubmesh(data, submeshForColor, color);
+                submesh.Add(index);
             }
+        }
+
+        static List<int> AddSubmesh(LDrawMeshData data, Dictionary<int, List<int>> submeshForColor, int color)
+        {
+            var submesh = new List<int>();
+            data.Submeshes.Add(submesh);
+            data.SubmeshColors.Add(color);
+            submeshForColor[color] = submesh;
+            return submesh;
+        }
+
+        /// <summary>
+        /// The part ids a model file (.ldr or .mpd) uses, following its submodels. Each part is listed once.
+        /// </summary>
+        public static List<string> ListModelParts(string modelPath)
+        {
+            // An .mpd holds several "0 FILE name" sections; a plain .ldr is one section.
+            var sections = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            string mainSection = null;
+            List<string> current = null;
+            foreach (string line in File.ReadAllLines(modelPath))
+            {
+                string trimmed = line.Trim();
+                if (trimmed.StartsWith("0 FILE ", StringComparison.OrdinalIgnoreCase))
+                {
+                    string name = NormalizeName(trimmed.Substring(7));
+                    current = new List<string>();
+                    sections[name] = current;
+                    if (mainSection == null)
+                        mainSection = name;
+                    continue;
+                }
+                if (current == null)
+                {
+                    mainSection = NormalizeName(Path.GetFileName(modelPath));
+                    current = new List<string>();
+                    sections[mainSection] = current;
+                }
+                current.Add(trimmed);
+            }
+
+            var parts = new List<string>();
+            var seenParts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (mainSection != null)
+                CollectParts(mainSection, sections, visited, seenParts, parts);
+            return parts;
+        }
+
+        static void CollectParts(string section, Dictionary<string, List<string>> sections,
+                                 HashSet<string> visited, HashSet<string> seenParts, List<string> parts)
+        {
+            if (!visited.Add(section))
+                return;
+
+            foreach (string line in sections[section])
+            {
+                string[] t = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                if (t.Length < 15 || t[0] != "1")
+                    continue;
+
+                string reference = NormalizeName(string.Join(" ", t, 14, t.Length - 14));
+                if (sections.ContainsKey(reference))
+                {
+                    CollectParts(reference, sections, visited, seenParts, parts);
+                }
+                else
+                {
+                    string id = reference.EndsWith(".dat") ? reference.Substring(0, reference.Length - 4) : reference;
+                    if (seenParts.Add(id))
+                        parts.Add(id);
+                }
+            }
+        }
+
+        static string NormalizeName(string name) => name.Trim().Replace('\\', '/').ToLowerInvariant();
+
+        /// <summary>One entry from LDConfig.ldr, LDraw's color list.</summary>
+        public struct ColorEntry
+        {
+            public int Code;
+            public string Name;
+            public float R, G, B, A; // 0..1, sRGB
+        }
+
+        /// <summary>Reads every color defined in the library's LDConfig.ldr.</summary>
+        public List<ColorEntry> ReadColors()
+        {
+            var colors = new List<ColorEntry>();
+            string path = Path.Combine(_root, "LDConfig.ldr");
+            if (!File.Exists(path))
+                return colors;
+
+            foreach (string line in File.ReadAllLines(path))
+            {
+                string[] t = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                if (t.Length < 4 || t[0] != "0" || t[1] != "!COLOUR")
+                    continue;
+
+                var entry = new ColorEntry { Name = t[2].Replace('_', ' '), A = 1f };
+                bool hasCode = false, hasValue = false;
+                for (int i = 3; i < t.Length - 1; i++)
+                {
+                    switch (t[i])
+                    {
+                        case "CODE":
+                            hasCode = int.TryParse(t[i + 1], NumberStyles.Integer, CultureInfo.InvariantCulture, out entry.Code);
+                            break;
+                        case "VALUE":
+                            string hex = t[i + 1].TrimStart('#');
+                            if (hex.Length == 6 && int.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int rgb))
+                            {
+                                entry.R = ((rgb >> 16) & 0xFF) / 255f;
+                                entry.G = ((rgb >> 8) & 0xFF) / 255f;
+                                entry.B = (rgb & 0xFF) / 255f;
+                                hasValue = true;
+                            }
+                            break;
+                        case "ALPHA":
+                            if (int.TryParse(t[i + 1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int alpha))
+                                entry.A = alpha / 255f;
+                            break;
+                    }
+                }
+
+                if (hasCode && hasValue)
+                    colors.Add(entry);
+            }
+            return colors;
         }
 
         void BuildConnections(LDrawMeshData data)

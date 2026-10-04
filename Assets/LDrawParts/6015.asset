@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 6015
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 6015
+  description: Tyre 12/ 40 x 11 Wide
+  category: Tyre
+  mesh: {fileID: 4300000, guid: 037ddae4f881c8f47ad8471ae09057fe, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: -0.007999999, y: -0.010000004, z: 0}
+  - {x: 0, y: -0.010000004, z: 0}
+  - {x: 0.007999999, y: -0.010000004, z: 0}
+  bodyBounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0.010000002, y: 0.010000004, z: 0.0056}

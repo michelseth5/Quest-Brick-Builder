@@ -156,10 +156,7 @@ public class ModelMenu : MonoBehaviour
 
             Color color = _sandbox.ColorForCode(placement.colorCode);
             var renderer = piece.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = color.a < 1f && _sandbox.transparentMaterial != null
-                ? _sandbox.transparentMaterial
-                : MenuStyle.Material;
-            MenuStyle.Tint(renderer, color);
+            BrickPartData.ApplyColors(renderer, part.mesh, part.submeshColors, color, MenuStyle.Material, _sandbox.transparentMaterial);
 
             Bounds meshBounds = part.mesh.bounds;
             for (int corner = 0; corner < 8; corner++)

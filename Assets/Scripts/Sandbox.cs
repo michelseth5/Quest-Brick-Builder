@@ -121,12 +121,8 @@ public class Sandbox : MonoBehaviour
     public BrickPartData FindPart(string partId) =>
         partId != null && _partsById.TryGetValue(partId, out BrickPartData part) ? part : null;
 
-    /// <summary>The display color for an LDraw color code (gray if it isn't one of ours).</summary>
-    public Color ColorForCode(int code)
-    {
-        int index = BrickColors.IndexOfCode(code);
-        return index >= 0 ? BrickColors.All[index].color : new Color(0.6f, 0.6f, 0.6f);
-    }
+    /// <summary>The display color for any LDraw color code.</summary>
+    public Color ColorForCode(int code) => LDrawColors.Get(code);
 
     // ---------- Opening and closing ----------
 
@@ -173,9 +169,20 @@ public class Sandbox : MonoBehaviour
 
     // ---------- Main parts menu ----------
 
+    const float MainWidth = 0.15f, ButtonHeight = 0.026f, ButtonGap = 0.006f, SectionGap = 0.012f;
+    const int CategoriesPerPage = 8;
+    const int PartsPerPage = 16;
+
+    List<string> _categories = new List<string>();
+    int _categoryPage;
+    Transform _categoryArea;
+    float _categoryTop;
+    string _openCategory;
+    int _partsPage;
+
     void BuildMainMenu()
     {
-        const float width = 0.15f, buttonHeight = 0.026f, gap = 0.006f, sectionGap = 0.012f;
+        const float width = MainWidth, buttonHeight = ButtonHeight, gap = ButtonGap, sectionGap = SectionGap;
 
         List<string> categories = catalog.parts
             .Where(p => p != null)
@@ -187,21 +194,23 @@ public class Sandbox : MonoBehaviour
             .ToList();
         bool hasBaseplate = catalog.parts.Any(p => p != null && p.Category == BaseplateCategory);
 
-        int buttonCount = categories.Count + (hasBaseplate ? 1 : 0) + 1 + 2 + 1;
+        // Categories are shown a page at a time, with a Prev/Next row when there are more than fit.
+        _categories = categories;
+        bool paged = categories.Count > CategoriesPerPage;
+        int categoryRows = Mathf.Min(categories.Count, CategoriesPerPage) + (paged ? 1 : 0);
+
+        int buttonCount = categoryRows + (hasBaseplate ? 1 : 0) + 1 + 2 + 1;
         float height = 0.045f + buttonCount * (buttonHeight + gap) + sectionGap * 3f;
 
         _mainMenu = MenuPanel.Create("Parts Menu", "Parts", new Vector2(width, height), CreateHandle());
         float y = _mainMenu.ContentTop - buttonHeight * 0.5f;
         var buttonSize = new Vector2(width - 0.02f, buttonHeight);
 
-        foreach (string category in categories)
-        {
-            MenuButton button = MenuButton.Create(_mainMenu.Content, category, new Vector3(0f, y, 0f), buttonSize,
-                                                  MenuStyle.Button, Plural(category));
-            button.Clicked += () => OpenCategory(category);
-            _categoryButtons[category] = button;
-            y -= buttonHeight + gap;
-        }
+        _categoryArea = new GameObject("Categories").transform;
+        _categoryArea.SetParent(_mainMenu.Content, false);
+        _categoryTop = y;
+        ShowCategoryPage(0);
+        y -= categoryRows * (buttonHeight + gap);
 
         y -= sectionGap;
         if (hasBaseplate)
@@ -238,6 +247,53 @@ public class Sandbox : MonoBehaviour
             new Vector3(0.01f, 0f, -MenuButton.Depth * 0.5f - 0.0005f), new Vector2(buttonSize.x - 0.04f, buttonHeight * 0.6f));
     }
 
+    void ShowCategoryPage(int page)
+    {
+        foreach (Transform child in _categoryArea)
+            Destroy(child.gameObject);
+        _categoryButtons.Clear();
+
+        int pageCount = Mathf.Max(1, Mathf.CeilToInt(_categories.Count / (float)CategoriesPerPage));
+        _categoryPage = Mathf.Clamp(page, 0, pageCount - 1);
+
+        var buttonSize = new Vector2(MainWidth - 0.02f, ButtonHeight);
+        float y = _categoryTop;
+        foreach (string category in _categories.Skip(_categoryPage * CategoriesPerPage).Take(CategoriesPerPage))
+        {
+            MenuButton button = MenuButton.Create(_categoryArea, category, new Vector3(0f, y, 0f), buttonSize,
+                                                  MenuStyle.Button, Plural(category));
+            button.Clicked += () => OpenCategory(category);
+            button.SetSelected(category == _openCategory && _partsPanel != null && _partsPanel.IsOpen);
+            _categoryButtons[category] = button;
+            y -= ButtonHeight + ButtonGap;
+        }
+
+        if (pageCount > 1)
+        {
+            y = _categoryTop - CategoriesPerPage * (ButtonHeight + ButtonGap);
+            AddPagingRow(_categoryArea, y, MainWidth - 0.02f, _categoryPage, pageCount, ShowCategoryPage);
+        }
+    }
+
+    // "< Prev   Page 1 of 3   Next >" across the given width.
+    static void AddPagingRow(Transform parent, float y, float width, int page, int pageCount, System.Action<int> showPage)
+    {
+        const float buttonWidth = 0.035f, height = 0.02f;
+        MenuStyle.CreateText(parent, $"{page + 1} / {pageCount}", new Vector3(0f, y, -0.001f), new Vector2(0.04f, height * 0.6f));
+        if (page > 0)
+        {
+            MenuButton prev = MenuButton.Create(parent, "Previous", new Vector3(-width * 0.5f + buttonWidth * 0.5f, y, 0f),
+                                                new Vector2(buttonWidth, height), MenuStyle.Button, "<");
+            prev.Clicked += () => showPage(page - 1);
+        }
+        if (page < pageCount - 1)
+        {
+            MenuButton next = MenuButton.Create(parent, "Next", new Vector3(width * 0.5f - buttonWidth * 0.5f, y, 0f),
+                                                new Vector2(buttonWidth, height), MenuStyle.Button, ">");
+            next.Clicked += () => showPage(page + 1);
+        }
+    }
+
     static string Plural(string category) => category.EndsWith("s") ? category : category + "s";
 
     // ---------- Part previews ----------
@@ -252,8 +308,11 @@ public class Sandbox : MonoBehaviour
         };
     }
 
-    void OpenCategory(string category)
+    void OpenCategory(string category) => ShowPartsPage(category, 0);
+
+    void ShowPartsPage(string category, int page)
     {
+        _openCategory = category;
         foreach (KeyValuePair<string, MenuButton> pair in _categoryButtons)
             pair.Value.SetSelected(pair.Key == category);
 
@@ -262,21 +321,26 @@ public class Sandbox : MonoBehaviour
             return;
         _modelMenu.Close(); // it opens in the same spot
 
-        // One cell size per category, big enough for its largest part.
+        int pageCount = Mathf.CeilToInt(parts.Count / (float)PartsPerPage);
+        _partsPage = Mathf.Clamp(page, 0, pageCount - 1);
+        List<BrickPartData> pageParts = parts.Skip(_partsPage * PartsPerPage).Take(PartsPerPage).ToList();
+
+        // One cell size per category, big enough for its largest part, so every page matches.
         float largest = parts.Max(p => Mathf.Max(p.bodyBounds.size.x, p.bodyBounds.size.y, p.bodyBounds.size.z));
         _cellSize = Mathf.Max(0.05f, largest + 0.02f);
-        const float labelHeight = 0.012f, margin = 0.01f;
+        const float labelHeight = 0.012f, margin = 0.01f, pagingHeight = 0.03f;
 
         int columns = Mathf.Min(partColumns, parts.Count);
-        int rows = Mathf.CeilToInt(parts.Count / (float)columns);
-        var size = new Vector2(columns * _cellSize + margin * 2f, 0.04f + rows * (_cellSize + labelHeight) + margin);
+        int rows = Mathf.CeilToInt(Mathf.Min(parts.Count, PartsPerPage) / (float)columns);
+        var size = new Vector2(columns * _cellSize + margin * 2f,
+                               0.04f + rows * (_cellSize + labelHeight) + margin + (pageCount > 1 ? pagingHeight : 0f));
 
         _partsPanel.ClearContent();
         _previews.Clear();
         _partsPanel.SetTitle(Plural(category));
         _partsPanel.SetSize(size);
 
-        for (int i = 0; i < parts.Count; i++)
+        for (int i = 0; i < pageParts.Count; i++)
         {
             int column = i % columns, row = i / columns;
             var cellCenter = new Vector3(
@@ -284,10 +348,16 @@ public class Sandbox : MonoBehaviour
                 _partsPanel.ContentTop - row * (_cellSize + labelHeight) - _cellSize * 0.5f,
                 0f);
 
-            SpawnPreview(parts[i], cellCenter);
-            MenuStyle.CreateText(_partsPanel.Content, parts[i].ShortName,
+            SpawnPreview(pageParts[i], cellCenter);
+            MenuStyle.CreateText(_partsPanel.Content, pageParts[i].ShortName,
                 cellCenter + new Vector3(0f, -_cellSize * 0.5f - labelHeight * 0.4f, -0.001f),
                 new Vector2(_cellSize - 0.004f, labelHeight * 0.8f));
+        }
+
+        if (pageCount > 1)
+        {
+            AddPagingRow(_partsPanel.Content, -size.y * 0.5f + margin + pagingHeight * 0.4f, size.x - margin * 2f,
+                         _partsPage, pageCount, p => ShowPartsPage(category, p));
         }
 
         if (!_partsPanel.IsOpen)

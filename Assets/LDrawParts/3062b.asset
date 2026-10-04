@@ -16,6 +16,7 @@ MonoBehaviour:
   description: Brick 1 x 1 Round with Hollow Stud
   category: Brick
   mesh: {fileID: 4300000, guid: ae04ce3838e93bf4bbf46edc84e7ac61, type: 2}
+  submeshColors: 10000000i
   studs:
   - {x: 0, y: -0, z: 0}
   antiStuds:

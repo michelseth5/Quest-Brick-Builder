@@ -32,7 +32,13 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   signature string with an "xN" label. Grabbing restores full size (ISDK's GrabFreeTransformer locks
   scale to the size at Grabbable.Start, so loaded items get two frames at full size before storing).
   Saved in .ldr files as `0 !QUESTBRICK WRIST L|R <count>` ... `0 !QUESTBRICK END` comment blocks.
-- Planned next: game modes beyond Sandbox; Rebrickable sets; step-by-step instructions.
+- Parts keep LDraw's built-in colors: one submesh per color (`BrickPartData.submeshColors`, 16 = brick
+  color), colored with per-material-index property blocks (`BrickPartData.ApplyColors`). All 322 LDraw
+  colors live in `Assets/Resources/LDrawColors.asset` (`LDrawColors.Get(code)`), written by the importer.
+- `Sets/` holds OMR set files (.mpd); the importer's "Import Set Parts" imports every part a set uses.
+- Roadmap (agreed order): 1) parts that scale (done: set import, colors, menu paging),
+  2) "Build a Set" mode: step-by-step ghosts, place parts on ghosts (works for non-stud connections),
+  start menu with modes, 3) Rebrickable set search/part lists.
 - `Assets/Editor/LDraw/`: `LDrawParser.cs` (pure C#, System.Numerics, testable with `dotnet`) and
   Tools > LDraw Part Importer window, which writes meshes + `BrickPartData` to `Assets/LDrawParts/`.
 

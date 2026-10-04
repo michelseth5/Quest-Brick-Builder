@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Oculus.Interaction;
 using UnityEngine;
 
@@ -550,7 +551,7 @@ public class Brick : MonoBehaviour
         _ghost.AddComponent<MeshFilter>().sharedMesh = _activeMesh;
 
         MeshRenderer ghostRenderer = _ghost.AddComponent<MeshRenderer>();
-        ghostRenderer.sharedMaterial = ghostMaterial;
+        ghostRenderer.sharedMaterials = Enumerable.Repeat(ghostMaterial, Mathf.Max(1, _activeMesh.subMeshCount)).ToArray();
         ghostRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
         // Brick's color, with the ghost material's transparency.
@@ -587,7 +588,11 @@ public class Brick : MonoBehaviour
 
         GetComponent<MeshFilter>().sharedMesh = _activeMesh;
         if (_ghost != null)
-            _ghost.GetComponent<MeshFilter>().sharedMesh = _activeMesh;
+        {
+            // Rebuilt on next use with the new shape and colors.
+            Destroy(_ghost);
+            _ghost = null;
+        }
 
         BoxCollider box = GetComponent<BoxCollider>();
         if (box != null)
@@ -599,13 +604,8 @@ public class Brick : MonoBehaviour
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
         if (_opaqueMaterial == null)
             _opaqueMaterial = meshRenderer.sharedMaterial;
-        bool seeThrough = color.a < 1f && transparentMaterial != null;
-        meshRenderer.sharedMaterial = seeThrough ? transparentMaterial : _opaqueMaterial;
-
-        var block = new MaterialPropertyBlock();
-        meshRenderer.GetPropertyBlock(block);
-        block.SetColor(BaseColorId, color);
-        meshRenderer.SetPropertyBlock(block);
+        BrickPartData.ApplyColors(meshRenderer, _activeMesh, part != null && part.mesh != null ? part.submeshColors : null,
+                                  color, _opaqueMaterial, transparentMaterial);
     }
 
     // A plain rectangular brick with its pivot at the bottom center.

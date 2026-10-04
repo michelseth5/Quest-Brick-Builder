@@ -14,6 +14,9 @@ public class BrickPartData : ScriptableObject
 
     public Mesh mesh;
 
+    [Tooltip("LDraw color code of each submesh. 16 means \"the brick's color\"; others are printed or fixed colors.")]
+    public int[] submeshColors;
+
     [Tooltip("Base of each stud on top of the part.")]
     public Vector3[] studs;
 
@@ -24,6 +27,36 @@ public class BrickPartData : ScriptableObject
     public Bounds bodyBounds;
 
     public string Category => !string.IsNullOrEmpty(category) ? category : CategoryFromDescription(description);
+
+    public const int MainColorCode = 16;
+
+    /// <summary>
+    /// Colors a renderer showing this part: the brick's color on its main-color submesh, and each printed
+    /// or fixed-color submesh in its own color. See-through colors use the transparent material.
+    /// </summary>
+    public static void ApplyColors(MeshRenderer renderer, Mesh mesh, int[] submeshColors, Color mainColor,
+                                   Material opaque, Material transparent)
+    {
+        int count = mesh != null ? Mathf.Max(1, mesh.subMeshCount) : 1;
+        var materials = new Material[count];
+        var colors = new Color[count];
+        for (int i = 0; i < count; i++)
+        {
+            int code = submeshColors != null && i < submeshColors.Length ? submeshColors[i] : MainColorCode;
+            colors[i] = code == MainColorCode ? mainColor : LDrawColors.Get(code);
+            materials[i] = colors[i].a < 1f && transparent != null ? transparent : opaque;
+        }
+        renderer.sharedMaterials = materials;
+
+        var block = new MaterialPropertyBlock();
+        for (int i = 0; i < count; i++)
+        {
+            block.SetColor(BaseColorId, colors[i]);
+            renderer.SetPropertyBlock(block, i);
+        }
+    }
+
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
     /// <summary>Description without the category word, e.g. "2 x 4" for "Brick 2 x 4".</summary>
     public string ShortName
