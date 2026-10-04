@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
   partId: 3005
   description: Brick 1 x 1
+  category: Brick
   mesh: {fileID: 4300000, guid: a879a1e116fefc14aaa70f5852119fec, type: 2}
   studs:
   - {x: 0, y: -0, z: 0}

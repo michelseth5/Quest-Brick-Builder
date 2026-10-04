@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
   partId: 3710
   description: Plate 1 x 4
+  category: Plate
   mesh: {fileID: 4300000, guid: 8a8636e3ed03d6243a81a6c7cd61048f, type: 2}
   studs:
   - {x: -0.012, y: -0, z: 0}

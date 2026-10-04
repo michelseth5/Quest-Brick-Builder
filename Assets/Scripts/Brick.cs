@@ -36,6 +36,11 @@ public class Brick : MonoBehaviour
     [Min(1)] public int heightInPlates = 3;
 
     public Color color = new Color(0.8f, 0.1f, 0.1f);
+    [Tooltip("LDraw color code for the color (used when saving or matching sets).")]
+    public int colorCode = 4;
+
+    [Tooltip("Used instead of the normal material when the color is see-through.")]
+    public Material transparentMaterial;
 
     [Header("Snapping")]
     [Tooltip("How close (in meters) the brick must be to another brick's top or bottom to snap.")]
@@ -52,6 +57,46 @@ public class Brick : MonoBehaviour
     /// <summary>Bounds of the brick without its studs, in local space.</summary>
     public Bounds BodyBounds => _body;
 
+    /// <summary>
+    /// A display copy sitting in a menu. Previews are ignored by snapping until someone grabs one,
+    /// which turns it into a normal brick.
+    /// </summary>
+    public bool IsPreview { get; set; }
+
+    /// <summary>Raised when a menu preview is grabbed and becomes a real brick, so the menu can replace it.</summary>
+    public static event System.Action<Brick> PreviewTaken;
+
+    /// <summary>Bricks currently held in a hand (only the brick actually grabbed, not what it carries).</summary>
+    public static readonly List<Brick> Held = new List<Brick>();
+
+    /// <summary>Every real brick placed in the world (not menu previews).</summary>
+    public static List<Brick> AllPlaced()
+    {
+        var placed = new List<Brick>();
+        foreach (Brick brick in AllBricks)
+        {
+            if (brick.IsBuildable)
+                placed.Add(brick);
+        }
+        return placed;
+    }
+
+    /// <summary>Bricks this brick is carrying as part of a grabbed group.</summary>
+    public IEnumerable<Brick> CarriedBricks
+    {
+        get
+        {
+            foreach ((Brick brick, Transform _) in _carried)
+                yield return brick;
+        }
+    }
+
+    // Baseplates anchor a model: grabbing a model by its grip doesn't pull the baseplate along.
+    bool IsBaseplate => part != null && part.Category == "Baseplate";
+
+    // Bricks that can be built on: real, active, and not sitting in a menu.
+    bool IsBuildable => isActiveAndEnabled && !IsPreview;
+
     // Shape and connection points, in local space. Filled by Rebuild().
     Mesh _activeMesh;
     Mesh _generatedMesh;
@@ -60,6 +105,7 @@ public class Brick : MonoBehaviour
     Bounds _body;
 
     bool _dirty = true;
+    Material _opaqueMaterial;
     PointableElement _grabbable;
     GameObject _ghost;
     readonly List<(Brick brick, Transform originalParent)> _carried = new List<(Brick, Transform)>();
@@ -86,6 +132,7 @@ public class Brick : MonoBehaviour
     void OnDisable()
     {
         AllBricks.Remove(this);
+        Held.Remove(this);
         HideGhosts();
         PutDownStack();
         if (_grabbable != null)
@@ -122,6 +169,17 @@ public class Brick : MonoBehaviour
     {
         if (evt.Type == PointerEventType.Select && _grabbable.SelectingPointsCount == 1)
         {
+            if (IsPreview)
+            {
+                // Taken out of a menu: it's a real brick from now on.
+                IsPreview = false;
+                transform.SetParent(null, worldPositionStays: true);
+                PreviewTaken?.Invoke(this);
+            }
+
+            if (!Held.Contains(this))
+                Held.Add(this);
+
             PutDownStack();
             if (BrickGrabInput.IsWholeGroupGrab(evt))
                 PickUpGroup();
@@ -130,7 +188,17 @@ public class Brick : MonoBehaviour
                  && _grabbable.SelectingPointsCount == 0)
         {
             // Only snap once every hand has let go.
+            Held.Remove(this);
             HideGhosts();
+
+            // Dropped into a trash can: delete it, along with everything it's carrying (they're its children).
+            if (TrashCan.Contains(transform.TransformPoint(_body.center)))
+            {
+                _carried.Clear();
+                Destroy(gameObject);
+                return;
+            }
+
             TrySnap();
             PutDownStack();
         }
@@ -145,7 +213,7 @@ public class Brick : MonoBehaviour
         {
             foreach (Brick other in AllBricks)
             {
-                if (other.isActiveAndEnabled && !group.Contains(other)
+                if (other.IsBuildable && !other.IsBaseplate && !group.Contains(other)
                     && (other.RestsOn(group[i]) || group[i].RestsOn(other)))
                 {
                     group.Add(other);
@@ -263,7 +331,7 @@ public class Brick : MonoBehaviour
 
         foreach (Brick other in AllBricks)
         {
-            if (other == this || !other.isActiveAndEnabled || IsCarrying(other))
+            if (other == this || !other.IsBuildable || IsCarrying(other))
                 continue;
 
             // Work in the other brick's local space. Bricks only connect upright to each other,
@@ -385,7 +453,8 @@ public class Brick : MonoBehaviour
     bool BodyOverlapsOthers(Bounds body, Vector3 position, Quaternion rotation)
     {
         // Shrink slightly so bricks that merely touch (stacked or side by side) don't count.
-        Vector3 halfExtents = body.extents - Vector3.one * 0.001f;
+        // (Kept above zero for very thin parts like baseplates.)
+        Vector3 halfExtents = Vector3.Max(body.extents - Vector3.one * 0.001f, Vector3.one * 0.0002f);
         Vector3 center = position + rotation * body.center;
 
         int count = Physics.OverlapBoxNonAlloc(center, halfExtents, OverlapResults, rotation,
@@ -393,7 +462,7 @@ public class Brick : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             Brick hit = OverlapResults[i].GetComponentInParent<Brick>();
-            if (hit != null && hit != this && !IsCarrying(hit))
+            if (hit != null && hit != this && !hit.IsPreview && !IsCarrying(hit))
                 return true;
         }
         return false;
@@ -409,7 +478,7 @@ public class Brick : MonoBehaviour
         if (!held)
             return;
 
-        if (!FindSnap(out Vector3 position, out Quaternion rotation))
+        if (TrashCan.Contains(transform.TransformPoint(_body.center)) || !FindSnap(out Vector3 position, out Quaternion rotation))
         {
             HideGhosts();
             return;
@@ -497,6 +566,11 @@ public class Brick : MonoBehaviour
         }
 
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
+        if (_opaqueMaterial == null)
+            _opaqueMaterial = meshRenderer.sharedMaterial;
+        bool seeThrough = color.a < 1f && transparentMaterial != null;
+        meshRenderer.sharedMaterial = seeThrough ? transparentMaterial : _opaqueMaterial;
+
         var block = new MaterialPropertyBlock();
         meshRenderer.GetPropertyBlock(block);
         block.SetColor(BaseColorId, color);
@@ -527,81 +601,5 @@ public class Brick : MonoBehaviour
         }
 
         builder.ApplyTo(mesh);
-    }
-
-    /// <summary>Minimal helper for flat-sided procedural meshes.</summary>
-    class MeshBuilder
-    {
-        readonly List<Vector3> _vertices = new List<Vector3>();
-        readonly List<Vector3> _normals = new List<Vector3>();
-        readonly List<int> _triangles = new List<int>();
-
-        // Adds a triangle facing the given outward direction, fixing the winding if needed.
-        void AddTriangle(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector3 outward)
-        {
-            if (Vector3.Dot(Vector3.Cross(b - a, c - a), outward) < 0f)
-            {
-                (b, c) = (c, b);
-                (nb, nc) = (nc, nb);
-            }
-            int start = _vertices.Count;
-            _vertices.Add(a); _vertices.Add(b); _vertices.Add(c);
-            _normals.Add(na); _normals.Add(nb); _normals.Add(nc);
-            _triangles.Add(start); _triangles.Add(start + 1); _triangles.Add(start + 2);
-        }
-
-        void AddQuad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 normal)
-        {
-            AddTriangle(a, b, c, normal, normal, normal, normal);
-            AddTriangle(a, c, d, normal, normal, normal, normal);
-        }
-
-        public void AddBox(Vector3 min, Vector3 max)
-        {
-            Vector3 p000 = new Vector3(min.x, min.y, min.z), p100 = new Vector3(max.x, min.y, min.z);
-            Vector3 p010 = new Vector3(min.x, max.y, min.z), p110 = new Vector3(max.x, max.y, min.z);
-            Vector3 p001 = new Vector3(min.x, min.y, max.z), p101 = new Vector3(max.x, min.y, max.z);
-            Vector3 p011 = new Vector3(min.x, max.y, max.z), p111 = new Vector3(max.x, max.y, max.z);
-
-            AddQuad(p010, p110, p111, p011, Vector3.up);
-            AddQuad(p000, p100, p101, p001, Vector3.down);
-            AddQuad(p000, p100, p110, p010, Vector3.back);
-            AddQuad(p001, p101, p111, p011, Vector3.forward);
-            AddQuad(p000, p001, p011, p010, Vector3.left);
-            AddQuad(p100, p101, p111, p110, Vector3.right);
-        }
-
-        public void AddCylinder(Vector3 baseCenter, float radius, float height, int segments)
-        {
-            Vector3 up = Vector3.up * height;
-            Vector3 topCenter = baseCenter + up;
-
-            for (int s = 0; s < segments; s++)
-            {
-                float a0 = s * Mathf.PI * 2f / segments;
-                float a1 = (s + 1) * Mathf.PI * 2f / segments;
-                Vector3 n0 = new Vector3(Mathf.Cos(a0), 0f, Mathf.Sin(a0));
-                Vector3 n1 = new Vector3(Mathf.Cos(a1), 0f, Mathf.Sin(a1));
-                Vector3 b0 = baseCenter + n0 * radius;
-                Vector3 b1 = baseCenter + n1 * radius;
-                Vector3 outward = (n0 + n1).normalized;
-
-                // Smooth-shaded side.
-                AddTriangle(b0, b1, b1 + up, n0, n1, n1, outward);
-                AddTriangle(b0, b1 + up, b0 + up, n0, n1, n0, outward);
-
-                // Flat top cap.
-                AddTriangle(topCenter, b0 + up, b1 + up, Vector3.up, Vector3.up, Vector3.up, Vector3.up);
-            }
-        }
-
-        public void ApplyTo(Mesh mesh)
-        {
-            mesh.Clear();
-            mesh.SetVertices(_vertices);
-            mesh.SetNormals(_normals);
-            mesh.SetTriangles(_triangles, 0);
-            mesh.RecalculateBounds();
-        }
     }
 }

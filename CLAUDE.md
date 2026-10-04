@@ -15,8 +15,19 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   group carrying, overlap checks, table placement, ghost preview. Pivot = part origin; scale must be 1.
 - `BrickGrabInput.cs`: controller trigger / hand pinch = one brick; grip / palm = whole connected group.
   Also lets the trigger select GrabInteractors at startup.
-- `BrickTray.cs` + `PlaceInFrontOfUser.cs`: spawns parts (from `BrickCatalog`) in rows in front of the user.
+- `BrickTray.cs` + `PlaceInFrontOfUser.cs`: older test helper that lays out one of each catalog part.
 - `RoomSurfaces.cs`: upward-facing MRUK plane lookup.
+- `Sandbox.cs`: sandbox mode. Y = parts menu (categories -> grid of real, grabbable preview bricks),
+  B = color menu (`BrickColors.cs`, 30 LDraw colors), A = duplicate held brick/group.
+  Spawns baseplate (part 3811) and `TrashCan`. Menus are built in code (`MenuUI.cs`: `MenuPanel`,
+  `MenuButton` = RayInteractable + ColliderSurface created at runtime). Grabbable non-brick objects
+  (menu handles, trash can) are made by cloning the brick prefab and removing its `Brick` component.
+- `MeshBuilder.cs`: procedural box/cylinder meshes.
+- `ModelFile.cs`: saves/loads models as LDraw .ldr in `Application.persistentDataPath/Models`
+  (positions relative to the model's bottom center, facing the first brick's yaw).
+  `ModelMenu.cs`: saved-model grid with spinning thumbnails, Load / Rename (system keyboard) / Delete.
+  "Save Everything" in the parts menu; X saves the held model.
+- Planned next: wrist inventory (Wrench-style stacks with counts), then game modes beyond Sandbox.
 - `Assets/Editor/LDraw/`: `LDrawParser.cs` (pure C#, System.Numerics, testable with `dotnet`) and
   Tools > LDraw Part Importer window, which writes meshes + `BrickPartData` to `Assets/LDrawParts/`.
 

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
   partId: 3040b
   description: Slope Brick 45 2 x 1
+  category: Slope
   mesh: {fileID: 4300000, guid: 7f88b1f4d1d778c4e8fa275081f0f768, type: 2}
   studs:
   - {x: 0, y: -0, z: 0}

@@ -21,7 +21,8 @@ public class LDrawImportWindow : EditorWindow
         "3001 3002 3003 3004 3005 3010 3009 3007\n" + // bricks
         "3020 3022 3023b 3024 3710 3031\n" +          // plates
         "3039 3040b 3062b\n" +                       // slopes, round
-        "3068b 3069b";                               // tiles
+        "3068b 3069b\n" +                            // tiles
+        "3811";                                      // 32 x 32 baseplate
 
     string _partList = StarterParts;
     string _log = "";
@@ -90,6 +91,7 @@ public class LDrawImportWindow : EditorWindow
                 BrickPartData part = LoadOrCreateAsset<BrickPartData>($"{OutputFolder}/{fileId}.asset");
                 part.partId = id;
                 part.description = data.Description;
+                part.category = BrickPartData.CategoryFromDescription(data.Description);
                 part.mesh = mesh;
                 part.studs = data.Studs.Select(ToUnity).ToArray();
                 part.antiStuds = data.AntiStuds.Select(ToUnity).ToArray();

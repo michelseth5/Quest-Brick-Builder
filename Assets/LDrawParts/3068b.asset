@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
   partId: 3068b
   description: Tile 2 x 2 with Groove
+  category: Tile
   mesh: {fileID: 4300000, guid: cae3f2229481b8645852bbf140b6bf51, type: 2}
   studs: []
   antiStuds:

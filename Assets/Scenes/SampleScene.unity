@@ -119,6 +119,55 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &33777036
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 33777038}
+  - component: {fileID: 33777037}
+  m_Layer: 0
+  m_Name: Sandbox
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &33777037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 33777036}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 556e7c31fd44cf04dae7e8d8ee762326, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Sandbox
+  brickPrefab: {fileID: 2195673924386441590, guid: 0991988071506f1468173a0f12d99704, type: 3}
+  catalog: {fileID: 11400000, guid: ee4d075bcb91ab54fb8aee08016195f1, type: 2}
+  transparentMaterial: {fileID: 2100000, guid: 859d858a5562bc54b83042f582724d50, type: 2}
+  menuDistance: 0.45
+  partColumns: 4
+--- !u!4 &33777038
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 33777036}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &75667275
 GameObject:
   m_ObjectHideFlags: 0
@@ -255,101 +304,6 @@ Transform:
   - {fileID: 637287693}
   m_Father: {fileID: 2116169746}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &402059527
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 402059529}
-  - component: {fileID: 402059528}
-  - component: {fileID: 402059530}
-  m_Layer: 0
-  m_Name: BrickTray
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &402059528
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 402059527}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 77046672890e0714a95d5f52335b839b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlaceInFrontOfUser
-  distance: 0.4
-  dropBelowEyes: 0.25
---- !u!4 &402059529
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 402059527}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &402059530
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 402059527}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3cb29a44985524440b8d84124b4c607c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BrickTray
-  brickPrefab: {fileID: 2195673924386441590, guid: 0991988071506f1468173a0f12d99704, type: 3}
-  catalog: {fileID: 11400000, guid: ee4d075bcb91ab54fb8aee08016195f1, type: 2}
-  palette:
-  - {r: 0.8, g: 0.1, b: 0.1, a: 1}
-  - {r: 0.1, g: 0.35, b: 0.8, a: 1}
-  - {r: 0.95, g: 0.8, b: 0.1, a: 1}
-  - {r: 0.15, g: 0.6, b: 0.2, a: 1}
-  - {r: 0.95, g: 0.95, b: 0.95, a: 1}
-  - {r: 0.2, g: 0.2, b: 0.2, a: 1}
-  spacing: 0.02
-  maxRowWidth: 0.35
-  bricks:
-  - studsX: 2
-    studsZ: 4
-    heightInPlates: 3
-    color: {r: 0.8, g: 0.1, b: 0.1, a: 1}
-  - studsX: 2
-    studsZ: 4
-    heightInPlates: 3
-    color: {r: 0.1, g: 0.35, b: 0.8, a: 1}
-  - studsX: 2
-    studsZ: 2
-    heightInPlates: 3
-    color: {r: 0.95, g: 0.8, b: 0.1, a: 1}
-  - studsX: 1
-    studsZ: 4
-    heightInPlates: 3
-    color: {r: 0.15, g: 0.6, b: 0.2, a: 1}
-  - studsX: 2
-    studsZ: 6
-    heightInPlates: 1
-    color: {r: 0.95, g: 0.95, b: 0.95, a: 1}
-  - studsX: 4
-    studsZ: 4
-    heightInPlates: 1
-    color: {r: 0.2, g: 0.2, b: 0.2, a: 1}
 --- !u!1 &409783920
 GameObject:
   m_ObjectHideFlags: 0
@@ -1643,5 +1597,5 @@ SceneRoots:
   - {fileID: 832575519}
   - {fileID: 2116169746}
   - {fileID: 1070278085}
-  - {fileID: 402059529}
   - {fileID: 604443874}
+  - {fileID: 33777038}
