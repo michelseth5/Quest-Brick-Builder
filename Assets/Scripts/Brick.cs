@@ -5,6 +5,7 @@ using UnityEngine;
 /// <summary>
 /// A real-scale brick. Builds its own mesh (body + studs) from its size, and when the
 /// player lets go of it, snaps it onto the stud grid of the nearest brick above or below.
+/// A trigger/pinch grab takes just this brick; a grip/whole-hand grab takes every brick connected to it.
 /// The pivot is at the bottom-center of the brick and the transform scale must stay at 1.
 /// </summary>
 [ExecuteAlways]
@@ -36,9 +37,12 @@ public class Brick : MonoBehaviour
 
     public float Height => heightInPlates * PlateHeight;
 
+    static readonly Collider[] OverlapResults = new Collider[32];
+
     Mesh _mesh;
     bool _dirty = true;
     PointableElement _grabbable;
+    readonly List<(Brick brick, Transform originalParent)> _carried = new List<(Brick, Transform)>();
 
     void OnEnable()
     {
@@ -56,6 +60,7 @@ public class Brick : MonoBehaviour
     void OnDisable()
     {
         AllBricks.Remove(this);
+        PutDownStack();
         if (_grabbable != null)
             _grabbable.WhenPointerEventRaised -= OnPointerEvent;
     }
@@ -80,13 +85,116 @@ public class Brick : MonoBehaviour
 
     void OnPointerEvent(PointerEvent evt)
     {
-        // Only snap once every hand has let go.
-        if (evt.Type == PointerEventType.Unselect && _grabbable.SelectingPointsCount == 0)
+        if (evt.Type == PointerEventType.Select && _grabbable.SelectingPointsCount == 1)
+        {
+            PutDownStack();
+            if (BrickGrabInput.IsWholeGroupGrab(evt))
+                PickUpGroup();
+        }
+        else if ((evt.Type == PointerEventType.Unselect || evt.Type == PointerEventType.Cancel)
+                 && _grabbable.SelectingPointsCount == 0)
+        {
+            // Only snap once every hand has let go.
             TrySnap();
+            PutDownStack();
+        }
+    }
+
+    // Temporarily parents every brick connected to this one (above or below) to it,
+    // so the whole model moves as a unit.
+    void PickUpGroup()
+    {
+        var group = new List<Brick> { this };
+        for (int i = 0; i < group.Count; i++)
+        {
+            foreach (Brick other in AllBricks)
+            {
+                if (other.isActiveAndEnabled && !group.Contains(other)
+                    && (other.RestsOn(group[i]) || group[i].RestsOn(other)))
+                {
+                    group.Add(other);
+                }
+            }
+        }
+
+        for (int i = 1; i < group.Count; i++)
+        {
+            Transform t = group[i].transform;
+            _carried.Add((group[i], t.parent));
+            t.SetParent(transform, worldPositionStays: true);
+        }
+    }
+
+    void PutDownStack()
+    {
+        foreach ((Brick brick, Transform originalParent) in _carried)
+        {
+            if (brick != null)
+                brick.transform.SetParent(originalParent, worldPositionStays: true);
+        }
+        _carried.Clear();
+    }
+
+    bool IsCarrying(Brick brick)
+    {
+        foreach ((Brick carried, Transform _) in _carried)
+        {
+            if (carried == brick)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>True when this brick is snapped onto the top of the given brick.</summary>
+    public bool RestsOn(Brick lower)
+    {
+        Transform lt = lower.transform;
+        Quaternion relative = Quaternion.Inverse(lt.rotation) * transform.rotation;
+        if (Vector3.Angle(relative * Vector3.up, Vector3.up) > 2f)
+            return false;
+
+        Vector3 local = lt.InverseTransformPoint(transform.position);
+        if (Mathf.Abs(local.y - lower.Height) > 0.0005f)
+            return false;
+
+        GetFootprint(relative, out int footprintX, out int footprintZ, out _);
+        return Overlaps(local.x, lower.studsX, footprintX) && Overlaps(local.z, lower.studsZ, footprintZ);
+    }
+
+    // This brick's size measured along another brick's axes, given the rotation between them.
+    void GetFootprint(Quaternion relative, out int footprintX, out int footprintZ, out int quarterTurns)
+    {
+        Vector3 forward = relative * Vector3.forward;
+        quarterTurns = Mathf.RoundToInt(Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg / 90f);
+        quarterTurns = ((quarterTurns % 4) + 4) % 4;
+        bool turnedSideways = quarterTurns % 2 == 1;
+        footprintX = turnedSideways ? studsZ : studsX;
+        footprintZ = turnedSideways ? studsX : studsZ;
+    }
+
+    // True if this brick placed at the given pose would cut into a brick it isn't carrying.
+    bool WouldOverlapOthers(Vector3 position, Quaternion rotation)
+    {
+        // Shrink slightly so bricks that merely touch (stacked or side by side) don't count.
+        Vector3 halfExtents = new Vector3(studsX * StudPitch, Height, studsZ * StudPitch) * 0.5f
+                              - Vector3.one * 0.001f;
+        Vector3 center = position + rotation * new Vector3(0f, Height * 0.5f, 0f);
+
+        int count = Physics.OverlapBoxNonAlloc(center, halfExtents, OverlapResults, rotation,
+                                               Physics.AllLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+        {
+            Brick hit = OverlapResults[i].GetComponentInParent<Brick>();
+            if (hit != null && hit != this && !IsCarrying(hit))
+                return true;
+        }
+        return false;
     }
 
     public bool TrySnap()
     {
+        // Make sure overlap checks see where every brick is right now.
+        Physics.SyncTransforms();
         if (!FindSnap(out Vector3 position, out Quaternion rotation))
             return false;
         transform.SetPositionAndRotation(position, rotation);
@@ -112,12 +220,10 @@ public class Brick : MonoBehaviour
             if (Vector3.Angle(relative * Vector3.up, Vector3.up) > maxTiltDegrees)
                 continue;
 
-            Vector3 forward = relative * Vector3.forward;
-            int quarterTurns = Mathf.RoundToInt(Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg / 90f);
-            quarterTurns = ((quarterTurns % 4) + 4) % 4;
-            bool turnedSideways = quarterTurns % 2 == 1;
-            int footprintX = turnedSideways ? studsZ : studsX;
-            int footprintZ = turnedSideways ? studsX : studsZ;
+            if (IsCarrying(other))
+                continue;
+
+            GetFootprint(relative, out int footprintX, out int footprintZ, out int quarterTurns);
 
             Vector3 local = ot.InverseTransformPoint(transform.position);
 
@@ -134,12 +240,17 @@ public class Brick : MonoBehaviour
 
                 Vector3 target = new Vector3(x, targetY, z);
                 float score = (target - local).sqrMagnitude;
-                if (score < bestScore)
-                {
-                    bestScore = score;
-                    bestPosition = ot.TransformPoint(target);
-                    bestRotation = ot.rotation * Quaternion.Euler(0f, quarterTurns * 90f, 0f);
-                }
+                if (score >= bestScore)
+                    continue;
+
+                Vector3 worldPosition = ot.TransformPoint(target);
+                Quaternion worldRotation = ot.rotation * Quaternion.Euler(0f, quarterTurns * 90f, 0f);
+                if (WouldOverlapOthers(worldPosition, worldRotation))
+                    continue;
+
+                bestScore = score;
+                bestPosition = worldPosition;
+                bestRotation = worldRotation;
             }
         }
 
