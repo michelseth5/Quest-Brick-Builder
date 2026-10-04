@@ -115,3 +115,6 @@ InitTestScene*.unity*
 
 # LDraw parts library (downloaded separately; ~146 MB)
 /LDraw/
+
+# Local API keys (Rebrickable, etc.) - never commit
+/Secrets/

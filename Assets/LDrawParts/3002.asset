@@ -16,6 +16,7 @@ MonoBehaviour:
   description: Brick 2 x 3
   category: Brick
   mesh: {fileID: 4300000, guid: acd6017371adf7740abae138c7cb5d31, type: 2}
+  submeshColors: 10000000i
   studs:
   - {x: 0.007999999, y: -0, z: 0.0039999997}
   - {x: 0, y: -0, z: 0.0039999997}

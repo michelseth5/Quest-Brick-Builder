@@ -44,9 +44,16 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   bonded (`Brick.BondTogether`): grip takes the whole bond, trigger pulls one brick out of it.
   Bonds are saved as `0 !QUESTBRICK BOND <n>` before each part line and kept for duplicates/wrist items. Start menu (Free Build / Build a Set) opens at launch and on
   the left controller's menu button (`OVRInput.RawButton.Start`).
-- Roadmap (agreed order): 1) parts that scale (done: set import, colors, menu paging),
-  2) "Build a Set" mode: step-by-step ghosts, place parts on ghosts (works for non-stud connections),
-  start menu with modes, 3) Rebrickable set search/part lists.
+- `Assets/Editor/LDraw/SetFinderWindow.cs` (Tools > Set Finder): Rebrickable search (key in
+  gitignored `Secrets/rebrickable.key`, never print it), OMR availability check, "Add" = Rebrickable
+  parts list (LDraw ids/colors via external_ids, spares excluded, minifig parts included) + OMR steps
+  if available + part import + `SetData` + CREDITS.md line.
+- Roadmap: A) Set Finder (written, awaiting test), B) "Build It Yourself" mode: a set's exact parts
+  (from `SetData.inventory`) on trays, free building, C) instruction book: LEGO PDFs the player
+  downloads in the Quest browser, imported via the Android file picker (Storage Access Framework,
+  needs a small Java plugin in Assets/Plugins/Android) into app storage, rendered with Android's
+  PdfRenderer, shown as a two-page floating book. Do NOT scrape lego.com/Rebrickable for PDFs
+  (bot protection + terms); never commit PDFs.
 - `Assets/Editor/LDraw/`: `LDrawParser.cs` (pure C#, System.Numerics, testable with `dotnet`) and
   Tools > LDraw Part Importer window, which writes meshes + `BrickPartData` to `Assets/LDrawParts/`.
 

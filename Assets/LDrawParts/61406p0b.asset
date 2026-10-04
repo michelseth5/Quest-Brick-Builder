@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 61406p0b
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 61406p0b
+  description: Plate 1 x 2 with Tooth and Flexible Dark Bluish Gray Tip
+  category: Plate
+  mesh: {fileID: 4300000, guid: a673b838046bb2143a346b39952bd607, type: 2}
+  submeshColors: 1000000058270000i
+  studs:
+  - {x: -0.0039999997, y: -0, z: 0}
+  - {x: 0.0039999997, y: -0, z: 0}
+  antiStuds:
+  - {x: -0.0039999997, y: -0.0032, z: -0.055999998}
+  - {x: -0.0039999997, y: -0.0032, z: -0.048}
+  - {x: -0.0039999997, y: -0.0032, z: -0.04}
+  - {x: -0.0039999997, y: -0.0032, z: -0.031999998}
+  - {x: -0.0039999997, y: -0.0032, z: -0.024}
+  - {x: -0.0039999997, y: -0.0032, z: -0.015999999}
+  - {x: -0.0039999997, y: -0.0032, z: -0.007999999}
+  - {x: -0.0039999997, y: -0.0032, z: 0}
+  - {x: 0.0039999997, y: -0.0032, z: -0.055999998}
+  - {x: 0.0039999997, y: -0.0032, z: -0.048}
+  - {x: 0.0039999997, y: -0.0032, z: -0.04}
+  - {x: 0.0039999997, y: -0.0032, z: -0.031999998}
+  - {x: 0.0039999997, y: -0.0032, z: -0.024}
+  - {x: 0.0039999997, y: -0.0032, z: -0.015999999}
+  - {x: 0.0039999997, y: -0.0032, z: -0.007999999}
+  - {x: 0.0039999997, y: -0.0032, z: 0}
+  bodyBounds:
+    m_Center: {x: 0, y: 0.0012, z: -0.028}
+    m_Extent: {x: 0.007999999, y: 0.0044, z: 0.031999998}

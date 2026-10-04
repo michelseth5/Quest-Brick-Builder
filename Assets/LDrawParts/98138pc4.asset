@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 98138pc4
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 98138pc4
+  description: Tile 1 x 1 Round with Groove with Gauge with Red Pointer and White, Blue and Red Dial Pattern
+  category: Tile
+  mesh: {fileID: 4300000, guid: 20794a4990c53c94aa187a06cf47f3d5, type: 2}
+  submeshColors: 1000000000000000040000000f00000042010000i
+  studs: []
+  antiStuds:
+  - {x: 0, y: -0.0032, z: 0}
+  bodyBounds:
+    m_Center: {x: 0, y: -0.0016, z: 0}
+    m_Extent: {x: 0.0039999997, y: 0.0016, z: 0.0039999997}

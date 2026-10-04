@@ -181,7 +181,7 @@ public class Sandbox : MonoBehaviour
     void ShowSetList()
     {
         var buttons = new List<(string, System.Action)>();
-        foreach (SetData set in SetData.LoadAll().OrderBy(s => s.setNumber))
+        foreach (SetData set in SetData.LoadAll().Where(s => s.HasSteps).OrderBy(s => s.setNumber))
         {
             SetData chosen = set;
             buttons.Add(($"{set.title}  <size=70%><color=#AAB>{set.setNumber} · {set.PartCount} parts</color></size>",

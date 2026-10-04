@@ -32,8 +32,8 @@ public class LDrawImportWindow : EditorWindow
     Vector2 _scroll;
     int _setIndex;
 
-    static string ProjectRoot => Directory.GetParent(Application.dataPath).FullName;
-    static string SetsFolder => Path.Combine(ProjectRoot, "Sets");
+    public static string ProjectRoot => Directory.GetParent(Application.dataPath).FullName;
+    public static string SetsFolder => Path.Combine(ProjectRoot, "Sets");
 
     [MenuItem("Tools/LDraw Part Importer")]
     static void Open() => GetWindow<LDrawImportWindow>("LDraw Importer");
@@ -66,9 +66,10 @@ public class LDrawImportWindow : EditorWindow
                 _setIndex = EditorGUILayout.Popup("Set", _setIndex, setFiles.Select(Path.GetFileName).ToArray());
                 if (GUILayout.Button("Import Set Parts", GUILayout.Height(30)))
                 {
-                    List<string> ids = LDrawParser.ListModelParts(setFiles[_setIndex]);
-                    Import(libraryRoot, ids, $"Set {Path.GetFileName(setFiles[_setIndex])}: {ids.Count} different parts");
-                    SaveSetData(setFiles[_setIndex]);
+                    string setFile = setFiles[_setIndex];
+                    List<string> ids = LDrawParser.ListModelParts(setFile);
+                    _log = ImportParts(libraryRoot, ids, $"Set {Path.GetFileName(setFile)}: {ids.Count} different parts");
+                    _log += "\n" + SaveSet(Path.GetFileNameWithoutExtension(setFile), setFile, null, 0, null);
                 }
             }
 
@@ -79,7 +80,7 @@ public class LDrawImportWindow : EditorWindow
             if (GUILayout.Button("Import Parts", GUILayout.Height(30)))
             {
                 string[] ids = _partList.Split(new[] { ' ', ',', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                Import(libraryRoot, ids, null);
+                _log = ImportParts(libraryRoot, ids, null);
             }
         }
 
@@ -89,7 +90,8 @@ public class LDrawImportWindow : EditorWindow
         EditorGUILayout.EndScrollView();
     }
 
-    void Import(string libraryRoot, IList<string> partIds, string heading)
+    /// <summary>Imports (or re-imports) LDraw parts into the catalog. Returns a log of what happened.</summary>
+    public static string ImportParts(string libraryRoot, IList<string> partIds, string heading)
     {
         var parser = new LDrawParser(libraryRoot);
         var log = new StringBuilder();
@@ -157,30 +159,43 @@ public class LDrawImportWindow : EditorWindow
 
         log.AppendLine();
         log.AppendLine($"Saved to {OutputFolder}. The catalog has {catalog.parts.Count} parts and {colorCount} colors are available.");
-        _log = log.ToString();
+        return log.ToString();
     }
 
-    // The set's building steps, into Resources/Sets so the game can list and build it.
-    void SaveSetData(string setFile)
-    {
-        List<List<LDrawParser.ModelPart>> steps = LDrawParser.ReadModelSteps(setFile, out string author);
-        string setNumber = Path.GetFileNameWithoutExtension(setFile);
+    public static string SetAssetPath(string setNumber) => $"Assets/Resources/{SetData.ResourceFolder}/{setNumber}.asset";
 
-        string folder = "Assets/Resources/" + SetData.ResourceFolder;
+    /// <summary>
+    /// Creates or updates a set in Resources/Sets so the game can list it. Pass a model file to (re)read
+    /// its building steps, and/or an inventory to store its parts list; null leaves that part unchanged.
+    /// </summary>
+    public static string SaveSet(string setNumber, string modelFile, string title, int year, List<SetData.InventoryItem> inventory)
+    {
         EnsureFolder("Assets/Resources");
-        EnsureFolder(folder);
-        SetData set = LoadOrCreateAsset<SetData>($"{folder}/{setNumber}.asset");
+        EnsureFolder("Assets/Resources/" + SetData.ResourceFolder);
+        SetData set = LoadOrCreateAsset<SetData>(SetAssetPath(setNumber));
         set.setNumber = setNumber;
-        set.title = ReadSetTitle(setNumber) ?? setNumber;
-        set.author = author;
-        set.steps = steps.Select(step => new SetData.Step
+        set.title = title ?? ReadSetTitle(setNumber) ?? (string.IsNullOrEmpty(set.title) ? setNumber : set.title);
+        if (year > 0)
+            set.year = year;
+
+        if (modelFile != null)
         {
-            parts = step.Select(ToPlacement).ToList(),
-        }).ToList();
+            List<List<LDrawParser.ModelPart>> steps = LDrawParser.ReadModelSteps(modelFile, out string author);
+            set.author = author;
+            set.steps = steps.Select(step => new SetData.Step { parts = step.Select(ToPlacement).ToList() }).ToList();
+        }
+        if (inventory != null)
+            set.inventory = inventory;
+
         EditorUtility.SetDirty(set);
         AssetDatabase.SaveAssets();
 
-        _log += $"\nBuilding steps saved: \"{set.title}\", {set.steps.Count} steps, {set.PartCount} parts.";
+        var summary = new StringBuilder($"Set saved: \"{set.title}\"");
+        if (set.HasSteps)
+            summary.Append($", {set.steps.Count} building steps");
+        if (set.HasInventory)
+            summary.Append($", parts list of {set.inventory.Sum(i => i.quantity)} parts");
+        return summary.Append('.').ToString();
     }
 
     static string ReadSetTitle(string setNumber)

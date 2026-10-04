@@ -16,6 +16,7 @@ MonoBehaviour:
   description: Plate 2 x 2
   category: Plate
   mesh: {fileID: 4300000, guid: 96fbdd6e128de124e8d17bfcfef58451, type: 2}
+  submeshColors: 10000000i
   studs:
   - {x: 0.0039999997, y: -0, z: 0.0039999997}
   - {x: -0.0039999997, y: -0, z: 0.0039999997}

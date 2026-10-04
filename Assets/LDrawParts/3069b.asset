@@ -16,6 +16,7 @@ MonoBehaviour:
   description: Tile 1 x 2 with Groove
   category: Tile
   mesh: {fileID: 4300000, guid: 8de72c6c66964414bbb99e62ed4012ce, type: 2}
+  submeshColors: 10000000i
   studs: []
   antiStuds:
   - {x: -0.0039999997, y: -0.0032, z: 0}

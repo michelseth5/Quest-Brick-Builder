@@ -26,18 +26,45 @@ public class SetData : ScriptableObject
         public List<Placement> parts = new List<Placement>();
     }
 
+    /// <summary>One line of the set's parts list: a part in a color, and how many.</summary>
+    [System.Serializable]
+    public class InventoryItem
+    {
+        public string partId;   // LDraw part number
+        public int colorCode;   // LDraw color code
+        public int quantity;
+    }
+
     public string setNumber;
     public string title;
     public string author;
+    public int year;
+
+    [Tooltip("Step-by-step building instructions (from an LDraw model file). Empty if none are available.")]
     public List<Step> steps = new List<Step>();
 
+    [Tooltip("The set's parts list (from Rebrickable), for building it yourself. Empty if it wasn't fetched.")]
+    public List<InventoryItem> inventory = new List<InventoryItem>();
+
+    public bool HasSteps => steps.Count > 0;
+    public bool HasInventory => inventory.Count > 0;
+
+    /// <summary>Number of parts: from the building steps if there are any, otherwise from the parts list.</summary>
     public int PartCount
     {
         get
         {
             int count = 0;
-            foreach (Step step in steps)
-                count += step.parts.Count;
+            if (HasSteps)
+            {
+                foreach (Step step in steps)
+                    count += step.parts.Count;
+            }
+            else
+            {
+                foreach (InventoryItem item in inventory)
+                    count += item.quantity;
+            }
             return count;
         }
     }

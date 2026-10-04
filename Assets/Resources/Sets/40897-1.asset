@@ -1,0 +1,209 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e83a1abd11e84fb418d18571d17fc05e, type: 3}
+  m_Name: 40897-1
+  m_EditorClassIdentifier: Assembly-CSharp::SetData
+  setNumber: 40897-1
+  title: Darth Vader's Lightsaber
+  author: 
+  year: 2026
+  steps: []
+  inventory:
+  - partId: 15068
+    colorCode: 0
+    quantity: 1
+  - partId: 15573
+    colorCode: 71
+    quantity: 1
+  - partId: 15672
+    colorCode: 0
+    quantity: 2
+  - partId: 16091
+    colorCode: 71
+    quantity: 1
+  - partId: 1745
+    colorCode: 0
+    quantity: 1
+  - partId: 1750
+    colorCode: 0
+    quantity: 2
+  - partId: 18653
+    colorCode: 0
+    quantity: 8
+  - partId: 18674
+    colorCode: 5
+    quantity: 2
+  - partId: 20482
+    colorCode: 0
+    quantity: 3
+  - partId: 20482
+    colorCode: 80
+    quantity: 1
+  - partId: 23948
+    colorCode: 14
+    quantity: 1
+  - partId: 2395
+    colorCode: 0
+    quantity: 1
+  - partId: 2403
+    colorCode: 0
+    quantity: 1
+  - partId: 24593
+    colorCode: 71
+    quantity: 6
+  - partId: 27925
+    colorCode: 0
+    quantity: 2
+  - partId: 27925
+    colorCode: 71
+    quantity: 8
+  - partId: 28653
+    colorCode: 0
+    quantity: 2
+  - partId: 3010
+    colorCode: 0
+    quantity: 4
+  - partId: 3022
+    colorCode: 0
+    quantity: 1
+  - partId: 3024
+    colorCode: 71
+    quantity: 1
+  - partId: 3069b
+    colorCode: 0
+    quantity: 1
+  - partId: 3069b
+    colorCode: 71
+    quantity: 1
+  - partId: 3070b
+    colorCode: 0
+    quantity: 8
+  - partId: 3070b
+    colorCode: 71
+    quantity: 3
+  - partId: 32028
+    colorCode: 0
+    quantity: 4
+  - partId: 32062
+    colorCode: 4
+    quantity: 1
+  - partId: 32073
+    colorCode: 14
+    quantity: 1
+  - partId: 3460
+    colorCode: 0
+    quantity: 8
+  - partId: 35485
+    colorCode: 179
+    quantity: 1
+  - partId: 3666
+    colorCode: 0
+    quantity: 4
+  - partId: 3832
+    colorCode: 0
+    quantity: 2
+  - partId: 3937
+    colorCode: 0
+    quantity: 1
+  - partId: 3941
+    colorCode: 36
+    quantity: 5
+  - partId: 4032a
+    colorCode: 4
+    quantity: 1
+  - partId: 4162
+    colorCode: 0
+    quantity: 8
+  - partId: 41682
+    colorCode: 0
+    quantity: 1
+  - partId: 46372
+    colorCode: 71
+    quantity: 1
+  - partId: 47905
+    colorCode: 71
+    quantity: 2
+  - partId: 5091
+    colorCode: 0
+    quantity: 1
+  - partId: 5092
+    colorCode: 0
+    quantity: 1
+  - partId: 52107
+    colorCode: 71
+    quantity: 1
+  - partId: 5264
+    colorCode: 0
+    quantity: 1
+  - partId: 5404
+    colorCode: 71
+    quantity: 1
+  - partId: 5847
+    colorCode: 0
+    quantity: 2
+  - partId: 59443
+    colorCode: 353
+    quantity: 1
+  - partId: 60474
+    colorCode: 0
+    quantity: 3
+  - partId: 60474
+    colorCode: 71
+    quantity: 7
+  - partId: 6134
+    colorCode: 71
+    quantity: 1
+  - partId: 6141
+    colorCode: 36
+    quantity: 1
+  - partId: 6180pr0048
+    colorCode: 0
+    quantity: 1
+  - partId: 6222
+    colorCode: 0
+    quantity: 2
+  - partId: 6222
+    colorCode: 71
+    quantity: 6
+  - partId: 63864
+    colorCode: 0
+    quantity: 1
+  - partId: 63965a
+    colorCode: 4
+    quantity: 1
+  - partId: 67095
+    colorCode: 71
+    quantity: 1
+  - partId: 77845
+    colorCode: 0
+    quantity: 1
+  - partId: 85080
+    colorCode: 0
+    quantity: 4
+  - partId: 85080
+    colorCode: 71
+    quantity: 4
+  - partId: 85861
+    colorCode: 72
+    quantity: 2
+  - partId: 85984
+    colorCode: 0
+    quantity: 4
+  - partId: 89678
+    colorCode: 4
+    quantity: 12
+  - partId: 89678
+    colorCode: 72
+    quantity: 12
+  - partId: 98138
+    colorCode: 71
+    quantity: 1
