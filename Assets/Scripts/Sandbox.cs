@@ -55,10 +55,23 @@ public class Sandbox : MonoBehaviour
 
     BrickColors.Entry CurrentColor => BrickColors.All[_colorIndex];
 
+    static Sandbox _instance;
+
     void Awake()
     {
+        _instance = this;
         _colorIndex = Mathf.Max(0, BrickColors.IndexOfCode(DefaultColorCode));
         Brick.PreviewTaken += OnPreviewTaken;
+
+        WristInventory inventory = gameObject.AddComponent<WristInventory>();
+        inventory.ghostMaterial = brickPrefab != null ? brickPrefab.ghostMaterial : null;
+    }
+
+    /// <summary>Shows a short floating message, if the sandbox is running.</summary>
+    public static void Message(string text)
+    {
+        if (_instance != null)
+            _instance.ShowMessage(text);
     }
 
     void OnDestroy()
@@ -458,12 +471,12 @@ public class Sandbox : MonoBehaviour
     void SaveEverything()
     {
         List<Brick> bricks = Brick.AllPlaced().Where(b => b.part != null).ToList();
-        if (bricks.Count == 0)
+        if (bricks.Count == 0 && WristInventory.Export().Count == 0)
         {
             ShowMessage("Nothing to save yet");
             return;
         }
-        SaveModel(bricks);
+        SaveModel(bricks, includeInventory: true);
     }
 
     // X while gripping a model saves that model (the held brick plus everything connected to it).
@@ -481,11 +494,16 @@ public class Sandbox : MonoBehaviour
         SaveModel(bricks);
     }
 
-    void SaveModel(List<Brick> bricks)
+    void SaveModel(List<Brick> bricks, bool includeInventory = false)
     {
         string name = ModelFile.NextAutoName();
-        ModelFile.Save(name, bricks);
-        ShowMessage($"Saved \"{name}\" ({bricks.Count} {(bricks.Count == 1 ? "part" : "parts")})");
+        ModelFile.Save(name, bricks, includeInventory);
+
+        string details = $"{bricks.Count} {(bricks.Count == 1 ? "part" : "parts")}";
+        int stacks = includeInventory ? WristInventory.Export().Count : 0;
+        if (stacks > 0)
+            details += $" + {stacks} on wrists";
+        ShowMessage($"Saved \"{name}\" ({details})");
         if (_modelMenu.IsOpen)
             _modelMenu.Refresh();
     }
@@ -504,33 +522,57 @@ public class Sandbox : MonoBehaviour
     /// <summary>Builds a saved model from real bricks, sitting in front of you, ready to grab.</summary>
     public void LoadModel(string path)
     {
-        List<ModelFile.Placement> placements = ModelFile.Load(path, out string title);
+        List<ModelFile.Placement> placements = ModelFile.Load(path, out string title, out List<ModelFile.InventoryStack> inventory);
         (Vector3 origin, Quaternion facing) = InFrontOfUser(0f, 0.3f, menuDistance + 0.1f);
 
         int missing = 0;
         foreach (ModelFile.Placement placement in placements)
         {
-            BrickPartData part = FindPart(placement.partId);
-            if (part == null)
-            {
+            if (SpawnPlacement(placement, origin, facing) == null)
                 missing++;
-                continue;
-            }
+        }
 
-            int colorIndex = BrickColors.IndexOfCode(placement.colorCode);
-            Brick brick = SpawnBrick(part, Mathf.Max(0, colorIndex));
-            if (colorIndex < 0)
+        // Wrist inventory: build each copy out of sight, then hand it to the inventory.
+        var outOfSight = new Vector3(0f, -100f, 0f);
+        foreach (ModelFile.InventoryStack stack in inventory)
+        {
+            for (int copy = 0; copy < stack.count; copy++)
             {
-                brick.color = ColorForCode(placement.colorCode);
-                brick.colorCode = placement.colorCode;
-                brick.Rebuild();
+                var members = new List<Brick>();
+                foreach (ModelFile.Placement placement in stack.parts)
+                {
+                    Brick brick = SpawnPlacement(placement, outOfSight, Quaternion.identity);
+                    if (brick != null)
+                        members.Add(brick);
+                    else if (copy == 0)
+                        missing++;
+                }
+                WristInventory.AddLoaded(stack.hand, members);
             }
-            brick.transform.SetPositionAndRotation(origin + facing * placement.position, facing * placement.rotation);
         }
 
         ShowMessage(missing == 0
             ? $"Loaded \"{title}\""
             : $"Loaded \"{title}\" ({missing} parts not imported yet)");
+    }
+
+    // A saved part as a real brick, placed relative to the given origin and facing. Null if the part isn't imported.
+    Brick SpawnPlacement(ModelFile.Placement placement, Vector3 origin, Quaternion facing)
+    {
+        BrickPartData part = FindPart(placement.partId);
+        if (part == null)
+            return null;
+
+        int colorIndex = BrickColors.IndexOfCode(placement.colorCode);
+        Brick brick = SpawnBrick(part, Mathf.Max(0, colorIndex));
+        if (colorIndex < 0)
+        {
+            brick.color = ColorForCode(placement.colorCode);
+            brick.colorCode = placement.colorCode;
+            brick.Rebuild();
+        }
+        brick.transform.SetPositionAndRotation(origin + facing * placement.position, facing * placement.rotation);
+        return brick;
     }
 
     /// <summary>A short message floating in front of you for a few seconds.</summary>

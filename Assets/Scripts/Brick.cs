@@ -94,8 +94,14 @@ public class Brick : MonoBehaviour
     // Baseplates anchor a model: grabbing a model by its grip doesn't pull the baseplate along.
     bool IsBaseplate => part != null && part.Category == "Baseplate";
 
-    // Bricks that can be built on: real, active, and not sitting in a menu.
-    bool IsBuildable => isActiveAndEnabled && !IsPreview;
+    /// <summary>Shrunk down and sitting in a wrist inventory slot.</summary>
+    public bool IsStored { get; private set; }
+
+    /// <summary>Which hand last grabbed this brick: 0 = left, 1 = right, -1 = unknown.</summary>
+    public int HeldHand { get; private set; } = -1;
+
+    // Bricks that can be built on: real, active, and not sitting in a menu or an inventory.
+    bool IsBuildable => isActiveAndEnabled && !IsPreview && !IsStored;
 
     // Shape and connection points, in local space. Filled by Rebuild().
     Mesh _activeMesh;
@@ -179,9 +185,13 @@ public class Brick : MonoBehaviour
 
             if (!Held.Contains(this))
                 Held.Add(this);
+            HeldHand = WristInventory.ClosestHand(evt.Pose.position);
+
+            // Taken off a wrist: grows back to full size, and always comes out as the whole stored group.
+            bool fromInventory = IsStored && WristInventory.TakeOut(this);
 
             PutDownStack();
-            if (BrickGrabInput.IsWholeGroupGrab(evt))
+            if (fromInventory || BrickGrabInput.IsWholeGroupGrab(evt))
                 PickUpGroup();
         }
         else if ((evt.Type == PointerEventType.Unselect || evt.Type == PointerEventType.Cancel)
@@ -190,6 +200,10 @@ public class Brick : MonoBehaviour
             // Only snap once every hand has let go.
             Held.Remove(this);
             HideGhosts();
+
+            // Let go next to the other wrist: goes into that wrist's inventory.
+            if (WristInventory.TryStore(this))
+                return;
 
             // Dropped into a trash can: delete it, along with everything it's carrying (they're its children).
             if (TrashCan.Contains(transform.TransformPoint(_body.center)))
@@ -268,6 +282,23 @@ public class Brick : MonoBehaviour
         }
         return false;
     }
+
+    /// <summary>
+    /// For the wrist inventory: ends carrying, but leaves the carried bricks attached as children so the
+    /// group stays together while stored. Returns this brick followed by the bricks it was carrying.
+    /// </summary>
+    public List<Brick> DetachGroupForStorage()
+    {
+        var members = new List<Brick> { this };
+        foreach ((Brick brick, Transform _) in _carried)
+            members.Add(brick);
+        _carried.Clear();
+        _groupStuds.Clear();
+        _groupAntiStuds.Clear();
+        return members;
+    }
+
+    public void SetStored(bool stored) => IsStored = stored;
 
     void PutDownStack()
     {
@@ -478,7 +509,7 @@ public class Brick : MonoBehaviour
         if (!held)
             return;
 
-        if (TrashCan.Contains(transform.TransformPoint(_body.center)) || !FindSnap(out Vector3 position, out Quaternion rotation))
+        if (WristInventory.IsOverWrist(this) || TrashCan.Contains(transform.TransformPoint(_body.center)) || !FindSnap(out Vector3 position, out Quaternion rotation))
         {
             HideGhosts();
             return;

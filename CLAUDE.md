@@ -27,7 +27,12 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   (positions relative to the model's bottom center, facing the first brick's yaw).
   `ModelMenu.cs`: saved-model grid with spinning thumbnails, Load / Rename (system keyboard) / Delete.
   "Save Everything" in the parts menu; X saves the held model.
-- Planned next: wrist inventory (Wrench-style stacks with counts), then game modes beyond Sandbox.
+- `WristInventory.cs`: Wrench-style forearm slots on OVRCameraRig hand anchors. Real bricks are stored
+  shrunk (root scaled, group members kept as children, colliders off); identical items stack by a
+  signature string with an "xN" label. Grabbing restores full size (ISDK's GrabFreeTransformer locks
+  scale to the size at Grabbable.Start, so loaded items get two frames at full size before storing).
+  Saved in .ldr files as `0 !QUESTBRICK WRIST L|R <count>` ... `0 !QUESTBRICK END` comment blocks.
+- Planned next: game modes beyond Sandbox; Rebrickable sets; step-by-step instructions.
 - `Assets/Editor/LDraw/`: `LDrawParser.cs` (pure C#, System.Numerics, testable with `dotnet`) and
   Tools > LDraw Part Importer window, which writes meshes + `BrickPartData` to `Assets/LDrawParts/`.
 

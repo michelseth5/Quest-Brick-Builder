@@ -22,6 +22,17 @@ public static class ModelFile
         public Quaternion rotation; // relative to the model's facing
     }
 
+    /// <summary>A saved wrist inventory stack: which wrist, how many copies, and one copy's parts.</summary>
+    public class InventoryStack
+    {
+        public int hand; // 0 = left, 1 = right
+        public int count;
+        public List<Placement> parts = new List<Placement>(); // relative to the first part
+    }
+
+    // Inventory stacks are written as comment lines, which other LDraw programs ignore.
+    const string InventoryPrefix = "0 !QUESTBRICK";
+
     public class Info
     {
         public string path;
@@ -67,18 +78,26 @@ public static class ModelFile
         }
     }
 
-    /// <summary>Saves the bricks as a new model. The first brick decides which way the model faces.</summary>
-    public static Info Save(string title, IList<Brick> bricks)
+    /// <summary>
+    /// Saves the bricks as a new model. The first brick decides which way the model faces.
+    /// With includeInventory, everything on both wrists is saved too.
+    /// </summary>
+    public static Info Save(string title, IList<Brick> bricks, bool includeInventory = false)
     {
         Directory.CreateDirectory(Folder);
         string path = Path.Combine(Folder, $"model-{DateTime.Now:yyyyMMdd-HHmmss-fff}.ldr");
-        File.WriteAllText(path, Write(title, bricks));
+        File.WriteAllText(path, Write(title, bricks, includeInventory));
         return new Info { path = path, title = title, saved = DateTime.Now };
     }
 
     public static List<Placement> Load(string path, out string title)
     {
-        return Read(File.ReadAllLines(path), out title);
+        return Read(File.ReadAllLines(path), out title, out _);
+    }
+
+    public static List<Placement> Load(string path, out string title, out List<InventoryStack> inventory)
+    {
+        return Read(File.ReadAllLines(path), out title, out inventory);
     }
 
     public static void Rename(string path, string newTitle)
@@ -109,74 +128,136 @@ public static class ModelFile
     // LDraw is Y-down in LDU; Unity is Y-up in meters. Flipping Y both ways converts positions and rotations.
     static readonly Matrix4x4 FlipY = Matrix4x4.Scale(new Vector3(1f, -1f, 1f));
 
-    static string Write(string title, IList<Brick> bricks)
+    static string Write(string title, IList<Brick> bricks, bool includeInventory)
     {
-        // Frame: bottom center of everything, facing the way the first brick faces (turned to upright).
-        Vector3 origin = BottomCenter(bricks);
-        float yaw = bricks.Count > 0 ? bricks[0].transform.eulerAngles.y : 0f;
-        Quaternion toModel = Quaternion.Inverse(Quaternion.Euler(0f, yaw, 0f));
-
         var text = new StringBuilder();
         text.AppendLine("0 " + title);
         text.AppendLine("0 Name: " + title + ".ldr");
         text.AppendLine("0 Author: Quest Brick Builder");
         text.AppendLine("0 BFC CERTIFY CCW");
 
-        foreach (Brick brick in bricks)
+        if (bricks.Count > 0)
         {
-            if (brick.part == null)
-                continue; // simple test bricks have no LDraw part
+            // Frame: bottom center of everything, facing the way the first brick faces (turned to upright).
+            Vector3 origin = BottomCenter(bricks);
+            Quaternion toModel = Quaternion.Inverse(Quaternion.Euler(0f, bricks[0].transform.eulerAngles.y, 0f));
 
-            Vector3 position = toModel * (brick.transform.position - origin);
-            Quaternion rotation = toModel * brick.transform.rotation;
-
-            Vector3 ld = new Vector3(position.x, -position.y, position.z) / MetersPerLdu;
-            Matrix4x4 m = FlipY * Matrix4x4.Rotate(rotation) * FlipY;
-
-            text.Append("1 ").Append(brick.colorCode).Append(' ');
-            text.Append(F(ld.x)).Append(' ').Append(F(ld.y)).Append(' ').Append(F(ld.z)).Append(' ');
-            text.Append(F(m.m00)).Append(' ').Append(F(m.m01)).Append(' ').Append(F(m.m02)).Append(' ');
-            text.Append(F(m.m10)).Append(' ').Append(F(m.m11)).Append(' ').Append(F(m.m12)).Append(' ');
-            text.Append(F(m.m20)).Append(' ').Append(F(m.m21)).Append(' ').Append(F(m.m22)).Append(' ');
-            text.Append(brick.part.partId).AppendLine(".dat");
+            foreach (Brick brick in bricks)
+            {
+                if (brick.part == null)
+                    continue; // simple test bricks have no LDraw part
+                AppendPartLine(text, brick, toModel * (brick.transform.position - origin), toModel * brick.transform.rotation);
+                text.AppendLine();
+            }
         }
+
+        if (includeInventory)
+        {
+            foreach (WristInventory.StackRecord stack in WristInventory.Export())
+            {
+                text.Append(InventoryPrefix).Append(" WRIST ").Append(stack.hand == 0 ? "L" : "R").Append(' ').Append(stack.count).AppendLine();
+
+                // Positions relative to the stack's first brick. (InverseTransformPoint undoes the shrinking.)
+                Transform root = stack.members[0].transform;
+                foreach (Brick member in stack.members)
+                {
+                    if (member.part == null)
+                        continue;
+                    text.Append(InventoryPrefix).Append(' ');
+                    AppendPartLine(text, member, root.InverseTransformPoint(member.transform.position),
+                                   Quaternion.Inverse(root.rotation) * member.transform.rotation);
+                    text.AppendLine();
+                }
+                text.Append(InventoryPrefix).AppendLine(" END");
+            }
+        }
+
         return text.ToString();
     }
 
-    static List<Placement> Read(string[] lines, out string title)
+    // "1 <color> x y z a b c d e f g h i <part>.dat" in LDraw units and axes.
+    static void AppendPartLine(StringBuilder text, Brick brick, Vector3 position, Quaternion rotation)
+    {
+        Vector3 ld = new Vector3(position.x, -position.y, position.z) / MetersPerLdu;
+        Matrix4x4 m = FlipY * Matrix4x4.Rotate(rotation) * FlipY;
+
+        text.Append("1 ").Append(brick.colorCode).Append(' ');
+        text.Append(F(ld.x)).Append(' ').Append(F(ld.y)).Append(' ').Append(F(ld.z)).Append(' ');
+        text.Append(F(m.m00)).Append(' ').Append(F(m.m01)).Append(' ').Append(F(m.m02)).Append(' ');
+        text.Append(F(m.m10)).Append(' ').Append(F(m.m11)).Append(' ').Append(F(m.m12)).Append(' ');
+        text.Append(F(m.m20)).Append(' ').Append(F(m.m21)).Append(' ').Append(F(m.m22)).Append(' ');
+        text.Append(brick.part.partId).Append(".dat");
+    }
+
+    static List<Placement> Read(string[] lines, out string title, out List<InventoryStack> inventory)
     {
         title = lines.Length > 0 && lines[0].StartsWith("0 ") ? lines[0].Substring(2).Trim() : "Model";
         var result = new List<Placement>();
+        inventory = new List<InventoryStack>();
+        InventoryStack stack = null;
 
         foreach (string line in lines)
         {
             string[] t = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
-            if (t.Length < 15 || t[0] != "1")
-                continue;
 
-            float[] v = new float[12];
-            bool ok = int.TryParse(t[1], out int colorCode);
-            for (int i = 0; i < 12 && ok; i++)
-                ok = float.TryParse(t[2 + i], NumberStyles.Float, CultureInfo.InvariantCulture, out v[i]);
-            if (!ok)
-                continue;
-
-            var m = Matrix4x4.identity;
-            m.m00 = v[3]; m.m01 = v[4]; m.m02 = v[5];
-            m.m10 = v[6]; m.m11 = v[7]; m.m12 = v[8];
-            m.m20 = v[9]; m.m21 = v[10]; m.m22 = v[11];
-            Matrix4x4 unity = FlipY * m * FlipY;
-
-            string file = string.Join(" ", t, 14, t.Length - 14);
-            result.Add(new Placement
+            if (t.Length >= 2 && t[0] == "0" && t[1] == "!QUESTBRICK")
             {
-                partId = Path.GetFileNameWithoutExtension(file.Replace('\\', '/')),
-                colorCode = colorCode,
-                position = new Vector3(v[0], -v[1], v[2]) * MetersPerLdu,
-                rotation = unity.rotation,
-            });
+                if (t.Length >= 5 && t[2] == "WRIST")
+                {
+                    int.TryParse(t[4], out int count);
+                    stack = new InventoryStack { hand = t[3] == "L" ? 0 : 1, count = Math.Max(1, count) };
+                    inventory.Add(stack);
+                }
+                else if (t.Length >= 3 && t[2] == "END")
+                {
+                    stack = null;
+                }
+                else if (stack != null && TryParsePartLine(t, 2, out Placement part))
+                {
+                    stack.parts.Add(part);
+                }
+                continue;
+            }
+
+            if (TryParsePartLine(t, 0, out Placement placement))
+                result.Add(placement);
         }
+
+        inventory.RemoveAll(s => s.parts.Count == 0);
         return result;
+    }
+
+    // Parses "1 <color> x y z a..i <file>" starting at token index `start`.
+    static bool TryParsePartLine(string[] t, int start, out Placement placement)
+    {
+        placement = default;
+        if (t.Length < start + 15 || t[start] != "1")
+            return false;
+
+        float[] v = new float[12];
+        if (!int.TryParse(t[start + 1], out int colorCode))
+            return false;
+        for (int i = 0; i < 12; i++)
+        {
+            if (!float.TryParse(t[start + 2 + i], NumberStyles.Float, CultureInfo.InvariantCulture, out v[i]))
+                return false;
+        }
+
+        var m = Matrix4x4.identity;
+        m.m00 = v[3]; m.m01 = v[4]; m.m02 = v[5];
+        m.m10 = v[6]; m.m11 = v[7]; m.m12 = v[8];
+        m.m20 = v[9]; m.m21 = v[10]; m.m22 = v[11];
+        Matrix4x4 unity = FlipY * m * FlipY;
+
+        string file = string.Join(" ", t, start + 14, t.Length - start - 14);
+        placement = new Placement
+        {
+            partId = Path.GetFileNameWithoutExtension(file.Replace('\\', '/')),
+            colorCode = colorCode,
+            position = new Vector3(v[0], -v[1], v[2]) * MetersPerLdu,
+            rotation = unity.rotation,
+        };
+        return true;
     }
 
     static Vector3 BottomCenter(IList<Brick> bricks)
