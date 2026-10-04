@@ -505,6 +505,112 @@ namespace LDrawImport
 
         static string NormalizeName(string name) => name.Trim().Replace('\\', '/').ToLowerInvariant();
 
+        /// <summary>A part placed in a model: its id, LDraw color, and transform (LDraw axes and units).</summary>
+        public struct ModelPart
+        {
+            public string PartId;
+            public int Color;
+            public Matrix4x4 Transform; // System.Numerics row-vector form; translation in M41..M43
+        }
+
+        /// <summary>
+        /// Reads a model's building steps. Submodels are built in place: their steps are inserted where the
+        /// parent model uses them. Returns the steps (each a list of parts) and the main model's author.
+        /// </summary>
+        public static List<List<ModelPart>> ReadModelSteps(string modelPath, out string author)
+        {
+            var sections = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            string mainSection = null;
+            List<string> current = null;
+            foreach (string line in File.ReadAllLines(modelPath))
+            {
+                string trimmed = line.Trim();
+                if (trimmed.StartsWith("0 FILE ", StringComparison.OrdinalIgnoreCase))
+                {
+                    string name = NormalizeName(trimmed.Substring(7));
+                    current = new List<string>();
+                    sections[name] = current;
+                    if (mainSection == null)
+                        mainSection = name;
+                    continue;
+                }
+                if (current == null)
+                {
+                    mainSection = NormalizeName(Path.GetFileName(modelPath));
+                    current = new List<string>();
+                    sections[mainSection] = current;
+                }
+                current.Add(trimmed);
+            }
+
+            author = "";
+            var steps = new List<List<ModelPart>> { new List<ModelPart>() };
+            if (mainSection == null)
+                return steps;
+
+            foreach (string line in sections[mainSection])
+            {
+                if (line.StartsWith("0 Author:", StringComparison.OrdinalIgnoreCase))
+                {
+                    author = line.Substring(9).Trim();
+                    break;
+                }
+            }
+
+            AddSectionSteps(mainSection, Matrix4x4.Identity, MainColor, sections, steps, 0);
+            steps.RemoveAll(s => s.Count == 0);
+            return steps;
+        }
+
+        static void AddSectionSteps(string section, Matrix4x4 transform, int color,
+                                    Dictionary<string, List<string>> sections, List<List<ModelPart>> steps, int depth)
+        {
+            if (depth > MaxDepth)
+                return;
+
+            foreach (string line in sections[section])
+            {
+                string[] t = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                if (t.Length == 0)
+                    continue;
+
+                if (t[0] == "0")
+                {
+                    if (t.Length >= 2 && (t[1] == "STEP" || t[1] == "ROTSTEP") && steps[steps.Count - 1].Count > 0)
+                        steps.Add(new List<ModelPart>());
+                    continue;
+                }
+
+                if (t[0] != "1" || t.Length < 15)
+                    continue;
+
+                float x = F(t[2]), y = F(t[3]), z = F(t[4]);
+                var local = new Matrix4x4(
+                    F(t[5]), F(t[8]), F(t[11]), 0f,
+                    F(t[6]), F(t[9]), F(t[12]), 0f,
+                    F(t[7]), F(t[10]), F(t[13]), 0f,
+                    x, y, z, 1f);
+                Matrix4x4 world = local * transform;
+                int partColor = ResolveColor(t[1], color);
+                string reference = NormalizeName(string.Join(" ", t, 14, t.Length - 14));
+
+                if (sections.ContainsKey(reference))
+                {
+                    // Build the submodel's steps here, then carry on with this model in a fresh step.
+                    if (steps[steps.Count - 1].Count > 0)
+                        steps.Add(new List<ModelPart>());
+                    AddSectionSteps(reference, world, partColor, sections, steps, depth + 1);
+                    if (steps[steps.Count - 1].Count > 0)
+                        steps.Add(new List<ModelPart>());
+                }
+                else
+                {
+                    string id = reference.EndsWith(".dat") ? reference.Substring(0, reference.Length - 4) : reference;
+                    steps[steps.Count - 1].Add(new ModelPart { PartId = id, Color = partColor, Transform = world });
+                }
+            }
+        }
+
         /// <summary>One entry from LDConfig.ldr, LDraw's color list.</summary>
         public struct ColorEntry
         {

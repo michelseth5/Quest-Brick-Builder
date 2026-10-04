@@ -35,7 +35,15 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
 - Parts keep LDraw's built-in colors: one submesh per color (`BrickPartData.submeshColors`, 16 = brick
   color), colored with per-material-index property blocks (`BrickPartData.ApplyColors`). All 322 LDraw
   colors live in `Assets/Resources/LDrawColors.asset` (`LDrawColors.Get(code)`), written by the importer.
-- `Sets/` holds OMR set files (.mpd); the importer's "Import Set Parts" imports every part a set uses.
+- `Sets/` holds OMR set files (.mpd) plus `titles.txt` (display names). "Import Set Parts" imports
+  every part a set uses and writes `Assets/Resources/Sets/<set>.asset` (`SetData`: steps of placements;
+  submodels are inlined where used).
+- `SetBuilder.cs`: Build a Set mode. Ghosts per step on a movable build root, a tray of the step's parts,
+  release within 2.5 cm of a matching ghost (same part + color, any angle) locks the part in place
+  (`Brick.SetLocked`); steps auto-advance. The parts tray has its own handle. Finished builds are
+  bonded (`Brick.BondTogether`): grip takes the whole bond, trigger pulls one brick out of it.
+  Bonds are saved as `0 !QUESTBRICK BOND <n>` before each part line and kept for duplicates/wrist items. Start menu (Free Build / Build a Set) opens at launch and on
+  the left controller's menu button (`OVRInput.RawButton.Start`).
 - Roadmap (agreed order): 1) parts that scale (done: set import, colors, menu paging),
   2) "Build a Set" mode: step-by-step ghosts, place parts on ghosts (works for non-stud connections),
   start menu with modes, 3) Rebrickable set search/part lists.

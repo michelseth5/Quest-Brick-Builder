@@ -420,6 +420,8 @@ public class WristInventory : MonoBehaviour
         Brick root = members[0];
         foreach (Brick member in members.Skip(1))
             member.transform.SetParent(root.transform, worldPositionStays: true);
+        if (members.Count > 1)
+            Brick.BondTogether(members); // a stored item always comes back out in one piece
 
         string signature = Signature(root, members);
         if (wrist.slots.Find(s => s.signature == signature) == null && wrist.slots.Count >= maxSlotsPerWrist)

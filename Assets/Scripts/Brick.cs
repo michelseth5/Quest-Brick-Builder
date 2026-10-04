@@ -67,6 +67,44 @@ public class Brick : MonoBehaviour
     /// <summary>Raised when a menu preview is grabbed and becomes a real brick, so the menu can replace it.</summary>
     public static event System.Action<Brick> PreviewTaken;
 
+    /// <summary>Raised whenever a brick is picked up.</summary>
+    public static event System.Action<Brick> Grabbed;
+
+    /// <summary>
+    /// Bricks bonded into one model, even where they don't connect by studs (wheels on pins, parts on
+    /// sideways studs, tools in clips). A grip grab takes the whole bond; a trigger grab pulls one brick out.
+    /// </summary>
+    public class Bond
+    {
+        public readonly HashSet<Brick> members = new HashSet<Brick>();
+    }
+
+    Bond _bond;
+
+    /// <summary>The brick's bond, or null. Bricks sharing a bond move together.</summary>
+    public Bond CurrentBond => _bond;
+
+    public static void BondTogether(IEnumerable<Brick> bricks)
+    {
+        var bond = new Bond();
+        foreach (Brick brick in bricks)
+        {
+            if (brick == null)
+                continue;
+            brick.LeaveBond();
+            brick._bond = bond;
+            bond.members.Add(brick);
+        }
+    }
+
+    public void LeaveBond()
+    {
+        if (_bond == null)
+            return;
+        _bond.members.Remove(this);
+        _bond = null;
+    }
+
     /// <summary>Bricks currently held in a hand (only the brick actually grabbed, not what it carries).</summary>
     public static readonly List<Brick> Held = new List<Brick>();
 
@@ -101,8 +139,18 @@ public class Brick : MonoBehaviour
     /// <summary>Which hand last grabbed this brick: 0 = left, 1 = right, -1 = unknown.</summary>
     public int HeldHand { get; private set; } = -1;
 
-    // Bricks that can be built on: real, active, and not sitting in a menu or an inventory.
-    bool IsBuildable => isActiveAndEnabled && !IsPreview && !IsStored;
+    /// <summary>Placed into a set being built; can't be grabbed until the set is finished or exited.</summary>
+    public bool IsLocked { get; private set; }
+
+    public void SetLocked(bool locked)
+    {
+        IsLocked = locked;
+        foreach (Collider collider in GetComponents<Collider>())
+            collider.enabled = !locked;
+    }
+
+    // Bricks that can be built on: real, active, and not sitting in a menu, an inventory, or a set build.
+    bool IsBuildable => isActiveAndEnabled && !IsPreview && !IsStored && !IsLocked;
 
     // Shape and connection points, in local space. Filled by Rebuild().
     Mesh _activeMesh;
@@ -158,6 +206,7 @@ public class Brick : MonoBehaviour
 
     void OnDestroy()
     {
+        LeaveBond();
         if (_ghost != null)
             Destroy(_ghost);
 
@@ -194,6 +243,10 @@ public class Brick : MonoBehaviour
             PutDownStack();
             if (fromInventory || BrickGrabInput.IsWholeGroupGrab(evt))
                 PickUpGroup();
+            else
+                LeaveBond(); // pulled off on its own
+
+            Grabbed?.Invoke(this);
         }
         else if ((evt.Type == PointerEventType.Unselect || evt.Type == PointerEventType.Cancel)
                  && _grabbable.SelectingPointsCount == 0)
@@ -201,6 +254,10 @@ public class Brick : MonoBehaviour
             // Only snap once every hand has let go.
             Held.Remove(this);
             HideGhosts();
+
+            // Let go near its spot in a set being built: locks into place.
+            if (SetBuilder.TryPlace(this))
+                return;
 
             // Let go next to the other wrist: goes into that wrist's inventory.
             if (WristInventory.TryStore(this))
@@ -226,6 +283,16 @@ public class Brick : MonoBehaviour
         var group = new List<Brick> { this };
         for (int i = 0; i < group.Count; i++)
         {
+            // Bonded bricks come along whether or not they connect by studs.
+            if (group[i]._bond != null)
+            {
+                foreach (Brick bonded in group[i]._bond.members)
+                {
+                    if (bonded != null && bonded.IsBuildable && !bonded.IsBaseplate && !group.Contains(bonded))
+                        group.Add(bonded);
+                }
+            }
+
             foreach (Brick other in AllBricks)
             {
                 if (other.IsBuildable && !other.IsBaseplate && !group.Contains(other)
@@ -510,7 +577,7 @@ public class Brick : MonoBehaviour
         if (!held)
             return;
 
-        if (WristInventory.IsOverWrist(this) || TrashCan.Contains(transform.TransformPoint(_body.center)) || !FindSnap(out Vector3 position, out Quaternion rotation))
+        if (SetBuilder.HasTargetFor(this) || WristInventory.IsOverWrist(this) || TrashCan.Contains(transform.TransformPoint(_body.center)) || !FindSnap(out Vector3 position, out Quaternion rotation))
         {
             HideGhosts();
             return;

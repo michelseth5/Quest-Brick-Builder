@@ -1,0 +1,149 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e83a1abd11e84fb418d18571d17fc05e, type: 3}
+  m_Name: 4914-1
+  m_EditorClassIdentifier: Assembly-CSharp::SetData
+  setNumber: 4914-1
+  title: Fire Chief's Car
+  author: 'Marc Giraudet [Mad_Marc]'
+  steps:
+  - parts:
+    - partId: 2456
+      colorCode: 72
+      position: {x: 0.007999999, y: -0, z: -0.007999999}
+      rotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+    - partId: 3788
+      colorCode: 4
+      position: {x: 0.007999999, y: 0.0064, z: -0.024}
+      rotation: {x: -0, y: 1, z: -0, w: 0}
+  - parts:
+    - partId: 4211
+      colorCode: 4
+      position: {x: 0.007999999, y: 0.0064, z: 0.007999999}
+      rotation: {x: -0, y: 1, z: -0, w: 0}
+  - parts:
+    - partId: 2436a
+      colorCode: 4
+      position: {x: 0.007999999, y: 0.0064, z: -0.027999999}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 3024
+      colorCode: 36
+      position: {x: -0.0039999997, y: 0.0064, z: 0.02}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 3024
+      colorCode: 36
+      position: {x: 0.02, y: 0.0064, z: 0.02}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 4085c
+      colorCode: 0
+      position: {x: 0.0039999997, y: 0.0064, z: 0.02}
+      rotation: {x: -0, y: 1, z: -0, w: 0}
+    - partId: 4085c
+      colorCode: 0
+      position: {x: 0.012, y: 0.0064, z: 0.02}
+      rotation: {x: -0, y: 1, z: -0, w: 0}
+  - parts:
+    - partId: 51739
+      colorCode: 15
+      position: {x: 0.007999999, y: 0.0095999995, z: -0.024}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 3835
+      colorCode: 0
+      position: {x: 0.0039999997, y: 0.0064, z: 0.027999999}
+      rotation: {x: -0, y: 1, z: -0, w: 0}
+    - partId: 4599a
+      colorCode: 14
+      position: {x: 0.012, y: 0.0095999995, z: 0.027999999}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 3062b
+      colorCode: 14
+      position: {x: 0.012, y: -0, z: 0.027999999}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+  - parts:
+    - partId: 3829c01
+      colorCode: 15
+      position: {x: 0.007999999, y: 0.0064, z: -0.012}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 4083
+      colorCode: 15
+      position: {x: 0.007999999, y: 0.0256, z: 0.02}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 4600
+      colorCode: 0
+      position: {x: 0.007999999, y: -0.0095999995, z: 0.007999999}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 4600
+      colorCode: 0
+      position: {x: 0.007999999, y: -0.0095999995, z: -0.024}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+  - parts:
+    - partId: 3068bp7b
+      colorCode: 4
+      position: {x: 0.007999999, y: 0.0128, z: -0.024}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 6141
+      colorCode: 46
+      position: {x: -0.0039999997, y: 0.0023999999, z: -0.0368}
+      rotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+    - partId: 6141
+      colorCode: 33
+      position: {x: 0.0039999997, y: 0.0023999999, z: -0.0368}
+      rotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+    - partId: 6141
+      colorCode: 33
+      position: {x: 0.012, y: 0.0023999999, z: -0.0368}
+      rotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+    - partId: 6141
+      colorCode: 46
+      position: {x: 0.02, y: 0.0023999999, z: -0.0368}
+      rotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+  - parts:
+    - partId: 6141
+      colorCode: 33
+      position: {x: 0.0039999997, y: 0.0288, z: 0.02}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 6141
+      colorCode: 33
+      position: {x: 0.012, y: 0.0288, z: 0.02}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - partId: 6014
+      colorCode: 15
+      position: {x: 0.02, y: -0.0116, z: 0.007999999}
+      rotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+    - partId: 6015
+      colorCode: 256
+      position: {x: 0.0224, y: -0.0116, z: 0.007999999}
+      rotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+    - partId: 6015
+      colorCode: 256
+      position: {x: 0.0224, y: -0.0116, z: -0.024}
+      rotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+    - partId: 6015
+      colorCode: 256
+      position: {x: -0.0064, y: -0.0116, z: -0.024}
+      rotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+    - partId: 6015
+      colorCode: 256
+      position: {x: -0.0064, y: -0.0116, z: 0.007999999}
+      rotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+    - partId: 6014
+      colorCode: 15
+      position: {x: 0.02, y: -0.0116, z: -0.024}
+      rotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+    - partId: 6014
+      colorCode: 15
+      position: {x: -0.0039999997, y: -0.0116, z: -0.024}
+      rotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+    - partId: 6014
+      colorCode: 15
+      position: {x: -0.0039999997, y: -0.0116, z: 0.007999999}
+      rotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}

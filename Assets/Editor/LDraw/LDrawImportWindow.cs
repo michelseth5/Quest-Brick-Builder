@@ -68,6 +68,7 @@ public class LDrawImportWindow : EditorWindow
                 {
                     List<string> ids = LDrawParser.ListModelParts(setFiles[_setIndex]);
                     Import(libraryRoot, ids, $"Set {Path.GetFileName(setFiles[_setIndex])}: {ids.Count} different parts");
+                    SaveSetData(setFiles[_setIndex]);
                 }
             }
 
@@ -157,6 +158,64 @@ public class LDrawImportWindow : EditorWindow
         log.AppendLine();
         log.AppendLine($"Saved to {OutputFolder}. The catalog has {catalog.parts.Count} parts and {colorCount} colors are available.");
         _log = log.ToString();
+    }
+
+    // The set's building steps, into Resources/Sets so the game can list and build it.
+    void SaveSetData(string setFile)
+    {
+        List<List<LDrawParser.ModelPart>> steps = LDrawParser.ReadModelSteps(setFile, out string author);
+        string setNumber = Path.GetFileNameWithoutExtension(setFile);
+
+        string folder = "Assets/Resources/" + SetData.ResourceFolder;
+        EnsureFolder("Assets/Resources");
+        EnsureFolder(folder);
+        SetData set = LoadOrCreateAsset<SetData>($"{folder}/{setNumber}.asset");
+        set.setNumber = setNumber;
+        set.title = ReadSetTitle(setNumber) ?? setNumber;
+        set.author = author;
+        set.steps = steps.Select(step => new SetData.Step
+        {
+            parts = step.Select(ToPlacement).ToList(),
+        }).ToList();
+        EditorUtility.SetDirty(set);
+        AssetDatabase.SaveAssets();
+
+        _log += $"\nBuilding steps saved: \"{set.title}\", {set.steps.Count} steps, {set.PartCount} parts.";
+    }
+
+    static string ReadSetTitle(string setNumber)
+    {
+        string path = Path.Combine(SetsFolder, "titles.txt");
+        if (!File.Exists(path))
+            return null;
+        foreach (string line in File.ReadAllLines(path))
+        {
+            int equals = line.IndexOf('=');
+            if (line.StartsWith("#") || equals < 0)
+                continue;
+            if (line.Substring(0, equals).Trim().Equals(setNumber, StringComparison.OrdinalIgnoreCase))
+                return line.Substring(equals + 1).Trim();
+        }
+        return null;
+    }
+
+    // LDraw placement -> Unity: meters, Y flipped (the same conversion the part meshes use).
+    static SetData.Placement ToPlacement(LDrawParser.ModelPart part)
+    {
+        System.Numerics.Matrix4x4 m = part.Transform;
+        // m stores LDraw's rotation transposed (row vectors), so R[i][j] = m[j][i].
+        var unity = Matrix4x4.identity;
+        unity.m00 = m.M11;  unity.m01 = -m.M21; unity.m02 = m.M31;
+        unity.m10 = -m.M12; unity.m11 = m.M22;  unity.m12 = -m.M32;
+        unity.m20 = m.M13;  unity.m21 = -m.M23; unity.m22 = m.M33;
+
+        return new SetData.Placement
+        {
+            partId = part.PartId,
+            colorCode = part.Color,
+            position = new Vector3(m.M41, -m.M42, m.M43) * LDrawParser.MetersPerLdu,
+            rotation = unity.rotation,
+        };
     }
 
     // Every LDraw color, into Resources so the game can look up any color code a set uses.

@@ -20,6 +20,7 @@ public static class ModelFile
         public int colorCode;
         public Vector3 position;    // Unity meters, relative to the model's bottom center
         public Quaternion rotation; // relative to the model's facing
+        public int bond;            // parts with the same non-zero bond are bonded together
     }
 
     /// <summary>A saved wrist inventory stack: which wrist, how many copies, and one copy's parts.</summary>
@@ -142,10 +143,19 @@ public static class ModelFile
             Vector3 origin = BottomCenter(bricks);
             Quaternion toModel = Quaternion.Inverse(Quaternion.Euler(0f, bricks[0].transform.eulerAngles.y, 0f));
 
+            var bondIds = new Dictionary<Brick.Bond, int>();
             foreach (Brick brick in bricks)
             {
                 if (brick.part == null)
                     continue; // simple test bricks have no LDraw part
+
+                if (brick.CurrentBond != null)
+                {
+                    if (!bondIds.TryGetValue(brick.CurrentBond, out int bondId))
+                        bondIds[brick.CurrentBond] = bondId = bondIds.Count + 1;
+                    text.Append(InventoryPrefix).Append(" BOND ").Append(bondId).AppendLine();
+                }
+
                 AppendPartLine(text, brick, toModel * (brick.transform.position - origin), toModel * brick.transform.rotation);
                 text.AppendLine();
             }
@@ -195,6 +205,7 @@ public static class ModelFile
         var result = new List<Placement>();
         inventory = new List<InventoryStack>();
         InventoryStack stack = null;
+        int pendingBond = 0;
 
         foreach (string line in lines)
         {
@@ -202,7 +213,11 @@ public static class ModelFile
 
             if (t.Length >= 2 && t[0] == "0" && t[1] == "!QUESTBRICK")
             {
-                if (t.Length >= 5 && t[2] == "WRIST")
+                if (t.Length >= 4 && t[2] == "BOND")
+                {
+                    int.TryParse(t[3], out pendingBond); // applies to the next part line
+                }
+                else if (t.Length >= 5 && t[2] == "WRIST")
                 {
                     int.TryParse(t[4], out int count);
                     stack = new InventoryStack { hand = t[3] == "L" ? 0 : 1, count = Math.Max(1, count) };
@@ -220,7 +235,11 @@ public static class ModelFile
             }
 
             if (TryParsePartLine(t, 0, out Placement placement))
+            {
+                placement.bond = pendingBond;
                 result.Add(placement);
+                pendingBond = 0;
+            }
         }
 
         inventory.RemoveAll(s => s.parts.Count == 0);

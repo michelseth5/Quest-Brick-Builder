@@ -50,6 +50,8 @@ public class Sandbox : MonoBehaviour
     readonly Dictionary<string, BrickPartData> _partsById =
         new Dictionary<string, BrickPartData>(System.StringComparer.OrdinalIgnoreCase);
     ModelMenu _modelMenu;
+    SetBuilder _setBuilder;
+    MenuPanel _startMenu;
     GameObject _trashCan;
     GameObject _message;
 
@@ -104,6 +106,121 @@ public class Sandbox : MonoBehaviour
 
         _modelMenu = gameObject.AddComponent<ModelMenu>();
         _modelMenu.Init(this);
+
+        _setBuilder = gameObject.AddComponent<SetBuilder>();
+        _setBuilder.Init(this, brickPrefab.ghostMaterial);
+
+        BuildStartMenu();
+        StartCoroutine(OpenStartMenuWhenTracking());
+    }
+
+    // ---------- Start menu (game modes) ----------
+
+    const float StartMenuWidth = 0.22f;
+
+    void BuildStartMenu()
+    {
+        _startMenu = MenuPanel.Create("Start Menu", "Brick Builder", new Vector2(StartMenuWidth, 0.15f), CreateHandle());
+        _startMenu.Close();
+    }
+
+    // Head tracking reports a zero pose for the first few frames; wait so the menu opens in front of you.
+    System.Collections.IEnumerator OpenStartMenuWhenTracking()
+    {
+        for (float waited = 0f; waited < 3f; waited += Time.deltaTime)
+        {
+            if (Camera.main != null && Camera.main.transform.position != Vector3.zero)
+                break;
+            yield return null;
+        }
+        OpenStartMenu();
+    }
+
+    void ToggleStartMenu()
+    {
+        if (_startMenu.IsOpen)
+            _startMenu.Close();
+        else
+            OpenStartMenu();
+    }
+
+    void OpenStartMenu()
+    {
+        ShowStartHome();
+        (Vector3 position, Quaternion rotation) = InFrontOfUser(0f, 0.05f);
+        _startMenu.Open(position, rotation);
+    }
+
+    void ShowStartHome()
+    {
+        var buttons = new List<(string, System.Action)>
+        {
+            ("Free Build", () => _startMenu.Close()),
+            ("Build a Set", ShowSetList),
+        };
+        if (_setBuilder.IsBuilding)
+            buttons.Add(("Exit Current Set", () => { _setBuilder.ExitSet(); _startMenu.Close(); }));
+        buttons.Add(("Settings", ShowSettings));
+        FillStartMenu("Brick Builder", "The left controller's menu button brings you back here", buttons);
+    }
+
+    void ShowSettings()
+    {
+        var buttons = new List<(string, System.Action)>();
+        for (int i = 0; i < GameSettings.GhostVisibilityNames.Length; i++)
+        {
+            var choice = (GameSettings.GhostVisibility)i;
+            buttons.Add((GameSettings.GhostVisibilityNames[i], () => { GameSettings.Ghosts = choice; ShowSettings(); }));
+        }
+        buttons.Add(("Back", ShowStartHome));
+
+        List<MenuButton> created = FillStartMenu("Settings", "Set-building ghosts", buttons);
+        created[(int)GameSettings.Ghosts].SetSelected(true);
+    }
+
+    void ShowSetList()
+    {
+        var buttons = new List<(string, System.Action)>();
+        foreach (SetData set in SetData.LoadAll().OrderBy(s => s.setNumber))
+        {
+            SetData chosen = set;
+            buttons.Add(($"{set.title}  <size=70%><color=#AAB>{set.setNumber} · {set.PartCount} parts</color></size>",
+                         () => { _startMenu.Close(); CloseBuildMenus(); _setBuilder.StartSet(chosen); }));
+        }
+        buttons.Add(("Back", ShowStartHome));
+        FillStartMenu("Build a Set", buttons.Count == 1 ? "No sets imported yet" : "Choose a set", buttons);
+    }
+
+    // Rebuilds the start menu as a subtitle plus a column of buttons.
+    List<MenuButton> FillStartMenu(string title, string subtitle, List<(string label, System.Action onClick)> buttons)
+    {
+        var created = new List<MenuButton>();
+        const float buttonHeight = 0.028f, gap = 0.006f;
+        _startMenu.ClearContent();
+        _startMenu.SetTitle(title);
+        _startMenu.SetSize(new Vector2(StartMenuWidth, 0.075f + buttons.Count * (buttonHeight + gap)));
+
+        float y = _startMenu.ContentTop - 0.008f;
+        MenuStyle.CreateText(_startMenu.Content, subtitle, new Vector3(0f, y, -0.001f), new Vector2(StartMenuWidth - 0.03f, 0.011f));
+        y -= 0.012f + gap + buttonHeight * 0.5f;
+
+        foreach ((string label, System.Action onClick) in buttons)
+        {
+            MenuButton button = MenuButton.Create(_startMenu.Content, label, new Vector3(0f, y, 0f),
+                                                  new Vector2(StartMenuWidth - 0.03f, buttonHeight), MenuStyle.Button, label);
+            button.Clicked += onClick;
+            created.Add(button);
+            y -= buttonHeight + gap;
+        }
+        return created;
+    }
+
+    void CloseBuildMenus()
+    {
+        _mainMenu.Close();
+        _partsPanel.Close();
+        _modelMenu.Close();
+        _colorPanel.Close();
     }
 
     void Update()
@@ -116,6 +233,8 @@ public class Sandbox : MonoBehaviour
             DuplicateHeld();
         if (OVRInput.GetDown(OVRInput.RawButton.X))
             SaveHeldModel();
+        if (OVRInput.GetDown(OVRInput.RawButton.Start))
+            ToggleStartMenu();
     }
 
     public BrickPartData FindPart(string partId) =>
@@ -153,7 +272,7 @@ public class Sandbox : MonoBehaviour
     }
 
     // A pose in front of the player's head: offset to the right and down, upright, facing them.
-    (Vector3, Quaternion) InFrontOfUser(float right, float down, float distance = -1f)
+    public (Vector3, Quaternion) InFrontOfUser(float right, float down, float distance = -1f)
     {
         Transform head = Camera.main != null ? Camera.main.transform : transform;
         Vector3 forward = Vector3.ProjectOnPlane(head.forward, Vector3.up);
@@ -596,11 +715,24 @@ public class Sandbox : MonoBehaviour
         (Vector3 origin, Quaternion facing) = InFrontOfUser(0f, 0.3f, menuDistance + 0.1f);
 
         int missing = 0;
+        var bonds = new Dictionary<int, List<Brick>>();
         foreach (ModelFile.Placement placement in placements)
         {
-            if (SpawnPlacement(placement, origin, facing) == null)
+            Brick brick = SpawnPlacement(placement, origin, facing);
+            if (brick == null)
+            {
                 missing++;
+                continue;
+            }
+            if (placement.bond != 0)
+            {
+                if (!bonds.TryGetValue(placement.bond, out List<Brick> members))
+                    bonds[placement.bond] = members = new List<Brick>();
+                members.Add(brick);
+            }
         }
+        foreach (List<Brick> members in bonds.Values)
+            Brick.BondTogether(members);
 
         // Wrist inventory: build each copy out of sight, then hand it to the inventory.
         var outOfSight = new Vector3(0f, -100f, 0f);
@@ -633,15 +765,22 @@ public class Sandbox : MonoBehaviour
         if (part == null)
             return null;
 
-        int colorIndex = BrickColors.IndexOfCode(placement.colorCode);
+        Brick brick = SpawnBrickWithColorCode(part, placement.colorCode);
+        brick.transform.SetPositionAndRotation(origin + facing * placement.position, facing * placement.rotation);
+        return brick;
+    }
+
+    /// <summary>A new brick in any LDraw color (not just the picker's palette).</summary>
+    public Brick SpawnBrickWithColorCode(BrickPartData part, int colorCode)
+    {
+        int colorIndex = BrickColors.IndexOfCode(colorCode);
         Brick brick = SpawnBrick(part, Mathf.Max(0, colorIndex));
         if (colorIndex < 0)
         {
-            brick.color = ColorForCode(placement.colorCode);
-            brick.colorCode = placement.colorCode;
+            brick.color = LDrawColors.Get(colorCode);
+            brick.colorCode = colorCode;
             brick.Rebuild();
         }
-        brick.transform.SetPositionAndRotation(origin + facing * placement.position, facing * placement.rotation);
         return brick;
     }
 
@@ -672,11 +811,16 @@ public class Sandbox : MonoBehaviour
             float height = GroupHeight(members);
             Brick copy = CloneBrick(held, held.transform.position + Vector3.up * (height + 0.02f), held.transform.rotation);
 
+            var copies = new List<Brick> { copy };
             foreach (Brick member in held.CarriedBricks)
             {
                 Transform t = member.transform; // carried bricks are children of the held one
-                CloneBrick(member, copy.transform.TransformPoint(t.localPosition), copy.transform.rotation * t.localRotation);
+                copies.Add(CloneBrick(member, copy.transform.TransformPoint(t.localPosition), copy.transform.rotation * t.localRotation));
             }
+
+            // The copy holds together like the original, including parts that don't connect by studs.
+            if (copies.Count > 1)
+                Brick.BondTogether(copies);
         }
     }
 
