@@ -35,6 +35,10 @@ public class Brick : MonoBehaviour
     [Tooltip("How far the brick can be tilted relative to the other brick and still snap.")]
     [Range(0f, 90f)] public float maxTiltDegrees = 35f;
 
+    [Header("Preview")]
+    [Tooltip("A transparent material that shows where the brick will land while it's held. Leave empty for no preview.")]
+    public Material ghostMaterial;
+
     public float Height => heightInPlates * PlateHeight;
 
     static readonly Collider[] OverlapResults = new Collider[32];
@@ -42,6 +46,7 @@ public class Brick : MonoBehaviour
     Mesh _mesh;
     bool _dirty = true;
     PointableElement _grabbable;
+    GameObject _ghost;
     readonly List<(Brick brick, Transform originalParent)> _carried = new List<(Brick, Transform)>();
 
     void OnEnable()
@@ -61,6 +66,8 @@ public class Brick : MonoBehaviour
     {
         AllBricks.Remove(this);
         PutDownStack();
+        if (_ghost != null)
+            _ghost.SetActive(false);
         if (_grabbable != null)
             _grabbable.WhenPointerEventRaised -= OnPointerEvent;
     }
@@ -71,10 +78,49 @@ public class Brick : MonoBehaviour
     {
         if (_dirty)
             Rebuild();
+        if (Application.isPlaying)
+            UpdateGhost();
+    }
+
+    // While held, shows a see-through copy of the brick where it would snap if released now.
+    void UpdateGhost()
+    {
+        bool held = _grabbable != null && _grabbable.SelectingPointsCount > 0;
+        if (held && ghostMaterial != null && FindSnap(out Vector3 position, out Quaternion rotation))
+        {
+            if (_ghost == null)
+                CreateGhost();
+            _ghost.transform.SetPositionAndRotation(position, rotation);
+            _ghost.SetActive(true);
+        }
+        else if (_ghost != null)
+        {
+            _ghost.SetActive(false);
+        }
+    }
+
+    void CreateGhost()
+    {
+        _ghost = new GameObject(name + " Ghost");
+        _ghost.AddComponent<MeshFilter>().sharedMesh = _mesh;
+
+        MeshRenderer ghostRenderer = _ghost.AddComponent<MeshRenderer>();
+        ghostRenderer.sharedMaterial = ghostMaterial;
+        ghostRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        // Brick's color, with the ghost material's transparency.
+        Color tint = color;
+        tint.a = ghostMaterial.color.a;
+        var block = new MaterialPropertyBlock();
+        block.SetColor(BaseColorId, tint);
+        ghostRenderer.SetPropertyBlock(block);
     }
 
     void OnDestroy()
     {
+        if (_ghost != null)
+            Destroy(_ghost);
+
         if (_mesh == null)
             return;
         if (Application.isPlaying)

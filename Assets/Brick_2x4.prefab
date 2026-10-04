@@ -184,6 +184,7 @@ MonoBehaviour:
   color: {r: 0.8, g: 0.1, b: 0.1, a: 1}
   maxVerticalSnap: 0.008
   maxTiltDegrees: 35
+  ghostMaterial: {fileID: 2100000, guid: 859d858a5562bc54b83042f582724d50, type: 2}
 --- !u!1 &5925191730625298220
 GameObject:
   m_ObjectHideFlags: 0
