@@ -23,6 +23,10 @@ public class BrickPartData : ScriptableObject
     [Tooltip("Where a stud from a part below plugs into the underside.")]
     public Vector3[] antiStuds;
 
+    [Tooltip("Every connection point (studs, sockets, pins, holes, bars, clips, hinges) from the LDCad shadow library. " +
+             "When empty, the studs and antiStuds above are used.")]
+    public Connector[] connectors;
+
     [Tooltip("Bounds of the part without its studs. Used for the collider and overlap checks.")]
     public Bounds bodyBounds;
 

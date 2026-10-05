@@ -49,6 +49,25 @@ public static class MenuStyle
         return label;
     }
 
+    /// <summary>"&lt;   1 / 3   &gt;" across the given width, for paging through a menu.</summary>
+    public static void AddPagingRow(Transform parent, float y, float width, int page, int pageCount, Action<int> showPage)
+    {
+        const float buttonWidth = 0.035f, height = 0.02f;
+        CreateText(parent, $"{page + 1} / {pageCount}", new Vector3(0f, y, -0.001f), new Vector2(0.04f, height * 0.6f));
+        if (page > 0)
+        {
+            MenuButton prev = MenuButton.Create(parent, "Previous", new Vector3(-width * 0.5f + buttonWidth * 0.5f, y, 0f),
+                                                new Vector2(buttonWidth, height), Button, "<");
+            prev.Clicked += () => showPage(page - 1);
+        }
+        if (page < pageCount - 1)
+        {
+            MenuButton next = MenuButton.Create(parent, "Next", new Vector3(width * 0.5f - buttonWidth * 0.5f, y, 0f),
+                                                new Vector2(buttonWidth, height), Button, ">");
+            next.Clicked += () => showPage(page + 1);
+        }
+    }
+
     /// <summary>A solid box, used for panel backgrounds and swatches.</summary>
     public static MeshRenderer CreateBox(Transform parent, string name, Vector3 localPosition, Vector3 size, Color color)
     {
@@ -72,6 +91,9 @@ public class MenuButton : MonoBehaviour
     public const float Depth = 0.008f;
 
     public event Action Clicked;
+
+    /// <summary>Raised when the laser starts (true) or stops (false) pointing at the button.</summary>
+    public event Action<bool> HoverChanged;
 
     MeshRenderer _renderer;
     RayInteractable _ray;
@@ -149,10 +171,12 @@ public class MenuButton : MonoBehaviour
             case PointerEventType.Hover:
                 _hovered = true;
                 Refresh();
+                HoverChanged?.Invoke(true);
                 break;
             case PointerEventType.Unhover:
                 _hovered = false;
                 Refresh();
+                HoverChanged?.Invoke(false);
                 break;
             case PointerEventType.Select:
                 Clicked?.Invoke();

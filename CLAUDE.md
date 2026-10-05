@@ -48,14 +48,36 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   gitignored `Secrets/rebrickable.key`, never print it), OMR availability check, "Add" = Rebrickable
   parts list (LDraw ids/colors via external_ids, spares excluded, minifig parts included) + OMR steps
   if available + part import + `SetData` + CREDITS.md line.
-- Roadmap: A) Set Finder (written, awaiting test), B) "Build It Yourself" mode: a set's exact parts
-  (from `SetData.inventory`) on trays, free building, C) instruction book: LEGO PDFs the player
+- `PartsBin.cs`: Build It Yourself mode. A panel with one set's parts (`SetData.PartsList()`), category
+  filter + pages, counts; grabbing a preview takes one; trashing a set part returns it (`Brick.Trashed`);
+  Finish Model bonds the built parts. Only on-screen previews exist as bricks. Grip-grabbing a bin
+  preview takes the whole remaining stack ("xN" label); stored at a wrist it becomes an xN slot
+  (`WristInventory.Stored` + `AddLoaded`), released elsewhere the extras return to the bin.
+- `InstructionBook.cs` + `Assets/Plugins/Android/PdfBridge.java`: PDFs picked via ACTION_OPEN_DOCUMENT
+  (headless android.app.Fragment) are copied to `persistentDataPath/Instructions/<set> booklet <n>.pdf`;
+  pages rendered by PdfRenderer on a thread to `Instructions/cache/<booklet>/<page>.jpg`, results via
+  UnitySendMessage to the Sandbox GameObject. Portrait pages show as a two-page spread, landscape alone.
+  Android-only (app entry is GameActivity). Check Java with javac + android.jar + Unity classes.jar.
+- Roadmap: A) Set Finder (done), B) Build It Yourself (written), C) instruction book (PDF pages vary
+  between portrait and landscape; the book must adapt and be freely movable/tiltable): LEGO PDFs the player
   downloads in the Quest browser, imported via the Android file picker (Storage Access Framework,
   needs a small Java plugin in Assets/Plugins/Android) into app storage, rendered with Android's
   PdfRenderer, shown as a two-page floating book. Do NOT scrape lego.com/Rebrickable for PDFs
   (bot protection + terms); never commit PDFs.
 - `Assets/Editor/LDraw/`: `LDrawParser.cs` (pure C#, System.Numerics, testable with `dotnet`) and
   Tools > LDraw Part Importer window, which writes meshes + `BrickPartData` to `Assets/LDrawParts/`.
+
+## Connections (non-stud snapping)
+- `LDraw/shadow/` = git clone of github.com/RolandMelkert/LDCadShadowLibrary (CC BY-SA 4.0, gitignored).
+  `Connections/` (committed) adds files in the same format for parts it misses (e.g. 6015 tyre, 6014a rim).
+- `LDrawParser` collects `!LDCAD SNAP_CYL/CLP/FGR/GEN/INCL/CLEAR` metas through sub-files (CLEAR drops
+  inherited ones) into `ConnectorData` (Unity space; shapes extend along the meta's -Y). Duplicates removed.
+- `Connector.cs`: runtime `Connector` + `Connections.Fit/QuarterTurns/AreMated/Align`. Pegs fit holes of
+  equal radius (R in R/S, A in R); clips take male R of their radius; fingers/generic match same profile,
+  opposite gender. Stud-like (R6/S6) pairs snap to quarter turns; others spin freely. Snaps are rejected
+  only if a connector they'd use is already mated with a third part (`UsesTakenConnection`); box overlap
+  checks were dropped for snapping because part bounding boxes are wrong for clips/brackets/car bases. Brick snapping, group carrying, and group free-connector lists all use
+  connectors; parts without data fall back to `studs`/`antiStuds`.
 
 ## Notes
 - LDraw -> Unity: (x, -y, z) * 0.0004 m; front-facing LDraw polygons are reversed for Unity winding.

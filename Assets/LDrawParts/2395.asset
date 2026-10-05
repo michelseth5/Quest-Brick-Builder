@@ -25,6 +25,40 @@ MonoBehaviour:
   - {x: 0, y: -0.0039999997, z: -0.0008}
   - {x: 0, y: -0.0039999997, z: 0.0072}
   - {x: 0, y: -0.0039999997, z: 0.015199999}
+  connectors:
+  - kind: 0
+    male: 0
+    position: {x: -0.007999999, y: 0.015999999, z: -0.0004}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: 0, y: 1, z: 0}
+    length: 0.0072
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R6 R8
+    group: 
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0, z: -0.0004}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: 0, y: 1, z: 0}
+    length: 0.0072
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R6 R8
+    group: 
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0039999997, z: 0.007999999}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0, y: -0, z: 1}
+    length: 0.007999999
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: A6
+    group: 
   bodyBounds:
     m_Center: {x: -0.0039999997, y: 0.0078000007, z: 0.0072}
     m_Extent: {x: 0.0076, y: 0.0118, z: 0.0112}

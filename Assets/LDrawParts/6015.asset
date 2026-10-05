@@ -22,6 +22,18 @@ MonoBehaviour:
   - {x: -0.007999999, y: -0.010000004, z: 0}
   - {x: 0, y: -0.010000004, z: 0}
   - {x: 0.007999999, y: -0.010000004, z: 0}
+  connectors:
+  - kind: 3
+    male: 0
+    position: {x: 0, y: -0, z: 0}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: G:rim12x11
+    group: rim12x11
   bodyBounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.010000002, y: 0.010000004, z: 0.0056}

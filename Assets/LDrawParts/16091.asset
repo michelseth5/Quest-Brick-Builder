@@ -23,6 +23,29 @@ MonoBehaviour:
   - {x: -0.0039999997, y: -0.0032, z: 0.0039999997}
   - {x: 0.0039999997, y: -0.0032, z: -0.0039999997}
   - {x: 0.0039999997, y: -0.0032, z: 0.0039999997}
+  connectors:
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: -1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0032, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0058
+    center: 0
+    slide: 0
+    openEnded: 1
+    profile: R6 R4
+    group: 
   bodyBounds:
     m_Center: {x: 0, y: 0.000000099884346, z: 0}
     m_Extent: {x: 0.0080002, y: 0.0032000998, z: 0.0080002}

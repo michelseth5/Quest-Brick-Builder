@@ -21,7 +21,6 @@ public class Brick : MonoBehaviour
     const float StudHeight = 0.0017f;
     const float SideGap = 0.0001f; // real bricks are slightly undersized so neighbors don't touch
     const int StudSegments = 16;
-    const float ConnectedTolerance = 0.0005f;
 
     static readonly List<Brick> AllBricks = new List<Brick>();
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -44,7 +43,7 @@ public class Brick : MonoBehaviour
     public Material transparentMaterial;
 
     [Header("Snapping")]
-    [Tooltip("How close (in meters) the brick must be to another brick's top or bottom to snap.")]
+    [Tooltip("How far (in meters) a brick may be moved to plug it into a nearby connection.")]
     public float maxVerticalSnap = 0.008f;
     [Tooltip("How far the brick can be tilted relative to the other brick and still snap.")]
     [Range(0f, 90f)] public float maxTiltDegrees = 35f;
@@ -65,10 +64,14 @@ public class Brick : MonoBehaviour
     public bool IsPreview { get; set; }
 
     /// <summary>Raised when a menu preview is grabbed and becomes a real brick, so the menu can replace it.</summary>
-    public static event System.Action<Brick> PreviewTaken;
+    /// The bool is true for a grip (whole-group) grab, false for a trigger (single) grab.
+    public static event System.Action<Brick, bool> PreviewTaken;
 
     /// <summary>Raised whenever a brick is picked up.</summary>
     public static event System.Action<Brick> Grabbed;
+
+    /// <summary>Raised for each brick dropped into a trash can, just before it's deleted.</summary>
+    public static event System.Action<Brick> Trashed;
 
     /// <summary>
     /// Bricks bonded into one model, even where they don't connect by studs (wheels on pins, parts on
@@ -155,8 +158,7 @@ public class Brick : MonoBehaviour
     // Shape and connection points, in local space. Filled by Rebuild().
     Mesh _activeMesh;
     Mesh _generatedMesh;
-    readonly List<Vector3> _studs = new List<Vector3>();
-    readonly List<Vector3> _antiStuds = new List<Vector3>();
+    readonly List<Connector> _connectors = new List<Connector>();
     Bounds _body;
 
     bool _dirty = true;
@@ -166,10 +168,8 @@ public class Brick : MonoBehaviour
     readonly List<(Brick brick, Transform originalParent)> _carried = new List<(Brick, Transform)>();
 
     // While carrying a group: the group's unused connection points, in this brick's local space.
-    readonly List<Vector3> _groupStuds = new List<Vector3>();
-    readonly List<Vector3> _groupAntiStuds = new List<Vector3>();
-    List<Vector3> SnapStuds => _carried.Count > 0 ? _groupStuds : _studs;
-    List<Vector3> SnapAntiStuds => _carried.Count > 0 ? _groupAntiStuds : _antiStuds;
+    readonly List<Connector> _groupConnectors = new List<Connector>();
+    List<Connector> SnapConnectors => _carried.Count > 0 ? _groupConnectors : _connectors;
 
     void OnEnable()
     {
@@ -225,12 +225,13 @@ public class Brick : MonoBehaviour
     {
         if (evt.Type == PointerEventType.Select && _grabbable.SelectingPointsCount == 1)
         {
+            bool wholeGroupGrab = BrickGrabInput.IsWholeGroupGrab(evt);
             if (IsPreview)
             {
                 // Taken out of a menu: it's a real brick from now on.
                 IsPreview = false;
                 transform.SetParent(null, worldPositionStays: true);
-                PreviewTaken?.Invoke(this);
+                PreviewTaken?.Invoke(this, wholeGroupGrab);
             }
 
             if (!Held.Contains(this))
@@ -241,7 +242,7 @@ public class Brick : MonoBehaviour
             bool fromInventory = IsStored && WristInventory.TakeOut(this);
 
             PutDownStack();
-            if (fromInventory || BrickGrabInput.IsWholeGroupGrab(evt))
+            if (fromInventory || wholeGroupGrab)
                 PickUpGroup();
             else
                 LeaveBond(); // pulled off on its own
@@ -266,6 +267,9 @@ public class Brick : MonoBehaviour
             // Dropped into a trash can: delete it, along with everything it's carrying (they're its children).
             if (TrashCan.Contains(transform.TransformPoint(_body.center)))
             {
+                Trashed?.Invoke(this);
+                foreach ((Brick carried, Transform _) in _carried)
+                    Trashed?.Invoke(carried);
                 _carried.Clear();
                 Destroy(gameObject);
                 return;
@@ -295,8 +299,7 @@ public class Brick : MonoBehaviour
 
             foreach (Brick other in AllBricks)
             {
-                if (other.IsBuildable && !other.IsBaseplate && !group.Contains(other)
-                    && (other.RestsOn(group[i]) || group[i].RestsOn(other)))
+                if (other.IsBuildable && !other.IsBaseplate && !group.Contains(other) && group[i].IsConnectedTo(other))
                 {
                     group.Add(other);
                 }
@@ -313,42 +316,33 @@ public class Brick : MonoBehaviour
         BuildGroupConnections(group);
     }
 
-    // Collects every member's connection points into this brick's space, leaving out the ones
-    // already plugged into another member, so only the group's exposed studs and sockets can snap.
+    // Collects every member's connection points into this brick's space, leaving out the ones already
+    // plugged into another member, so only the group's exposed studs, sockets, pins, etc. can snap.
     void BuildGroupConnections(List<Brick> group)
     {
-        var studs = new List<Vector3>();
-        var antiStuds = new List<Vector3>();
+        var world = new List<(Brick owner, Connector connector)>();
         foreach (Brick member in group)
         {
-            foreach (Vector3 stud in member._studs)
-                studs.Add(transform.InverseTransformPoint(member.transform.TransformPoint(stud)));
-            foreach (Vector3 antiStud in member._antiStuds)
-                antiStuds.Add(transform.InverseTransformPoint(member.transform.TransformPoint(antiStud)));
+            foreach (Connector connector in member._connectors)
+                world.Add((member, connector.InWorld(member.transform)));
         }
 
-        _groupStuds.Clear();
-        _groupAntiStuds.Clear();
-        foreach (Vector3 stud in studs)
+        _groupConnectors.Clear();
+        Quaternion toLocal = Quaternion.Inverse(transform.rotation);
+        foreach ((Brick owner, Connector connector) in world)
         {
-            if (!ContainsPoint(antiStuds, stud))
-                _groupStuds.Add(stud);
+            bool used = false;
+            foreach ((Brick otherOwner, Connector other) in world)
+            {
+                if (otherOwner != owner && Connections.AreMated(connector, other))
+                {
+                    used = true;
+                    break;
+                }
+            }
+            if (!used) // world -> this brick's local space
+                _groupConnectors.Add(connector.Moved(-(toLocal * transform.position), toLocal));
         }
-        foreach (Vector3 antiStud in antiStuds)
-        {
-            if (!ContainsPoint(studs, antiStud))
-                _groupAntiStuds.Add(antiStud);
-        }
-    }
-
-    static bool ContainsPoint(List<Vector3> points, Vector3 point)
-    {
-        foreach (Vector3 p in points)
-        {
-            if ((p - point).sqrMagnitude < ConnectedTolerance * ConnectedTolerance)
-                return true;
-        }
-        return false;
     }
 
     /// <summary>
@@ -361,8 +355,7 @@ public class Brick : MonoBehaviour
         foreach ((Brick brick, Transform _) in _carried)
             members.Add(brick);
         _carried.Clear();
-        _groupStuds.Clear();
-        _groupAntiStuds.Clear();
+        _groupConnectors.Clear();
         return members;
     }
 
@@ -376,8 +369,7 @@ public class Brick : MonoBehaviour
                 brick.transform.SetParent(originalParent, worldPositionStays: true);
         }
         _carried.Clear();
-        _groupStuds.Clear();
-        _groupAntiStuds.Clear();
+        _groupConnectors.Clear();
     }
 
     bool IsCarrying(Brick brick)
@@ -390,24 +382,28 @@ public class Brick : MonoBehaviour
         return false;
     }
 
-    /// <summary>True when one of the lower brick's studs is plugged into this brick's underside.</summary>
-    public bool RestsOn(Brick lower)
+    /// <summary>True when any of this brick's connectors is plugged into one of the other brick's.</summary>
+    public bool IsConnectedTo(Brick other)
     {
-        Quaternion relative = Quaternion.Inverse(lower.transform.rotation) * transform.rotation;
-        if (Vector3.Angle(relative * Vector3.up, Vector3.up) > 2f)
+        // Quick rejection: too far apart to touch.
+        float reach = WorldRadius + other.WorldRadius + 0.01f;
+        if ((WorldCenter - other.WorldCenter).sqrMagnitude > reach * reach)
             return false;
 
-        foreach (Vector3 antiStud in _antiStuds)
+        foreach (Connector mine in _connectors)
         {
-            Vector3 socket = transform.TransformPoint(antiStud);
-            foreach (Vector3 stud in lower._studs)
+            Connector a = mine.InWorld(transform);
+            foreach (Connector theirs in other._connectors)
             {
-                if ((lower.transform.TransformPoint(stud) - socket).sqrMagnitude < ConnectedTolerance * ConnectedTolerance)
+                if (Connections.AreMated(a, theirs.InWorld(other.transform)))
                     return true;
             }
         }
         return false;
     }
+
+    Vector3 WorldCenter => transform.TransformPoint(_body.center);
+    float WorldRadius => _body.extents.magnitude + 0.004f; // a little extra for studs and pins
 
     // ---------- Snapping ----------
 
@@ -421,46 +417,64 @@ public class Brick : MonoBehaviour
         return true;
     }
 
-    /// <summary>Finds the closest pose that plugs this brick onto, or under, another brick.</summary>
+    /// <summary>
+    /// Finds the closest pose that plugs one of this brick's (or its group's) free connectors into a
+    /// matching connector on another brick: studs into sockets, pins into holes, bars into clips, and so on.
+    /// </summary>
     public bool FindSnap(out Vector3 bestPosition, out Quaternion bestRotation)
     {
         bestPosition = default;
         bestRotation = default;
         float bestScore = float.MaxValue;
 
+        Vector3 position = transform.position;
+        Quaternion rotation = transform.rotation;
+        List<Connector> mine = SnapConnectors;
+        float myReach = GroupRadius();
+
         foreach (Brick other in AllBricks)
         {
             if (other == this || !other.IsBuildable || IsCarrying(other))
                 continue;
-
-            // Work in the other brick's local space. Bricks only connect upright to each other,
-            // turned in quarter turns.
-            Transform ot = other.transform;
-            Quaternion relative = Quaternion.Inverse(ot.rotation) * transform.rotation;
-            if (Vector3.Angle(relative * Vector3.up, Vector3.up) > maxTiltDegrees)
+            float reach = myReach + other.WorldRadius + maxVerticalSnap + 0.01f;
+            if ((WorldCenter - other.WorldCenter).sqrMagnitude > reach * reach)
                 continue;
 
-            Vector3 forward = relative * Vector3.forward;
-            float quarterTurns = Mathf.Round(Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg / 90f);
-            Quaternion turn = Quaternion.Euler(0f, quarterTurns * 90f, 0f);
-            Vector3 current = ot.InverseTransformPoint(transform.position);
+            foreach (Connector theirsLocal in other._connectors)
+            {
+                Connector theirs = theirsLocal.InWorld(other.transform);
+                foreach (Connector local in mine)
+                {
+                    // Cheap distance check before the real work.
+                    Connector current = local.Moved(position, rotation);
+                    float near = maxVerticalSnap + 0.012f + current.length + theirs.length;
+                    if ((current.position - theirs.position).sqrMagnitude > near * near)
+                        continue;
+                    if (!Connections.Fit(local, theirs))
+                        continue;
 
-            // On top: our underside onto their studs. Underneath: our studs into their underside.
-            float score = float.MaxValue;
-            Vector3 target = default;
-            FindClosestPairing(SnapAntiStuds, other._studs, turn, current, ref score, ref target);
-            FindClosestPairing(SnapStuds, other._antiStuds, turn, current, ref score, ref target);
-            if (score >= bestScore)
-                continue;
+                    bool quarterTurns = Connections.QuarterTurns(local, theirs);
+                    Connections.Align(local, position, rotation, theirs, quarterTurns,
+                                      out Vector3 snappedPosition, out Quaternion snappedRotation);
 
-            Vector3 worldPosition = ot.TransformPoint(target);
-            Quaternion worldRotation = ot.rotation * turn;
-            if (WouldOverlapOthers(worldPosition, worldRotation))
-                continue;
+                    float move = (snappedPosition - position).magnitude;
+                    float turn = Quaternion.Angle(snappedRotation, rotation);
+                    if (move > maxVerticalSnap || turn > maxTiltDegrees)
+                        continue;
 
-            bestScore = score;
-            bestPosition = worldPosition;
-            bestRotation = worldRotation;
+                    float score = move + turn * 0.0003f; // 1 degree counts like 0.3 mm
+                    if (score >= bestScore)
+                        continue;
+
+                    // Don't plug into a spot another part is already using.
+                    if (UsesTakenConnection(snappedPosition, snappedRotation))
+                        continue;
+
+                    bestScore = score;
+                    bestPosition = snappedPosition;
+                    bestRotation = snappedRotation;
+                }
+            }
         }
 
         if (bestScore < float.MaxValue)
@@ -470,31 +484,62 @@ public class Brick : MonoBehaviour
         return FindSurfaceSnap(out bestPosition, out bestRotation);
     }
 
-    // Tries every way of lining up one of our connection points with one of theirs, and keeps the
-    // position that needs the smallest move from where the brick is now.
-    void FindClosestPairing(List<Vector3> ours, List<Vector3> theirs, Quaternion turn, Vector3 current,
-                            ref float bestScore, ref Vector3 bestTarget)
+    // True if, at this pose, any of our free connectors would plug into a connector that another part is
+    // already plugged into (e.g. a stud that already has a brick on it). This is exact for any part shape,
+    // unlike checking boxes, which fails for clips, brackets, and other irregular parts.
+    bool UsesTakenConnection(Vector3 position, Quaternion rotation)
     {
-        foreach (Vector3 mine in ours)
-        {
-            Vector3 turned = turn * mine;
-            foreach (Vector3 point in theirs)
-            {
-                Vector3 target = point - turned;
-                Vector3 move = target - current;
-                if (Mathf.Abs(move.y) > maxVerticalSnap)
-                    continue;
-                if (move.x * move.x + move.z * move.z > StudPitch * StudPitch)
-                    continue;
+        Vector3 center = position + rotation * _body.center;
+        float myReach = GroupRadius();
 
-                float score = move.sqrMagnitude;
-                if (score < bestScore)
+        foreach (Brick other in AllBricks)
+        {
+            if (other == this || !other.IsBuildable || IsCarrying(other))
+                continue;
+            float reach = myReach + other.WorldRadius;
+            if ((center - other.WorldCenter).sqrMagnitude > reach * reach)
+                continue;
+
+            foreach (Connector theirsLocal in other._connectors)
+            {
+                Connector theirs = theirsLocal.InWorld(other.transform);
+                foreach (Connector mine in SnapConnectors)
                 {
-                    bestScore = score;
-                    bestTarget = target;
+                    if (Connections.AreMated(mine.Moved(position, rotation), theirs) && IsTaken(theirs, other))
+                        return true;
                 }
             }
         }
+        return false;
+    }
+
+    // Whether a connector (in world space) on the given brick is plugged into some other part we aren't holding.
+    bool IsTaken(in Connector connector, Brick owner)
+    {
+        foreach (Brick brick in AllBricks)
+        {
+            if (brick == owner || brick == this || !brick.IsBuildable || IsCarrying(brick))
+                continue;
+            float reach = brick.WorldRadius + connector.length + 0.01f;
+            if ((brick.WorldCenter - connector.position).sqrMagnitude > reach * reach)
+                continue;
+
+            foreach (Connector other in brick._connectors)
+            {
+                if (Connections.AreMated(other.InWorld(brick.transform), connector))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    // How far the held brick and everything it's carrying reach from this brick's center.
+    float GroupRadius()
+    {
+        float radius = WorldRadius;
+        foreach ((Brick member, Transform _) in _carried)
+            radius = Mathf.Max(radius, (member.WorldCenter - WorldCenter).magnitude + member.WorldRadius);
+        return radius;
     }
 
     // Stands the brick upright on the nearest real surface below or slightly above it, keeping its heading.
@@ -635,15 +680,24 @@ public class Brick : MonoBehaviour
     public void Rebuild()
     {
         _dirty = false;
-        _studs.Clear();
-        _antiStuds.Clear();
+        _connectors.Clear();
 
         if (part != null && part.mesh != null)
         {
             _activeMesh = part.mesh;
-            _studs.AddRange(part.studs);
-            _antiStuds.AddRange(part.antiStuds);
             _body = part.bodyBounds;
+            if (part.connectors != null && part.connectors.Length > 0)
+            {
+                _connectors.AddRange(part.connectors);
+            }
+            else
+            {
+                // Imported before connection data (or not covered by it): plain studs and sockets.
+                foreach (Vector3 stud in part.studs ?? new Vector3[0])
+                    _connectors.Add(Connector.Stud(stud, male: true));
+                foreach (Vector3 socket in part.antiStuds ?? new Vector3[0])
+                    _connectors.Add(Connector.Stud(socket, male: false));
+            }
         }
         else
         {
@@ -693,8 +747,8 @@ public class Brick : MonoBehaviour
                 float x = (i - (studsX - 1) * 0.5f) * StudPitch;
                 float z = (j - (studsZ - 1) * 0.5f) * StudPitch;
                 builder.AddCylinder(new Vector3(x, height, z), StudRadius, StudHeight, StudSegments);
-                _studs.Add(new Vector3(x, height, z));
-                _antiStuds.Add(new Vector3(x, 0f, z));
+                _connectors.Add(Connector.Stud(new Vector3(x, height, z), male: true));
+                _connectors.Add(Connector.Stud(new Vector3(x, 0f, z), male: false));
             }
         }
 

@@ -49,6 +49,27 @@ public class SetData : ScriptableObject
     public bool HasSteps => steps.Count > 0;
     public bool HasInventory => inventory.Count > 0;
 
+    /// <summary>The set's parts list; worked out from the building steps if no list was fetched.</summary>
+    public List<InventoryItem> PartsList()
+    {
+        if (HasInventory)
+            return inventory;
+
+        var totals = new Dictionary<(string, int), int>();
+        foreach (Step step in steps)
+        {
+            foreach (Placement placement in step.parts)
+            {
+                var key = (placement.partId, placement.colorCode);
+                totals[key] = totals.TryGetValue(key, out int quantity) ? quantity + 1 : 1;
+            }
+        }
+        var list = new List<InventoryItem>();
+        foreach (KeyValuePair<(string, int), int> total in totals)
+            list.Add(new InventoryItem { partId = total.Key.Item1, colorCode = total.Key.Item2, quantity = total.Value });
+        return list;
+    }
+
     /// <summary>Number of parts: from the building steps if there are any, otherwise from the parts list.</summary>
     public int PartCount
     {

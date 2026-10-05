@@ -29,6 +29,9 @@ public class WristInventory : MonoBehaviour
 
     static WristInventory _instance;
 
+    /// <summary>Raised after a released brick (or group) is stored: the stored brick and the wrist (0 left, 1 right).</summary>
+    public static event System.Action<Brick, int> Stored;
+
     /// <summary>One stored copy: the brick that was held, plus the bricks attached to it.</summary>
     class Item
     {
@@ -145,6 +148,7 @@ public class WristInventory : MonoBehaviour
         }
 
         _instance.Store(wrist, released, released.DetachGroupForStorage(), signature);
+        Stored?.Invoke(released, System.Array.IndexOf(_instance._wrists, wrist));
         return true;
     }
 

@@ -26,6 +26,9 @@ public class Sandbox : MonoBehaviour
     [Tooltip("See-through material used for transparent colors. BrickGhost works.")]
     public Material transparentMaterial;
 
+    [Tooltip("Optional material for instruction book pages (an Unlit material looks best). Leave empty to use the brick material.")]
+    public Material bookPageMaterial;
+
     [Header("Menus")]
     [Tooltip("How far in front of you menus open, in meters.")]
     public float menuDistance = 0.45f;
@@ -51,7 +54,12 @@ public class Sandbox : MonoBehaviour
         new Dictionary<string, BrickPartData>(System.StringComparer.OrdinalIgnoreCase);
     ModelMenu _modelMenu;
     SetBuilder _setBuilder;
+    PartsBin _partsBin;
+    InstructionBook _book;
     MenuPanel _startMenu;
+
+    /// <summary>Opens the instruction book for a set (and its "Add PDF" option if it has none yet).</summary>
+    public void OpenBook(SetData set) => _book.Open(set);
     GameObject _trashCan;
     GameObject _message;
 
@@ -110,6 +118,12 @@ public class Sandbox : MonoBehaviour
         _setBuilder = gameObject.AddComponent<SetBuilder>();
         _setBuilder.Init(this, brickPrefab.ghostMaterial);
 
+        _partsBin = gameObject.AddComponent<PartsBin>();
+        _partsBin.Init(this);
+
+        _book = gameObject.AddComponent<InstructionBook>();
+        _book.Init(this, bookPageMaterial != null ? bookPageMaterial : MenuStyle.Material);
+
         BuildStartMenu();
         StartCoroutine(OpenStartMenuWhenTracking());
     }
@@ -157,11 +171,39 @@ public class Sandbox : MonoBehaviour
         {
             ("Free Build", () => _startMenu.Close()),
             ("Build a Set", ShowSetList),
+            ("Build It Yourself", ShowBuildYourselfList),
         };
         if (_setBuilder.IsBuilding)
             buttons.Add(("Exit Current Set", () => { _setBuilder.ExitSet(); _startMenu.Close(); }));
+        if (_partsBin.IsActive)
+        {
+            buttons.Add(($"Show Parts Bin  <size=70%><color=#AAB>{_partsBin.SetTitle}</color></size>",
+                         () => { _startMenu.Close(); _partsBin.Show(); }));
+            buttons.Add(("Finish Model", () => { _partsBin.FinishModel(); }));
+            buttons.Add(("Stop Building It Yourself", () => { _partsBin.End(); ShowStartHome(); }));
+        }
         buttons.Add(("Settings", ShowSettings));
         FillStartMenu("Brick Builder", "The left controller's menu button brings you back here", buttons);
+    }
+
+    // Every set with a parts list (or building steps to work one out from).
+    void ShowBuildYourselfList()
+    {
+        var buttons = new List<(string, System.Action)>();
+        foreach (SetData set in SetData.LoadAll().Where(s => s.HasInventory || s.HasSteps).OrderBy(s => s.title))
+        {
+            SetData chosen = set;
+            buttons.Add(($"{set.title}  <size=70%><color=#AAB>{set.setNumber} · {set.PartCount} parts</color></size>",
+                         () =>
+                         {
+                             _startMenu.Close();
+                             CloseBuildMenus();
+                             _setBuilder.ExitSet();
+                             _partsBin.Begin(chosen);
+                         }));
+        }
+        buttons.Add(("Back", ShowStartHome));
+        FillStartMenu("Build It Yourself", buttons.Count == 1 ? "No sets added yet" : "Get a set's parts and build it your way", buttons);
     }
 
     void ShowSettings()
@@ -185,7 +227,7 @@ public class Sandbox : MonoBehaviour
         {
             SetData chosen = set;
             buttons.Add(($"{set.title}  <size=70%><color=#AAB>{set.setNumber} · {set.PartCount} parts</color></size>",
-                         () => { _startMenu.Close(); CloseBuildMenus(); _setBuilder.StartSet(chosen); }));
+                         () => { _startMenu.Close(); CloseBuildMenus(); _partsBin.End(); _setBuilder.StartSet(chosen); }));
         }
         buttons.Add(("Back", ShowStartHome));
         FillStartMenu("Build a Set", buttons.Count == 1 ? "No sets imported yet" : "Choose a set", buttons);
@@ -390,30 +432,11 @@ public class Sandbox : MonoBehaviour
         if (pageCount > 1)
         {
             y = _categoryTop - CategoriesPerPage * (ButtonHeight + ButtonGap);
-            AddPagingRow(_categoryArea, y, MainWidth - 0.02f, _categoryPage, pageCount, ShowCategoryPage);
+            MenuStyle.AddPagingRow(_categoryArea, y, MainWidth - 0.02f, _categoryPage, pageCount, ShowCategoryPage);
         }
     }
 
-    // "< Prev   Page 1 of 3   Next >" across the given width.
-    static void AddPagingRow(Transform parent, float y, float width, int page, int pageCount, System.Action<int> showPage)
-    {
-        const float buttonWidth = 0.035f, height = 0.02f;
-        MenuStyle.CreateText(parent, $"{page + 1} / {pageCount}", new Vector3(0f, y, -0.001f), new Vector2(0.04f, height * 0.6f));
-        if (page > 0)
-        {
-            MenuButton prev = MenuButton.Create(parent, "Previous", new Vector3(-width * 0.5f + buttonWidth * 0.5f, y, 0f),
-                                                new Vector2(buttonWidth, height), MenuStyle.Button, "<");
-            prev.Clicked += () => showPage(page - 1);
-        }
-        if (page < pageCount - 1)
-        {
-            MenuButton next = MenuButton.Create(parent, "Next", new Vector3(width * 0.5f - buttonWidth * 0.5f, y, 0f),
-                                                new Vector2(buttonWidth, height), MenuStyle.Button, ">");
-            next.Clicked += () => showPage(page + 1);
-        }
-    }
-
-    static string Plural(string category) => category.EndsWith("s") ? category : category + "s";
+    public static string Plural(string category) => category.EndsWith("s") ? category : category + "s";
 
     // ---------- Part previews ----------
 
@@ -475,7 +498,7 @@ public class Sandbox : MonoBehaviour
 
         if (pageCount > 1)
         {
-            AddPagingRow(_partsPanel.Content, -size.y * 0.5f + margin + pagingHeight * 0.4f, size.x - margin * 2f,
+            MenuStyle.AddPagingRow(_partsPanel.Content, -size.y * 0.5f + margin + pagingHeight * 0.4f, size.x - margin * 2f,
                          _partsPage, pageCount, p => ShowPartsPage(category, p));
         }
 
@@ -504,7 +527,7 @@ public class Sandbox : MonoBehaviour
     }
 
     // When a preview is taken, put a fresh one in its place so the menu is never empty.
-    void OnPreviewTaken(Brick brick)
+    void OnPreviewTaken(Brick brick, bool wholeGroupGrab)
     {
         if (!_previews.TryGetValue(brick, out (BrickPartData part, Vector3 cellCenter) slot))
             return;

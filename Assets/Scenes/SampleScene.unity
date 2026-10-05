@@ -151,6 +151,7 @@ MonoBehaviour:
   brickPrefab: {fileID: 2195673924386441590, guid: 0991988071506f1468173a0f12d99704, type: 3}
   catalog: {fileID: 11400000, guid: ee4d075bcb91ab54fb8aee08016195f1, type: 2}
   transparentMaterial: {fileID: 2100000, guid: 859d858a5562bc54b83042f582724d50, type: 2}
+  bookPageMaterial: {fileID: 2100000, guid: 37599445c9e8d5a4da955e4eeb9e83c1, type: 2}
   menuDistance: 0.45
   partColumns: 4
 --- !u!4 &33777038

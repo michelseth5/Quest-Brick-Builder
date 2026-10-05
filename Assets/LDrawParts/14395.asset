@@ -29,6 +29,73 @@ MonoBehaviour:
   - {x: 0, y: -0.038399998, z: 0.015999999}
   - {x: 0, y: -0.038399998, z: 0.024}
   - {x: 0, y: -0.038399998, z: 0.031999998}
+  connectors:
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0.019199999, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0, y: -0, z: 1}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0.0095999995, z: 0.007999999}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0, y: -0, z: 1}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0, z: 0.015999999}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0, y: -0, z: 1}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0.0032, z: 0.024}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0, y: -0, z: 1}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0.0032, z: 0.031999998}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0, y: -0, z: 1}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.038399998, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0176
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
   bodyBounds:
     m_Center: {x: 0, y: -0.019199999, z: 0.015999999}
     m_Extent: {x: 0.0039999997, y: 0.019199999, z: 0.02}

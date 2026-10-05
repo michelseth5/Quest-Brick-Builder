@@ -20,6 +20,29 @@ MonoBehaviour:
   studs: []
   antiStuds:
   - {x: 0, y: -0.016999999, z: -0.000051213265}
+  connectors:
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: -1, y: -0, z: 0}
+    length: 0.016999999
+    center: 0
+    slide: 1
+    openEnded: 0
+    profile: R4
+    group: 
+  - kind: 1
+    male: 0
+    position: {x: 0, y: 0.0093982015, z: 0.0010060938}
+    axis: {x: -1, y: -0, z: 0}
+    reference: {x: 0, y: -0.656059, z: 0.7547096}
+    length: 0.0032
+    center: 1
+    slide: 0
+    openEnded: 1
+    profile: R6
+    group: 
   bodyBounds:
     m_Center: {x: 0, y: -0.0025260001, z: -0.000051213196}
     m_Extent: {x: 0.0016, y: 0.014473999, z: 0.0035712132}

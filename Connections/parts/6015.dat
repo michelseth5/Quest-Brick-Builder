@@ -1,0 +1,6 @@
+0 Extra connection info for "Tyre 12/ 40 x 11 Wide" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // The tyre's centre, matching the "rim12x11" point added to wheel 6014a (see 6014a.dat here).
+0 // The tyre is symmetric about its origin, so it fits either way round.
+0 !LDCAD SNAP_GEN [group=rim12x11] [gender=F] [bounding=cyl 8 3] [ori=1 0 0 0 0 -1 0 1 0]

@@ -9,6 +9,15 @@ Thanks to the LDraw.org community and part authors.
 The library itself isn't stored in this repository; download `complete.zip` from
 https://library.ldraw.org and unzip it into an `LDraw` folder next to `Assets`.
 
+## Connection data
+
+How parts connect (studs, pins, holes, axles, bars, clips, hinges) comes from the
+[LDCad shadow library](https://github.com/RolandMelkert/LDCadShadowLibrary) by Roland Melkert and
+contributors, used under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). It isn't stored
+in this repository; clone it into `LDraw/shadow`. Extra connection files for parts it doesn't cover are in
+`Connections/`, under the same license. Connection data derived from these (in `Assets/LDrawParts`) is
+likewise CC BY-SA 4.0.
+
 ## Set models
 
 Set files in `Sets/` come from the [LDraw Official Model Repository](https://library.ldraw.org/omr),

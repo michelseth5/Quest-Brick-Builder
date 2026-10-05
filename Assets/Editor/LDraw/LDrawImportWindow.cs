@@ -73,6 +73,18 @@ public class LDrawImportWindow : EditorWindow
                 }
             }
 
+            // Everything already imported (e.g. after an importer update).
+            EditorGUILayout.Space();
+            BrickCatalog existing = AssetDatabase.LoadAssetAtPath<BrickCatalog>(CatalogPath);
+            using (new EditorGUI.DisabledScope(existing == null || existing.parts.Count == 0))
+            {
+                if (GUILayout.Button($"Re-import All Parts ({(existing != null ? existing.parts.Count : 0)})", GUILayout.Height(30)))
+                {
+                    List<string> ids = existing.parts.Where(p => p != null).Select(p => p.partId).ToList();
+                    _log = ImportParts(libraryRoot, ids, $"Re-importing {ids.Count} parts");
+                }
+            }
+
             // Specific part numbers.
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Part numbers (separate with spaces, commas, or new lines)", EditorStyles.boldLabel);
@@ -93,7 +105,8 @@ public class LDrawImportWindow : EditorWindow
     /// <summary>Imports (or re-imports) LDraw parts into the catalog. Returns a log of what happened.</summary>
     public static string ImportParts(string libraryRoot, IList<string> partIds, string heading)
     {
-        var parser = new LDrawParser(libraryRoot);
+        // Connection data: the LDCad shadow library (LDraw/shadow) plus our own additions (Connections/).
+        var parser = new LDrawParser(libraryRoot) { ExtraShadowRoot = Path.Combine(ProjectRoot, "Connections") };
         var log = new StringBuilder();
         if (heading != null)
             log.AppendLine(heading).AppendLine();
@@ -132,6 +145,7 @@ public class LDrawImportWindow : EditorWindow
                 part.submeshColors = data.SubmeshColors.ToArray();
                 part.studs = data.Studs.Select(ToUnity).ToArray();
                 part.antiStuds = data.AntiStuds.Select(ToUnity).ToArray();
+                part.connectors = data.Connectors.Select(ToConnector).ToArray();
                 var bounds = new Bounds();
                 bounds.SetMinMax(ToUnity(data.BodyMin), ToUnity(data.BodyMax));
                 part.bodyBounds = bounds;
@@ -140,7 +154,7 @@ public class LDrawImportWindow : EditorWindow
                 if (!catalog.parts.Contains(part))
                     catalog.parts.Add(part);
 
-                log.Append($"✓ {id}: {data.Description} — {data.TriangleCount} triangles, {part.studs.Length} studs");
+                log.Append($"✓ {id}: {data.Description} — {data.TriangleCount} triangles, {part.connectors.Length} connections");
                 if (data.SubmeshColors.Count > 1)
                     log.Append($", {data.SubmeshColors.Count} colors");
                 if (data.MissingFiles.Count > 0)
@@ -293,4 +307,25 @@ public class LDrawImportWindow : EditorWindow
     }
 
     static Vector3 ToUnity(System.Numerics.Vector3 v) => new Vector3(v.X, v.Y, v.Z);
+
+    static Connector ToConnector(ConnectorData c) => new Connector
+    {
+        kind = c.Kind switch
+        {
+            "clip" => Connector.Kind.Clip,
+            "finger" => Connector.Kind.Finger,
+            "generic" => Connector.Kind.Generic,
+            _ => Connector.Kind.Cylinder,
+        },
+        male = c.Male,
+        position = ToUnity(c.Position),
+        axis = ToUnity(c.Axis),
+        reference = ToUnity(c.Reference),
+        length = c.Length,
+        center = c.Center,
+        slide = c.Slide,
+        openEnded = c.OpenEnded,
+        profile = c.Profile ?? "",
+        group = c.Group ?? "",
+    };
 }

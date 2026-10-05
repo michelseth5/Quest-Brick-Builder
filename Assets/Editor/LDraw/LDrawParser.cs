@@ -43,7 +43,26 @@ namespace LDrawImport
         /// <summary>Bounds of the part without its studs.</summary>
         public Vector3 BodyMin, BodyMax;
 
+        /// <summary>Connection points from the LDCad shadow library (studs, pins, holes, bars, clips, hinges...).</summary>
+        public readonly List<ConnectorData> Connectors = new List<ConnectorData>();
+
         public readonly List<string> MissingFiles = new List<string>();
+    }
+
+    /// <summary>One connection point on a part, in Unity space (meters, +Y up).</summary>
+    public sealed class ConnectorData
+    {
+        public string Kind;        // "cylinder", "clip", "finger", or "generic"
+        public bool Male;
+        public Vector3 Position;   // where the shape starts (or its middle, if Center)
+        public Vector3 Axis;       // the direction the shape extends from Position
+        public Vector3 Reference;  // the shape's sideways axis, for lining up rotation
+        public float Length;       // meters along Axis
+        public bool Center;
+        public bool Slide;
+        public bool OpenEnded;     // no closed end: can be entered from either side
+        public string Profile;     // what it fits, e.g. "R6" (round, radius 6), "R6 R8", "A6" (axle), clip "R4", "F6", "G:group"
+        public string Group;
     }
 
     /// <summary>
@@ -104,7 +123,7 @@ namespace LDrawImport
             _missing.Clear();
             _hasBody = false;
 
-            ProcessFile(fileName, Matrix4x4.Identity, MainColor, inverted: false, allowBfc: true, lowRes: false, inStud: false, depth: 0);
+            List<Snap> snaps = ProcessFile(fileName, Matrix4x4.Identity, MainColor, inverted: false, allowBfc: true, lowRes: false, inStud: false, depth: 0);
 
             // Renumbered parts are stubs saying "~Moved to X": use X's description instead.
             string description = ReadDescription(lines);
@@ -120,6 +139,7 @@ namespace LDrawImport
             data.MissingFiles.AddRange(_missing);
             BuildMesh(data);
             BuildConnections(data);
+            BuildConnectors(data, snaps);
             return data;
         }
 
@@ -201,16 +221,18 @@ namespace LDrawImport
             return code == MainColor || code == EdgeColor ? current : code;
         }
 
-        void ProcessFile(string name, Matrix4x4 transform, int color, bool inverted, bool allowBfc, bool lowRes, bool inStud, int depth)
+        // Draws one file into the mesh and returns the connection points it (and its sub-files) define.
+        List<Snap> ProcessFile(string name, Matrix4x4 transform, int color, bool inverted, bool allowBfc, bool lowRes, bool inStud, int depth)
         {
+            var snaps = new List<Snap>();
             if (depth > MaxDepth)
-                return;
+                return snaps;
 
             string[] lines = Load(name, lowRes);
             if (lines == null)
             {
                 _missing.Add(name);
-                return;
+                return snaps;
             }
 
             bool certified = false;
@@ -245,7 +267,7 @@ namespace LDrawImport
                     case "1":
                         if (t.Length >= 15)
                         {
-                            ProcessReference(t, transform, ResolveColor(t[1], color), inverted ^ invertNext, certified, lowRes, inStud, depth);
+                            snaps.AddRange(ProcessReference(t, transform, ResolveColor(t[1], color), inverted ^ invertNext, certified, lowRes, inStud, depth));
                         }
                         invertNext = false;
                         break;
@@ -267,9 +289,12 @@ namespace LDrawImport
                         break;
                 }
             }
+
+            ApplyShadow(name, transform, snaps, includeDepth: 0);
+            return snaps;
         }
 
-        void ProcessReference(string[] t, Matrix4x4 parent, int color, bool inverted, bool certified, bool lowRes, bool inStud, int depth)
+        List<Snap> ProcessReference(string[] t, Matrix4x4 parent, int color, bool inverted, bool certified, bool lowRes, bool inStud, int depth)
         {
             float x = F(t[2]), y = F(t[3]), z = F(t[4]);
             float a = F(t[5]), b = F(t[6]), c = F(t[7]);
@@ -297,7 +322,283 @@ namespace LDrawImport
                     _studs.Add(Vector3.Transform(Vector3.Zero, world));
             }
 
-            ProcessFile(file, world, color, childInverted, certified, lowRes || isStud, inStud || isStud, depth + 1);
+            return ProcessFile(file, world, color, childInverted, certified, lowRes || isStud, inStud || isStud, depth + 1);
+        }
+
+        // ---------- Connection points (LDCad shadow library) ----------
+
+        /// <summary>A raw snap meta, placed in the part's space (LDraw axes and units).</summary>
+        struct Snap
+        {
+            public string Kind;                       // CYL, CLP, FGR, GEN
+            public string Id;
+            public Dictionary<string, string> Params;
+            public Matrix4x4 World;                   // the shape's own frame: its axis is -Y, its sideways axis is X
+        }
+
+        string _shadowRoot;
+        bool _shadowChecked;
+        readonly Dictionary<string, string[]> _shadowCache = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+
+        // The shadow library sits next to the parts library (LDraw/shadow) or inside it.
+        string ShadowRoot
+        {
+            get
+            {
+                if (!_shadowChecked)
+                {
+                    _shadowChecked = true;
+                    string sibling = Path.Combine(Path.GetDirectoryName(_root.TrimEnd('/', '\\')) ?? _root, "shadow");
+                    string inside = Path.Combine(_root, "shadow");
+                    _shadowRoot = Directory.Exists(sibling) ? sibling : Directory.Exists(inside) ? inside : null;
+                }
+                return _shadowRoot;
+            }
+        }
+
+        public bool HasShadowLibrary => ShadowRoot != null;
+
+        /// <summary>
+        /// Optional folder of extra connection files in the same format (for parts the shadow library
+        /// doesn't cover). Its lines are added after the library's for the same file name.
+        /// </summary>
+        public string ExtraShadowRoot { get; set; }
+
+        string[] LoadShadow(string name)
+        {
+            name = name.Replace('\\', '/').Trim();
+            if (_shadowCache.TryGetValue(name, out string[] cached))
+                return cached;
+
+            var lines = new List<string>();
+            foreach (string root in new[] { ShadowRoot, ExtraShadowRoot })
+            {
+                if (root == null)
+                    continue;
+                foreach (string folder in new[] { "parts", "p" })
+                {
+                    string path = Path.Combine(root, folder, name);
+                    if (File.Exists(path))
+                    {
+                        lines.AddRange(File.ReadAllLines(path));
+                        break;
+                    }
+                }
+            }
+
+            string[] result = lines.Count > 0 ? lines.ToArray() : null;
+            _shadowCache[name] = result;
+            return result;
+        }
+
+        static readonly System.Text.RegularExpressions.Regex SnapParam =
+            new System.Text.RegularExpressions.Regex(@"\[(\w+)=([^\]]*)\]");
+
+        // Adds a file's snap metas to the list (already holding what its sub-files defined).
+        void ApplyShadow(string name, Matrix4x4 transform, List<Snap> snaps, int includeDepth)
+        {
+            string[] lines = LoadShadow(name);
+            if (lines == null || includeDepth > 4)
+                return;
+
+            foreach (string raw in lines)
+            {
+                string line = raw.Trim();
+                if (!line.StartsWith("0 !LDCAD SNAP_"))
+                    continue;
+                int space = line.IndexOf(' ', 9);
+                string kind = (space > 0 ? line.Substring(9, space - 9) : line.Substring(9)).Substring(5);
+
+                var p = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (System.Text.RegularExpressions.Match m in SnapParam.Matches(line))
+                    p[m.Groups[1].Value] = m.Groups[2].Value.Trim();
+                p.TryGetValue("id", out string id);
+
+                Matrix4x4 local = LocalFrame(p);
+                switch (kind)
+                {
+                    case "CLEAR":
+                        // Drops what sub-files defined (all of it, or just one ID), so this file can redefine it.
+                        if (includeDepth == 0)
+                            snaps.RemoveAll(s => string.IsNullOrEmpty(id) || string.Equals(s.Id, id, StringComparison.OrdinalIgnoreCase));
+                        break;
+
+                    case "INCL":
+                        if (p.TryGetValue("ref", out string reference))
+                        {
+                            foreach (Matrix4x4 placed in GridPlacements(local, p))
+                                ApplyShadow(reference, placed * transform, snaps, includeDepth + 1);
+                        }
+                        break;
+
+                    case "CYL":
+                    case "CLP":
+                    case "FGR":
+                    case "GEN":
+                        foreach (Matrix4x4 placed in GridPlacements(local, p))
+                            snaps.Add(new Snap { Kind = kind, Id = id, Params = p, World = placed * transform });
+                        break;
+                }
+            }
+        }
+
+        // [pos=x y z] [ori=a b c d e f g h i], in the same row-vector form as type 1 lines.
+        static Matrix4x4 LocalFrame(Dictionary<string, string> p)
+        {
+            float[] pos = Floats(p, "pos", 3) ?? new float[3];
+            float[] o = Floats(p, "ori", 9) ?? new float[] { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+            return new Matrix4x4(
+                o[0], o[3], o[6], 0f,
+                o[1], o[4], o[7], 0f,
+                o[2], o[5], o[8], 0f,
+                pos[0], pos[1], pos[2], 1f);
+        }
+
+        // [grid=Xcnt Zcnt Xstep Zstep] or [grid=C Xcnt C Zcnt Xstep Zstep] (C = centered), along the shape's X and Z.
+        static IEnumerable<Matrix4x4> GridPlacements(Matrix4x4 local, Dictionary<string, string> p)
+        {
+            if (!p.TryGetValue("grid", out string grid))
+            {
+                yield return local;
+                yield break;
+            }
+
+            string[] t = grid.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+            int i = 0;
+            bool centerX = IsCenterMark(t, i);
+            if (centerX)
+                i++;
+            int countX = t.Length > i ? (int)F(t[i++]) : 1;
+            bool centerZ = IsCenterMark(t, i);
+            if (centerZ)
+                i++;
+            int countZ = t.Length > i ? (int)F(t[i++]) : 1;
+            float stepX = t.Length > i ? F(t[i++]) : 0f;
+            float stepZ = t.Length > i ? F(t[i]) : 0f;
+
+            for (int x = 0; x < Math.Max(1, countX); x++)
+            {
+                for (int z = 0; z < Math.Max(1, countZ); z++)
+                {
+                    float ox = centerX ? (x - (countX - 1) * 0.5f) * stepX : x * stepX;
+                    float oz = centerZ ? (z - (countZ - 1) * 0.5f) * stepZ : z * stepZ;
+                    yield return Matrix4x4.CreateTranslation(ox, 0f, oz) * local;
+                }
+            }
+        }
+
+        static bool IsCenterMark(string[] tokens, int index) =>
+            index < tokens.Length && tokens[index].Equals("C", StringComparison.OrdinalIgnoreCase);
+
+        static float[] Floats(Dictionary<string, string> p, string key, int count)
+        {
+            if (!p.TryGetValue(key, out string text))
+                return null;
+            string[] t = text.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+            if (t.Length < count)
+                return null;
+            var values = new float[count];
+            for (int i = 0; i < count; i++)
+                values[i] = F(t[i]);
+            return values;
+        }
+
+        static bool Flag(Dictionary<string, string> p, string key) =>
+            p.TryGetValue(key, out string value) && value.Equals("true", StringComparison.OrdinalIgnoreCase);
+
+        // Turns raw snap metas into connectors in Unity space.
+        void BuildConnectors(LDrawMeshData data, List<Snap> snaps)
+        {
+            foreach (Snap snap in snaps)
+            {
+                Vector3 origin = Vector3.Transform(Vector3.Zero, snap.World);
+                Vector3 down = Vector3.TransformNormal(new Vector3(0f, -1f, 0f), snap.World); // shapes extend along -Y
+                Vector3 side = Vector3.TransformNormal(new Vector3(1f, 0f, 0f), snap.World);
+                float scale = down.Length();
+                if (scale < 1e-6f)
+                    continue;
+
+                var connector = new ConnectorData
+                {
+                    Position = ToUnity(origin),
+                    Axis = Vector3.Normalize(new Vector3(down.X, -down.Y, down.Z)),
+                    Reference = Vector3.Normalize(new Vector3(side.X, -side.Y, side.Z)),
+                    Center = Flag(snap.Params, "center"),
+                    Slide = Flag(snap.Params, "slide"),
+                };
+                snap.Params.TryGetValue("group", out connector.Group);
+
+                switch (snap.Kind)
+                {
+                    case "CYL":
+                    {
+                        connector.Kind = "cylinder";
+                        connector.Male = !(snap.Params.TryGetValue("gender", out string gender) && gender.StartsWith("F", StringComparison.OrdinalIgnoreCase));
+                        connector.OpenEnded = snap.Params.TryGetValue("caps", out string caps) && caps.Equals("none", StringComparison.OrdinalIgnoreCase);
+                        var profile = new List<string>();
+                        float length = 0f;
+                        if (snap.Params.TryGetValue("secs", out string secs))
+                        {
+                            string[] t = secs.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                            for (int i = 0; i + 2 < t.Length; i += 3)
+                            {
+                                length += F(t[i + 2]);
+                                string shape = t[i].Trim('_').ToUpperInvariant(); // "_L"/"L_" are flexible extensions
+                                if (shape == "L")
+                                    continue;
+                                string token = shape + F(t[i + 1]).ToString("0.#", CultureInfo.InvariantCulture);
+                                if (!profile.Contains(token))
+                                    profile.Add(token);
+                            }
+                        }
+                        connector.Length = length * scale * MetersPerLdu;
+                        connector.Profile = string.Join(" ", profile);
+                        break;
+                    }
+                    case "CLP":
+                        connector.Kind = "clip";
+                        connector.Male = false;
+                        connector.OpenEnded = true;
+                        connector.Length = (Floats(snap.Params, "length", 1)?[0] ?? 8f) * scale * MetersPerLdu;
+                        connector.Profile = "R" + (Floats(snap.Params, "radius", 1)?[0] ?? 4f).ToString("0.#", CultureInfo.InvariantCulture);
+                        break;
+                    case "FGR":
+                    {
+                        connector.Kind = "finger";
+                        connector.Male = !(snap.Params.TryGetValue("genderOfs", out string gender) && gender.StartsWith("F", StringComparison.OrdinalIgnoreCase));
+                        connector.OpenEnded = true;
+                        float total = 0f;
+                        if (snap.Params.TryGetValue("seq", out string seq))
+                        {
+                            foreach (string width in seq.Split((char[])null, StringSplitOptions.RemoveEmptyEntries))
+                                total += F(width);
+                        }
+                        connector.Length = total * scale * MetersPerLdu;
+                        connector.Profile = "F" + (Floats(snap.Params, "radius", 1)?[0] ?? 6f).ToString("0.#", CultureInfo.InvariantCulture);
+                        break;
+                    }
+                    case "GEN":
+                        connector.Kind = "generic";
+                        connector.Male = !(snap.Params.TryGetValue("gender", out string genGender) && genGender.StartsWith("F", StringComparison.OrdinalIgnoreCase));
+                        connector.Profile = "G:" + (connector.Group ?? "");
+                        break;
+                }
+
+                // A part and one of its sub-parts sometimes describe the same connection; keep one.
+                bool duplicate = false;
+                foreach (ConnectorData existing in data.Connectors)
+                {
+                    if (existing.Kind == connector.Kind && existing.Male == connector.Male && existing.Profile == connector.Profile
+                        && Vector3.DistanceSquared(existing.Position, connector.Position) < 1e-10f
+                        && Vector3.Dot(existing.Axis, connector.Axis) > 0.999f)
+                    {
+                        duplicate = true;
+                        break;
+                    }
+                }
+                if (!duplicate)
+                    data.Connectors.Add(connector);
+            }
         }
 
         void AddPolygon(Matrix4x4 transform, int color, bool certified, bool frontAsListed, bool inStud, Vector3 a, Vector3 b, Vector3 c)

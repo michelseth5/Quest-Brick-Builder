@@ -1,0 +1,6 @@
+0 Extra connection info for "Wheel Rim 12 x 11 with Round Hole" (added to the LDCad shadow library's own)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Where a 12 x 11 tyre (e.g. 6015) centres on this rim: 6 LDU along the wheel's axis from its origin
+0 // (taken from set 4914-1, where the tyres sit 6 LDU outboard of these rims).
+0 !LDCAD SNAP_GEN [group=rim12x11] [gender=M] [bounding=cyl 10 5.5] [pos=0 0 -6] [ori=1 0 0 0 0 -1 0 1 0]
