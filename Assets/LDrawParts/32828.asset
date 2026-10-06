@@ -67,6 +67,28 @@ MonoBehaviour:
     openEnded: 0
     profile: R4
     group: 
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0032, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: 0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+  - kind: 0
+    male: 0
+    position: {x: 0.007999999, y: -0.0032, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: 0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
   bodyBounds:
     m_Center: {x: 0.004000019, y: -0.0012, z: 0}
     m_Extent: {x: 0.007999982, y: 0.0019999999, z: 0.003999963}

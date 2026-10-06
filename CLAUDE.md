@@ -74,10 +74,37 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   inherited ones) into `ConnectorData` (Unity space; shapes extend along the meta's -Y). Duplicates removed.
 - `Connector.cs`: runtime `Connector` + `Connections.Fit/QuarterTurns/AreMated/Align`. Pegs fit holes of
   equal radius (R in R/S, A in R); clips take male R of their radius; fingers/generic match same profile,
-  opposite gender. Stud-like (R6/S6) pairs snap to quarter turns; others spin freely. Snaps are rejected
+  opposite gender. Stud-like (R6/S6) pairs and axle-in-cross-hole (both have an A token) pairs snap to
+  quarter turns; others spin freely. Non-sliding pegs enter a hole through the end they point toward
+  (same direction: peg base at the hole's start; opposite: at the hole's far end). Sliding cylinder pairs
+  (Technic pins/axles/holes/bars) click to half-stud steps from the fixed shape's start, or rest flush
+  against a part already on the same shaft when within 3 mm (`SlideShift`, anchors from `PartnerEnds`).
+  A denser plate+half-stud grid from every anchor was tried and made placement inconsistent; avoid it.
+  Clips slide freely. Single-connection snaps prefer centering the part over the connector. A connector counts as taken only where an existing
+  partner occupies the same span along it (`Connections.SpanAlong`), so axles/bars/pins hold several parts.
+  `Brick.FindSnap`: aligns each candidate pair, keeps the 6 closest, then also tries rolls about the
+  connection that line up a second connector, scoring by distance/turn minus 2 mm per extra connection
+  plugged in (fixes studs on free-spinning pins, e.g. a 3x3 round tile on 4 half-pins in a gear). Snaps are rejected
   only if a connector they'd use is already mated with a third part (`UsesTakenConnection`); box overlap
-  checks were dropped for snapping because part bounding boxes are wrong for clips/brackets/car bases. Brick snapping, group carrying, and group free-connector lists all use
+  checks were dropped for snapping because part bounding boxes are wrong for clips/brackets/car bases.
+  Parts with upward R6 studs but no upward R6/S6 sockets anywhere get the estimated footprint grid added at import
+  (`AddMissingBottomSockets`; a centred "jumper" stud doesn't shift that grid). Bars (R4) fit axle holes (A6). Brick snapping, group carrying, and group free-connector lists all use
   connectors; parts without data fall back to `studs`/`antiStuds`.
+
+## Undo (`UndoHistory.cs`)
+- Each grab records a step at Select: trigger = the brick's pose + bond; grip = the brick plus carried bricks
+  relative to their original parents; posing = the bricks the joint turns; menu/bin previews and A-duplicates
+  = spawn steps (undo deletes them, firing `Trashed` so the bin takes them back). Trashed bricks are
+  deactivated, not destroyed, until their step falls out of the 30-step history. Wrist storing and set
+  placement discard the step. Undo = left thumbstick click or the parts menu's Undo button (not while holding).
+
+## Posing joints (`Articulation.cs`)
+- Links between bricks are rigid if any mated pair is quarter-turn/generic or two pairs lie on different
+  lines; otherwise a joint around the shared axis. A grip grab calls `Articulation.TryBegin`: two-handed
+  only (the grabbed brick is carried by another held brick); turns the grabbed side away from the holder.
+  Re-applied on release and once more the next frame so the part doesn't come loose. Hand position from
+  the Grabbable's Move events; applied in `Brick.LateUpdate` after the grab system. Optional click angles
+  in Settings (`GameSettings.JointStep`). Bonds are ignored when splitting a model at joints.
 
 ## Notes
 - LDraw -> Unity: (x, -y, z) * 0.0004 m; front-facing LDraw polygons are reversed for Unity winding.

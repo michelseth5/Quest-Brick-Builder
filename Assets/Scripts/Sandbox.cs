@@ -208,16 +208,18 @@ public class Sandbox : MonoBehaviour
 
     void ShowSettings()
     {
-        var buttons = new List<(string, System.Action)>();
-        for (int i = 0; i < GameSettings.GhostVisibilityNames.Length; i++)
+        // One row per setting; clicking a row steps to its next option.
+        int ghostCount = GameSettings.GhostVisibilityNames.Length;
+        int jointCount = GameSettings.JointStepNames.Length;
+        var buttons = new List<(string, System.Action)>
         {
-            var choice = (GameSettings.GhostVisibility)i;
-            buttons.Add((GameSettings.GhostVisibilityNames[i], () => { GameSettings.Ghosts = choice; ShowSettings(); }));
-        }
-        buttons.Add(("Back", ShowStartHome));
-
-        List<MenuButton> created = FillStartMenu("Settings", "Set-building ghosts", buttons);
-        created[(int)GameSettings.Ghosts].SetSelected(true);
+            ($"Ghosts: {GameSettings.GhostVisibilityNames[(int)GameSettings.Ghosts]}",
+             () => { GameSettings.Ghosts = (GameSettings.GhostVisibility)(((int)GameSettings.Ghosts + 1) % ghostCount); ShowSettings(); }),
+            ($"Joints: {GameSettings.JointStepNames[GameSettings.JointStep]}",
+             () => { GameSettings.JointStep = (GameSettings.JointStep + 1) % jointCount; ShowSettings(); }),
+            ("Back", ShowStartHome),
+        };
+        FillStartMenu("Settings", "Click a setting to change it", buttons);
     }
 
     void ShowSetList()
@@ -277,6 +279,16 @@ public class Sandbox : MonoBehaviour
             SaveHeldModel();
         if (OVRInput.GetDown(OVRInput.RawButton.Start))
             ToggleStartMenu();
+        if (OVRInput.GetDown(OVRInput.RawButton.LThumbstick))
+            Undo();
+    }
+
+    void Undo()
+    {
+        if (Brick.Held.Count > 0)
+            ShowMessage("Let go first, then undo");
+        else
+            ShowMessage(UndoHistory.Undo() ? "Undone" : "Nothing to undo");
     }
 
     public BrickPartData FindPart(string partId) =>
@@ -360,7 +372,7 @@ public class Sandbox : MonoBehaviour
         bool paged = categories.Count > CategoriesPerPage;
         int categoryRows = Mathf.Min(categories.Count, CategoriesPerPage) + (paged ? 1 : 0);
 
-        int buttonCount = categoryRows + (hasBaseplate ? 1 : 0) + 1 + 2 + 1;
+        int buttonCount = categoryRows + (hasBaseplate ? 1 : 0) + 1 + 1 + 2 + 1;
         float height = 0.045f + buttonCount * (buttonHeight + gap) + sectionGap * 3f;
 
         _mainMenu = MenuPanel.Create("Parts Menu", "Parts", new Vector2(width, height), CreateHandle());
@@ -385,6 +397,11 @@ public class Sandbox : MonoBehaviour
         MenuButton trash = MenuButton.Create(_mainMenu.Content, "Trash", new Vector3(0f, y, 0f), buttonSize,
                                              MenuStyle.Button, "Get Trash Can");
         trash.Clicked += SpawnTrashCan;
+        y -= buttonHeight + gap;
+
+        MenuButton undo = MenuButton.Create(_mainMenu.Content, "Undo", new Vector3(0f, y, 0f), buttonSize,
+                                            MenuStyle.Button, "Undo  <size=70%><color=#AAB>(left stick click)</color></size>");
+        undo.Clicked += Undo;
         y -= buttonHeight + gap + sectionGap;
 
         MenuButton save = MenuButton.Create(_mainMenu.Content, "Save", new Vector3(0f, y, 0f), buttonSize,
@@ -840,6 +857,7 @@ public class Sandbox : MonoBehaviour
                 Transform t = member.transform; // carried bricks are children of the held one
                 copies.Add(CloneBrick(member, copy.transform.TransformPoint(t.localPosition), copy.transform.rotation * t.localRotation));
             }
+            UndoHistory.RecordSpawn(copies); // undo removes the copy
 
             // The copy holds together like the original, including parts that don't connect by studs.
             if (copies.Count > 1)

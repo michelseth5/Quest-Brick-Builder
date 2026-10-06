@@ -1,0 +1,6 @@
+0 Extra connection info for "Brick 1 x 2 x 1 with Curved Bottom" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Its flat underside is 16 LDU down (two plates above the bottom of the curve), like 1750's.
+0 // Two stud sockets there, one under each stud position, so a 1 x 2 plate fits underneath.
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=0 16 0] [grid=1 2 0 -20]

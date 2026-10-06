@@ -57,13 +57,15 @@ public static class Connections
 {
     const float Tolerance = 0.0006f;
 
-    static readonly Dictionary<string, bool> FitCache = new Dictionary<string, bool>();
+    static readonly Dictionary<(Connector.Kind, bool, string, string, Connector.Kind, bool, string, string), bool> FitCache =
+        new Dictionary<(Connector.Kind, bool, string, string, Connector.Kind, bool, string, string), bool>();
     static readonly Dictionary<string, (char shape, float radius)[]> Tokens = new Dictionary<string, (char, float)[]>();
 
     /// <summary>Whether two connectors can plug into each other (ignoring where they are).</summary>
     public static bool Fit(in Connector a, in Connector b)
     {
-        string key = $"{(int)a.kind}{(a.male ? 'M' : 'F')}{a.profile}|{a.group}/{(int)b.kind}{(b.male ? 'M' : 'F')}{b.profile}|{b.group}";
+        // (A tuple key: no string building in this very hot path.)
+        var key = (a.kind, a.male, a.profile, a.group, b.kind, b.male, b.profile, b.group);
         if (FitCache.TryGetValue(key, out bool cached))
             return cached;
         bool fits = ComputeFit(a, b);
@@ -103,6 +105,9 @@ public static class Connections
         {
             foreach ((char holeShape, float holeRadius) in ParseTokens(hole.profile))
             {
+                // A bar (round, radius 4) also fits into the middle of an axle hole.
+                if (pegShape == 'R' && Mathf.Abs(pegRadius - 4f) < 0.05f && holeShape == 'A' && Mathf.Abs(holeRadius - 6f) < 0.05f)
+                    return true;
                 if (Mathf.Abs(pegRadius - holeRadius) > 0.05f)
                     continue;
                 // Same shape; a round peg in a square socket; an axle spinning in a round hole.
@@ -133,12 +138,39 @@ public static class Connections
     }
 
     /// <summary>
-    /// Studs and their sockets lock parts at quarter turns to each other; pins, axles, bars, clips,
-    /// and hinges leave the angle around the connection free.
+    /// Studs and their sockets lock parts at quarter turns to each other, and so does an axle in a
+    /// cross-shaped hole (the cross sets the angle). Pins, bars, clips, and hinges leave the angle free.
     /// </summary>
-    public static bool QuarterTurns(in Connector a, in Connector b) =>
-        a.kind == Connector.Kind.Cylinder && b.kind == Connector.Kind.Cylinder
-        && !a.slide && !b.slide && IsStudLike(a.profile) && IsStudLike(b.profile);
+    public static bool QuarterTurns(in Connector a, in Connector b)
+    {
+        if (a.kind != Connector.Kind.Cylinder || b.kind != Connector.Kind.Cylinder)
+            return false;
+        if (HasShape(a.profile, 'A') && HasShape(b.profile, 'A'))
+            return true;
+        return !a.slide && !b.slide && IsStudLike(a.profile) && IsStudLike(b.profile);
+    }
+
+    static bool HasShape(string profile, char shape)
+    {
+        foreach ((char s, float _) in ParseTokens(profile))
+        {
+            if (s == shape)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The stretch of connector c along host's axis, measured from host's start (meters). Used to tell
+    /// whether two parts on the same axle, bar, or stud would occupy the same place.
+    /// </summary>
+    public static (float from, float to) SpanAlong(in Connector host, in Connector c)
+    {
+        Vector3 u = host.axis;
+        float s = Vector3.Dot(c.Start - host.Start, u);
+        float e = s + Vector3.Dot(c.axis, u) * c.length;
+        return (Mathf.Min(s, e), Mathf.Max(s, e));
+    }
 
     static bool IsStudLike(string profile)
     {
@@ -153,6 +185,10 @@ public static class Connections
     /// <summary>Whether two connectors (both in world space) are currently plugged together.</summary>
     public static bool AreMated(in Connector a, in Connector b)
     {
+        // Cheap distance check first: mated shapes overlap along a shared line.
+        float reach = a.length + b.length + Tolerance;
+        if ((a.position - b.position).sqrMagnitude > reach * reach)
+            return false;
         if (!Fit(a, b))
             return false;
         if (a.kind == Connector.Kind.Generic)
@@ -177,9 +213,12 @@ public static class Connections
     /// Where a part must go so its connector (given in the part's local space) plugs into a fixed
     /// connector (world space): turned the least amount needed, then moved onto the connection.
     /// </summary>
+    /// <param name="slideAnchors">For sliding connections: where parts already on the fixed shape begin and end
+    /// (meters along it from its start), so the moving part can rest against them.</param>
     public static void Align(in Connector movingLocal, Vector3 partPosition, Quaternion partRotation,
                              in Connector fixedWorld, bool quarterTurns,
-                             out Vector3 newPosition, out Quaternion newRotation)
+                             out Vector3 newPosition, out Quaternion newRotation,
+                             IReadOnlyList<float> slideAnchors = null)
     {
         Connector moving = movingLocal.Moved(partPosition, partRotation);
 
@@ -221,9 +260,17 @@ public static class Connections
             float shift;
             bool sliding = turned.slide || fixedWorld.slide
                            || turned.kind == Connector.Kind.Clip || fixedWorld.kind == Connector.Kind.Clip;
-            if (sliding)
+            bool clip = turned.kind == Connector.Kind.Clip || fixedWorld.kind == Connector.Kind.Clip;
+            if (sliding && !clip)
             {
-                // Stay where it is along the bar or axle, just enough to keep the shorter one within the longer.
+                // Pins, axles, and holes that may slide still click into place: at plate-height or half-stud
+                // steps from the fixed shape's ends and from the parts already on it, so a pin goes fully in,
+                // a gear sits at a set spot on an axle, and a part can rest against the one below it.
+                shift = SlideShift(Mathf.Min(a0, a1), Mathf.Max(a0, a1), fixedWorld.length, slideAnchors);
+            }
+            else if (sliding)
+            {
+                // Clips: stay where it is along the bar, just enough to keep the shorter one within the longer.
                 float lo = Mathf.Min(a0, a1), hi = Mathf.Max(a0, a1);
                 if (hi - lo > fixedWorld.length)
                 {
@@ -236,11 +283,21 @@ public static class Connections
                 }
             }
             else if (turned.center && fixedWorld.center)
+            {
                 shift = fixedWorld.length * 0.5f - middle;                       // middles meet
-            else if (direction > 0f)
-                shift = -a0;                                                     // starts meet (stud into socket)
+            }
             else
-                shift = fixedWorld.length - a0;                                  // entered from the far end
+            {
+                // A peg goes in through the hole's end it points toward: pointing the same way as the hole,
+                // its base meets the hole's opening (stud into socket); pointing against it, its base meets
+                // the hole's far end (e.g. a plate's underside pin into an open stud from above).
+                Connector peg = turned.male ? turned : fixedWorld;
+                Connector hole = turned.male ? fixedWorld : turned;
+                bool sameWay = Vector3.Dot(peg.axis, hole.axis) > 0f;
+                Vector3 entry = sameWay ? hole.Start : hole.Start + hole.axis * hole.length;
+                float needed = Vector3.Dot(entry - peg.Start, u);   // how far the peg must move along the axis
+                shift = turned.male ? needed : -needed;              // ...or the hole the opposite way
+            }
 
             Vector3 sideways = offset - Vector3.Dot(offset, u) * u;
             delta = -sideways + u * shift;
@@ -248,5 +305,41 @@ public static class Connections
 
         newPosition = partPosition + delta;
         newRotation = rotation;
+    }
+
+    const float HalfStudStep = Brick.StudPitch * 0.5f; // half a stud (10 LDU)
+    const float RestMagnet = 0.003f;                    // within 3 mm, rest flush against a neighbor
+
+    // Along a sliding connection, the moving shape (lo..hi, measured from the fixed shape's start) clicks to
+    // half-stud steps from the fixed shape's start. If it's within a few mm of resting flush against a part
+    // already on the same shaft (anchors = those parts' ends), it rests there instead, so stacked parts sit
+    // snugly. Returns how far to move it.
+    static float SlideShift(float lo, float hi, float fixedLength, IReadOnlyList<float> anchors)
+    {
+        float length = hi - lo;
+        bool Overlaps(float newLo) => newLo < fixedLength - 0.0001f && newLo + length > 0.0001f;
+
+        float restShift = 0f, restDistance = float.MaxValue;
+        if (anchors != null)
+        {
+            foreach (float end in anchors)
+            {
+                // Our low end against its end, or our high end against it.
+                foreach (float newLo in new[] { end, end - length })
+                {
+                    float distance = Mathf.Abs(newLo - lo);
+                    if (distance < restDistance && distance <= RestMagnet && Overlaps(newLo))
+                    {
+                        restDistance = distance;
+                        restShift = newLo - lo;
+                    }
+                }
+            }
+        }
+        if (restDistance < float.MaxValue)
+            return restShift;
+
+        float stepped = Mathf.Round(lo / HalfStudStep) * HalfStudStep;
+        return (Overlaps(stepped) ? stepped : 0f) - lo;
     }
 }

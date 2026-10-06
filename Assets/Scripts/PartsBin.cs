@@ -62,6 +62,7 @@ public class PartsBin : MonoBehaviour
         Brick.PreviewTaken += OnPreviewTaken;
         Brick.Trashed += OnTrashed;
         WristInventory.Stored += OnStored;
+        UndoHistory.Restored += OnRestored;
     }
 
     void OnDestroy()
@@ -69,6 +70,21 @@ public class PartsBin : MonoBehaviour
         Brick.PreviewTaken -= OnPreviewTaken;
         Brick.Trashed -= OnTrashed;
         WristInventory.Stored -= OnStored;
+        UndoHistory.Restored -= OnRestored;
+    }
+
+    // Undo brought a trashed set part back: it leaves the bin again.
+    void OnRestored(Brick brick)
+    {
+        if (_set == null)
+            return;
+        Entry entry = _entries.Find(e => e.part == brick.part && e.colorCode == brick.colorCode);
+        if (entry == null || entry.remaining == 0)
+            return;
+        entry.remaining--;
+        _built.Add(brick);
+        if (_panel.IsOpen)
+            Rebuild();
     }
 
     // ---------- Starting, showing, finishing ----------
@@ -157,7 +173,14 @@ public class PartsBin : MonoBehaviour
         _panel.ClearContent();
         _panel.SetTitle(_set.title);
 
-        List<Entry> shown = _entries.Where(e => _category == AllCategory || e.part.Category == _category).ToList();
+        // Used-up parts (and categories with nothing left) drop out, so what's left is easy to find.
+        List<string> categories = VisibleCategories();
+        if (!categories.Contains(_category))
+        {
+            _category = AllCategory;
+            _page = 0;
+        }
+        List<Entry> shown = _entries.Where(e => e.remaining > 0 && (_category == AllCategory || e.part.Category == _category)).ToList();
         int pageCount = Mathf.Max(1, Mathf.CeilToInt(shown.Count / (float)PartsPerPage));
         _page = Mathf.Clamp(_page, 0, pageCount - 1);
         List<Entry> pageEntries = shown.Skip(_page * PartsPerPage).Take(PartsPerPage).ToList();
@@ -171,14 +194,14 @@ public class PartsBin : MonoBehaviour
         int rows = Mathf.Max(1, Mathf.CeilToInt(Mathf.Min(shown.Count, PartsPerPage) / (float)Columns));
         float gridWidth = Columns * _cellSize;
         float gridHeight = HeaderHeight + rows * (_cellSize + LabelHeight) + PagingHeight;
-        int categoryRows = Mathf.Min(_categories.Count, CategoriesPerPage) + (_categories.Count > CategoriesPerPage ? 1 : 0);
+        int categoryRows = Mathf.Min(categories.Count, CategoriesPerPage) + (categories.Count > CategoriesPerPage ? 1 : 0);
         float categoryHeight = categoryRows * (ButtonHeight + Gap);
         var size = new Vector2(Margin * 3f + CategoryWidth + gridWidth, 0.04f + Mathf.Max(gridHeight, categoryHeight) + Margin);
         _panel.SetSize(size);
 
         float left = -size.x * 0.5f + Margin;
         float top = _panel.ContentTop;
-        BuildCategoryColumn(left + CategoryWidth * 0.5f, top);
+        BuildCategoryColumn(categories, left + CategoryWidth * 0.5f, top);
 
         // Header: how many parts are left, and Finish Model.
         float gridLeft = left + CategoryWidth + Margin;
@@ -194,6 +217,13 @@ public class PartsBin : MonoBehaviour
         MenuButton book = MenuButton.Create(_panel.Content, "Instructions", new Vector3(gridLeft + gridWidth - 0.12f, headerY, 0f),
                                             new Vector2(0.075f, 0.02f), MenuStyle.Button, "Instructions");
         book.Clicked += () => _sandbox.OpenBook(_set);
+
+        if (shown.Count == 0)
+        {
+            MenuStyle.CreateText(_panel.Content, "Every part has been used!",
+                new Vector3(gridLeft + gridWidth * 0.5f, top - HeaderHeight - _cellSize * 0.5f, -0.001f),
+                new Vector2(gridWidth - 0.02f, 0.016f));
+        }
 
         // The parts.
         for (int i = 0; i < pageEntries.Count; i++)
@@ -224,13 +254,17 @@ public class PartsBin : MonoBehaviour
         }
     }
 
-    void BuildCategoryColumn(float x, float top)
+    // "All" plus every category that still has parts left.
+    List<string> VisibleCategories() =>
+        _categories.Where(c => c == AllCategory || _entries.Any(e => e.remaining > 0 && e.part.Category == c)).ToList();
+
+    void BuildCategoryColumn(List<string> categories, float x, float top)
     {
-        int pageCount = Mathf.Max(1, Mathf.CeilToInt(_categories.Count / (float)CategoriesPerPage));
+        int pageCount = Mathf.Max(1, Mathf.CeilToInt(categories.Count / (float)CategoriesPerPage));
         _categoryPage = Mathf.Clamp(_categoryPage, 0, pageCount - 1);
 
         float y = top - ButtonHeight * 0.5f;
-        foreach (string category in _categories.Skip(_categoryPage * CategoriesPerPage).Take(CategoriesPerPage))
+        foreach (string category in categories.Skip(_categoryPage * CategoriesPerPage).Take(CategoriesPerPage))
         {
             string label = category == AllCategory ? "All Parts" : Sandbox.Plural(category);
             MenuButton button = MenuButton.Create(_panel.Content, category, new Vector3(x, y, 0f),

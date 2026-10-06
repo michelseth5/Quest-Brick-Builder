@@ -506,6 +506,43 @@ namespace LDrawImport
         static bool Flag(Dictionary<string, string> p, string key) =>
             p.TryGetValue(key, out string value) && value.Equals("true", StringComparison.OrdinalIgnoreCase);
 
+        // Some parts aren't covered by the shadow library, so their sub-parts give studs on top but nothing
+        // underneath (e.g. 1745, 5847). If a part has upward studs but no sockets on its bottom face, add the
+        // estimated stud grid across its footprint (BuildConnections' AntiStuds). Parts without upward studs
+        // (Technic beams, axles, pins) are left alone.
+        static void AddMissingBottomSockets(LDrawMeshData data)
+        {
+            // Any upward stud socket counts, wherever it is: parts like 1750 have their real underside above
+            // the lowest point of a curved skirt, and guessed sockets at the very bottom would be wrong.
+            bool hasTopStud = false, hasBottomSocket = false;
+            foreach (ConnectorData c in data.Connectors)
+            {
+                if (c.Kind != "cylinder" || c.Axis.Y < 0.99f)
+                    continue;
+                if (c.Male && c.Profile.Contains("R6"))
+                    hasTopStud = true;
+                if (!c.Male && (c.Profile.Contains("R6") || c.Profile.Contains("S6")))
+                    hasBottomSocket = true;
+            }
+            if (!hasTopStud || hasBottomSocket)
+                return;
+
+            foreach (Vector3 socket in data.AntiStuds)
+            {
+                data.Connectors.Add(new ConnectorData
+                {
+                    Kind = "cylinder",
+                    Male = false,
+                    Position = socket,
+                    Axis = Vector3.UnitY,
+                    Reference = Vector3.UnitX,
+                    Length = 4 * MetersPerLdu,
+                    Profile = "R6",
+                    Group = "",
+                });
+            }
+        }
+
         // Turns raw snap metas into connectors in Unity space.
         void BuildConnectors(LDrawMeshData data, List<Snap> snaps)
         {
@@ -599,6 +636,8 @@ namespace LDrawImport
                 if (!duplicate)
                     data.Connectors.Add(connector);
             }
+
+            AddMissingBottomSockets(data);
         }
 
         void AddPolygon(Matrix4x4 transform, int color, bool certified, bool frontAsListed, bool inStud, Vector3 a, Vector3 b, Vector3 c)
@@ -1002,7 +1041,10 @@ namespace LDrawImport
             {
                 float offset = alignTo.Value - start;
                 offset -= (float)Math.Round(offset / StudPitchLdu) * StudPitchLdu;
-                start += offset;
+                // A stud exactly half a step off the footprint grid is a centred "jumper" stud (e.g. 1745,
+                // 15573); the underside still follows the footprint, so don't shift for it.
+                if (Math.Abs(Math.Abs(offset) - StudPitchLdu * 0.5f) > 0.5f)
+                    start += offset;
             }
 
             var result = new float[count];

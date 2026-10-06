@@ -25,4 +25,22 @@ public static class GameSettings
 
     public static float GhostAlpha => GhostAlphas[(int)Ghosts];
     public static float GhostReadyAlpha => GhostReadyAlphas[(int)Ghosts];
+
+    // Joints: turn freely, or click at set angles while posing.
+    public static readonly string[] JointStepNames = { "Turn freely", "Click every 15°", "Click every 45°" };
+    static readonly float[] JointSteps = { 0f, 15f, 45f };
+    const string JointKey = "JointStep";
+
+    public static int JointStep
+    {
+        get => Mathf.Clamp(PlayerPrefs.GetInt(JointKey, 0), 0, JointSteps.Length - 1);
+        set
+        {
+            PlayerPrefs.SetInt(JointKey, value);
+            PlayerPrefs.Save();
+        }
+    }
+
+    /// <summary>Degrees between joint clicks, or 0 for free turning.</summary>
+    public static float JointStepDegrees => JointSteps[JointStep];
 }
