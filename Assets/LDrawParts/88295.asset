@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 88295
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 88295
+  description: Minifig Armour Shoulder Pads with Top Spikes
+  category: Minifig
+  mesh: {fileID: 4300000, guid: 118b61e1cf9999b48836f7a7494ea10d, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: 0, y: -0, z: 0}
+  connectors: []
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: -0.0012337998, z: 0}
+    m_Extent: {x: 0.011899999, y: 0.0035746, z: 0.0039999997}

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 60602
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 60602
+  description: Glass for Window 1 x 2 x 3
+  category: Glass
+  mesh: {fileID: 4300000, guid: 54e31ea33538a8443b0a709c4825202a, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds: []
+  connectors:
+  - kind: 2
+    male: 1
+    position: {x: 0, y: -0.0134, z: -0.0019999999}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.024799999
+    center: 0
+    slide: 0
+    openEnded: 1
+    profile: F2|M|1 60 1
+    group: 
+    sections: 
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: -0.0134, z: -0.0019999999}
+    m_Extent: {x: 0.0066, y: 0.012599999, z: 0.0008}

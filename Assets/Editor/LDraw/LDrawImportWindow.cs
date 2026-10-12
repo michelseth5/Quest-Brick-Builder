@@ -118,6 +118,8 @@ public class LDrawImportWindow : EditorWindow
 
         try
         {
+            // (A copy, so the parts that assemblies are made of can be added as they turn up.)
+            partIds = new List<string>(partIds);
             for (int i = 0; i < partIds.Count; i++)
             {
                 string id = partIds[i];
@@ -146,6 +148,12 @@ public class LDrawImportWindow : EditorWindow
                 part.studs = data.Studs.Select(ToUnity).ToArray();
                 part.antiStuds = data.AntiStuds.Select(ToUnity).ToArray();
                 part.connectors = data.Connectors.Select(ToConnector).ToArray();
+                part.components = data.Components.Select(ToComponent).ToArray();
+                foreach ((string componentId, float[] _) in data.Components)
+                {
+                    if (!partIds.Contains(componentId))
+                        partIds.Add(componentId);
+                }
                 var bounds = new Bounds();
                 bounds.SetMinMax(ToUnity(data.BodyMin), ToUnity(data.BodyMax));
                 part.bodyBounds = bounds;
@@ -263,6 +271,23 @@ public class LDrawImportWindow : EditorWindow
         return entries.Count;
     }
 
+    // An assembly's part line (LDraw: x y z, then a 3 x 3 matrix, Y down) as a Unity position and rotation.
+    static BrickPartData.Component ToComponent((string partId, float[] placement) component)
+    {
+        float[] v = component.placement;
+        var flip = Matrix4x4.Scale(new Vector3(1f, -1f, 1f));
+        var m = Matrix4x4.identity;
+        m.m00 = v[3]; m.m01 = v[4]; m.m02 = v[5];
+        m.m10 = v[6]; m.m11 = v[7]; m.m12 = v[8];
+        m.m20 = v[9]; m.m21 = v[10]; m.m22 = v[11];
+        return new BrickPartData.Component
+        {
+            partId = component.partId,
+            position = new Vector3(v[0], -v[1], v[2]) * LDrawParser.MetersPerLdu,
+            rotation = (flip * m * flip).rotation,
+        };
+    }
+
     static Mesh SaveMesh(LDrawMeshData data, string name, string path)
     {
         Mesh mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
@@ -326,6 +351,7 @@ public class LDrawImportWindow : EditorWindow
         slide = c.Slide,
         openEnded = c.OpenEnded,
         profile = c.Profile ?? "",
+        sections = c.Sections ?? "",
         group = c.Group ?? "",
     };
 }

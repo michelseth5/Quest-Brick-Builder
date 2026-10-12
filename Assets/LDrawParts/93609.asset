@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 93609
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 93609
+  description: Arm Skeleton with Horizontal Clip Bent 56.31
+  category: Arm
+  mesh: {fileID: 4300000, guid: c0e5cafb1fa775640ac209ebc810b12f, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: 0, y: -0.012584999, z: -0.0032303692}
+  connectors:
+  - kind: 1
+    male: 0
+    position: {x: 0, y: -0, z: 0}
+    axis: {x: -1, y: -0, z: 0}
+    reference: {x: 0, y: -0, z: 1}
+    length: 0.0032
+    center: 1
+    slide: 0
+    openEnded: 1
+    profile: R4
+    group: 
+    sections: 
+  - kind: 1
+    male: 0
+    position: {x: 0, y: -0.0099848, z: -0.0066564}
+    axis: {x: -1, y: 0, z: 0}
+    reference: {x: 0, y: 0.92305034, z: -0.38467932}
+    length: 0.0032
+    center: 1
+    slide: 0
+    openEnded: 1
+    profile: R4
+    group: 
+    sections: 
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.012584999, z: -0.0032303692}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: 0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: 
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: -0.0053732693, z: -0.0032303692}
+    m_Extent: {x: 0.0019200001, y: 0.00721173, z: 0.0058303694}

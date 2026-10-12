@@ -1,0 +1,11 @@
+0 Extra connection info for "Bar 1 x 4 x 1.5" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Two bars 4 studs long, one stud apart (LDraw y = -10 and 10), joined by four short uprights.
+0 // Clips and bar holes can take either long bar; clips can also grip an upright between the bars.
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 80] [center=true] [slide=true] [pos=0 -10 0] [ori=0 -1 0 1 0 0 0 0 1]
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 80] [center=true] [slide=true] [pos=0 10 0] [ori=0 -1 0 1 0 0 0 0 1]
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 12] [center=true] [slide=true] [pos=-30 0 0]
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 12] [center=true] [slide=true] [pos=-10 0 0]
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 12] [center=true] [slide=true] [pos=10 0 0]
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 12] [center=true] [slide=true] [pos=30 0 0]

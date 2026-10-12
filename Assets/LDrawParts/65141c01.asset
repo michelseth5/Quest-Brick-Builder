@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 65141c01
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 65141c01
+  description: ~Technic Shock Absorber 11L Piston
+  category: Technic
+  mesh: {fileID: 4300000, guid: ba3ce91f69aef7c41886265a67846a37, type: 2}
+  submeshColors: 1000000048000000i
+  studs: []
+  antiStuds: []
+  connectors:
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.046, z: 0}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: -1, y: -0, z: 0}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  components:
+  - partId: 65141
+    position: {x: 0, y: -0.046, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+  - partId: 65142
+    position: {x: 0, y: -0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+  bodyBounds:
+    m_Center: {x: 0, y: -0.024799999, z: 0}
+    m_Extent: {x: 0.0036, y: 0.024799999, z: 0.0039999997}

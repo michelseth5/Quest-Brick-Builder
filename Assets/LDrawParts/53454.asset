@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 53454
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 53454
+  description: Minifig Battleaxe Blade
+  category: Minifig
+  mesh: {fileID: 4300000, guid: d25c2691b598d7443bf4e4d21b66b043, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: 0, y: -0.0047919997, z: 0.001026}
+  connectors:
+  - kind: 1
+    male: 0
+    position: {x: 0, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0032
+    center: 1
+    slide: 0
+    openEnded: 1
+    profile: R4
+    group: 
+    sections: 
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: -0.0016120002, z: 0.0050259996}
+    m_Extent: {x: 0.0026399998, y: 0.009256, z: 0.007006}

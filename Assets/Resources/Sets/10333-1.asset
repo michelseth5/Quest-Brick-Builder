@@ -1,0 +1,2228 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e83a1abd11e84fb418d18571d17fc05e, type: 3}
+  m_Name: 10333-1
+  m_EditorClassIdentifier: Assembly-CSharp::SetData
+  setNumber: 10333-1
+  title: "The Lord of the Rings: Barad-d\xFBr"
+  author: 
+  year: 2024
+  steps: []
+  inventory:
+  - partId: 10048
+    colorCode: 308
+    quantity: 1
+  - partId: 10048
+    colorCode: 484
+    quantity: 1
+  - partId: 10050
+    colorCode: 87
+    quantity: 5
+  - partId: 10108367
+    colorCode: 16
+    quantity: 1
+  - partId: 101658
+    colorCode: 0
+    quantity: 1
+  - partId: 11010
+    colorCode: 334
+    quantity: 1
+  - partId: 11089
+    colorCode: 0
+    quantity: 14
+  - partId: 11090
+    colorCode: 0
+    quantity: 11
+  - partId: 11090
+    colorCode: 72
+    quantity: 8
+  - partId: 11211
+    colorCode: 19
+    quantity: 10
+  - partId: 11211
+    colorCode: 71
+    quantity: 9
+  - partId: 11211
+    colorCode: 72
+    quantity: 12
+  - partId: 11213
+    colorCode: 71
+    quantity: 1
+  - partId: 11214
+    colorCode: 4
+    quantity: 8
+  - partId: 11291
+    colorCode: 0
+    quantity: 2
+  - partId: 11476
+    colorCode: 15
+    quantity: 3
+  - partId: 11476
+    colorCode: 19
+    quantity: 2
+  - partId: 11476
+    colorCode: 71
+    quantity: 1
+  - partId: 11477
+    colorCode: 0
+    quantity: 26
+  - partId: 11477
+    colorCode: 46
+    quantity: 48
+  - partId: 11477
+    colorCode: 72
+    quantity: 6
+  - partId: 11477
+    colorCode: 308
+    quantity: 8
+  - partId: 13548
+    colorCode: 0
+    quantity: 2
+  - partId: 13548
+    colorCode: 28
+    quantity: 23
+  - partId: 13548
+    colorCode: 71
+    quantity: 2
+  - partId: 13548
+    colorCode: 72
+    quantity: 6
+  - partId: 13548
+    colorCode: 84
+    quantity: 34
+  - partId: 13965
+    colorCode: 0
+    quantity: 12
+  - partId: 13965
+    colorCode: 70
+    quantity: 10
+  - partId: 14413
+    colorCode: 0
+    quantity: 6
+  - partId: 14417
+    colorCode: 72
+    quantity: 2
+  - partId: 14716
+    colorCode: 0
+    quantity: 12
+  - partId: 14716
+    colorCode: 72
+    quantity: 1
+  - partId: 14716
+    colorCode: 321
+    quantity: 1
+  - partId: 14719
+    colorCode: 15
+    quantity: 2
+  - partId: 14719
+    colorCode: 70
+    quantity: 6
+  - partId: 14719
+    colorCode: 71
+    quantity: 1
+  - partId: 14769
+    colorCode: 84
+    quantity: 1
+  - partId: 15068
+    colorCode: 0
+    quantity: 14
+  - partId: 15070
+    colorCode: 14
+    quantity: 4
+  - partId: 15070
+    colorCode: 70
+    quantity: 5
+  - partId: 15332
+    colorCode: 70
+    quantity: 3
+  - partId: 15456
+    colorCode: 0
+    quantity: 1
+  - partId: 15462
+    colorCode: 70
+    quantity: 1
+  - partId: 15535
+    colorCode: 0
+    quantity: 4
+  - partId: 15535
+    colorCode: 15
+    quantity: 2
+  - partId: 15571
+    colorCode: 70
+    quantity: 4
+  - partId: 15573
+    colorCode: 0
+    quantity: 1
+  - partId: 15573
+    colorCode: 10
+    quantity: 8
+  - partId: 15573
+    colorCode: 70
+    quantity: 9
+  - partId: 15573
+    colorCode: 72
+    quantity: 1
+  - partId: 15573
+    colorCode: 308
+    quantity: 4
+  - partId: 15573
+    colorCode: 484
+    quantity: 2
+  - partId: 15672
+    colorCode: 0
+    quantity: 13
+  - partId: 15672
+    colorCode: 28
+    quantity: 2
+  - partId: 15672
+    colorCode: 71
+    quantity: 2
+  - partId: 15712
+    colorCode: 0
+    quantity: 13
+  - partId: 15712
+    colorCode: 70
+    quantity: 8
+  - partId: 15712
+    colorCode: 71
+    quantity: 3
+  - partId: 16577
+    colorCode: 72
+    quantity: 2
+  - partId: 16709p04
+    colorCode: 308
+    quantity: 2
+  - partId: 1745
+    colorCode: 0
+    quantity: 2
+  - partId: 17485
+    colorCode: 71
+    quantity: 2
+  - partId: 18031
+    colorCode: 179
+    quantity: 1
+  - partId: 18034
+    colorCode: 179
+    quantity: 1
+  - partId: 18575
+    colorCode: 0
+    quantity: 3
+  - partId: 18646
+    colorCode: 0
+    quantity: 4
+  - partId: 18646
+    colorCode: 15
+    quantity: 1
+  - partId: 18674
+    colorCode: 0
+    quantity: 5
+  - partId: 18674
+    colorCode: 70
+    quantity: 1
+  - partId: 18674
+    colorCode: 72
+    quantity: 2
+  - partId: 18677
+    colorCode: 0
+    quantity: 1
+  - partId: 18838
+    colorCode: 72
+    quantity: 2
+  - partId: 18927
+    colorCode: 4
+    quantity: 1
+  - partId: 1927
+    colorCode: 0
+    quantity: 29
+  - partId: 1927
+    colorCode: 4
+    quantity: 4
+  - partId: 1927
+    colorCode: 15
+    quantity: 4
+  - partId: 1927
+    colorCode: 70
+    quantity: 23
+  - partId: 1927
+    colorCode: 72
+    quantity: 12
+  - partId: 20310
+    colorCode: 72
+    quantity: 4
+  - partId: 20310
+    colorCode: 484
+    quantity: 2
+  - partId: 20482
+    colorCode: 0
+    quantity: 12
+  - partId: 20482
+    colorCode: 70
+    quantity: 2
+  - partId: 20482
+    colorCode: 71
+    quantity: 6
+  - partId: 22388
+    colorCode: 0
+    quantity: 5
+  - partId: 22388
+    colorCode: 70
+    quantity: 4
+  - partId: 22391
+    colorCode: 0
+    quantity: 2
+  - partId: 22885
+    colorCode: 0
+    quantity: 5
+  - partId: 22885
+    colorCode: 2
+    quantity: 4
+  - partId: 22885
+    colorCode: 19
+    quantity: 10
+  - partId: 22885
+    colorCode: 71
+    quantity: 13
+  - partId: 22886
+    colorCode: 0
+    quantity: 12
+  - partId: 22888
+    colorCode: 72
+    quantity: 2
+  - partId: 2310
+    colorCode: 28
+    quantity: 2
+  - partId: 2310
+    colorCode: 72
+    quantity: 2
+  - partId: 2343
+    colorCode: 179
+    quantity: 2
+  - partId: 2343
+    colorCode: 297
+    quantity: 2
+  - partId: 23443
+    colorCode: 0
+    quantity: 2
+  - partId: 2357
+    colorCode: 0
+    quantity: 4
+  - partId: 2357
+    colorCode: 14
+    quantity: 2
+  - partId: 2357
+    colorCode: 15
+    quantity: 2
+  - partId: 2357
+    colorCode: 19
+    quantity: 2
+  - partId: 2357
+    colorCode: 28
+    quantity: 1
+  - partId: 2357
+    colorCode: 71
+    quantity: 2
+  - partId: 2357
+    colorCode: 72
+    quantity: 5
+  - partId: 2357
+    colorCode: 484
+    quantity: 1
+  - partId: 23861
+    colorCode: 57
+    quantity: 4
+  - partId: 23930
+    colorCode: 0
+    quantity: 4
+  - partId: 2412b
+    colorCode: 0
+    quantity: 44
+  - partId: 2419
+    colorCode: 0
+    quantity: 1
+  - partId: 2420
+    colorCode: 0
+    quantity: 21
+  - partId: 2420
+    colorCode: 19
+    quantity: 2
+  - partId: 2420
+    colorCode: 70
+    quantity: 5
+  - partId: 2420
+    colorCode: 71
+    quantity: 2
+  - partId: 2420
+    colorCode: 72
+    quantity: 2
+  - partId: 2420
+    colorCode: 84
+    quantity: 5
+  - partId: 24201
+    colorCode: 0
+    quantity: 4
+  - partId: 24299
+    colorCode: 0
+    quantity: 7
+  - partId: 24307
+    colorCode: 0
+    quantity: 8
+  - partId: 24309
+    colorCode: 0
+    quantity: 62
+  - partId: 2431
+    colorCode: 0
+    quantity: 8
+  - partId: 2431
+    colorCode: 28
+    quantity: 1
+  - partId: 2431
+    colorCode: 57
+    quantity: 63
+  - partId: 2431
+    colorCode: 71
+    quantity: 2
+  - partId: 2431
+    colorCode: 72
+    quantity: 1
+  - partId: 24316
+    colorCode: 70
+    quantity: 1
+  - partId: 2445
+    colorCode: 0
+    quantity: 18
+  - partId: 2445
+    colorCode: 25
+    quantity: 1
+  - partId: 2445
+    colorCode: 70
+    quantity: 1
+  - partId: 2445
+    colorCode: 71
+    quantity: 3
+  - partId: 2445
+    colorCode: 72
+    quantity: 1
+  - partId: 24482
+    colorCode: 0
+    quantity: 2
+  - partId: 2449
+    colorCode: 84
+    quantity: 3
+  - partId: 2450
+    colorCode: 72
+    quantity: 18
+  - partId: 2454b
+    colorCode: 0
+    quantity: 13
+  - partId: 2454b
+    colorCode: 72
+    quantity: 2
+  - partId: 2454b
+    colorCode: 84
+    quantity: 2
+  - partId: 2456
+    colorCode: 0
+    quantity: 16
+  - partId: 2456
+    colorCode: 14
+    quantity: 2
+  - partId: 2456
+    colorCode: 15
+    quantity: 13
+  - partId: 2456
+    colorCode: 19
+    quantity: 3
+  - partId: 2456
+    colorCode: 70
+    quantity: 4
+  - partId: 2456
+    colorCode: 72
+    quantity: 20
+  - partId: 2456
+    colorCode: 84
+    quantity: 7
+  - partId: 2462
+    colorCode: 0
+    quantity: 2
+  - partId: 2462
+    colorCode: 71
+    quantity: 8
+  - partId: 2489
+    colorCode: 84
+    quantity: 2
+  - partId: 2489
+    colorCode: 308
+    quantity: 1
+  - partId: 25269
+    colorCode: 0
+    quantity: 22
+  - partId: 25269
+    colorCode: 71
+    quantity: 2
+  - partId: 2540
+    colorCode: 28
+    quantity: 2
+  - partId: 2540
+    colorCode: 71
+    quantity: 1
+  - partId: 2587
+    colorCode: 87
+    quantity: 1
+  - partId: 26047
+    colorCode: 0
+    quantity: 8
+  - partId: 2653
+    colorCode: 71
+    quantity: 4
+  - partId: 26601
+    colorCode: 0
+    quantity: 18
+  - partId: 26601
+    colorCode: 71
+    quantity: 3
+  - partId: 26601
+    colorCode: 72
+    quantity: 4
+  - partId: 26601
+    colorCode: 484
+    quantity: 12
+  - partId: 26603
+    colorCode: 0
+    quantity: 4
+  - partId: 26603
+    colorCode: 28
+    quantity: 1
+  - partId: 27263
+    colorCode: 0
+    quantity: 6
+  - partId: 2736
+    colorCode: 71
+    quantity: 1
+  - partId: 2739a
+    colorCode: 0
+    quantity: 2
+  - partId: 27925
+    colorCode: 0
+    quantity: 4
+  - partId: 27925
+    colorCode: 71
+    quantity: 2
+  - partId: 28192
+    colorCode: 0
+    quantity: 19
+  - partId: 28192
+    colorCode: 70
+    quantity: 1
+  - partId: 28192
+    colorCode: 72
+    quantity: 4
+  - partId: 28621
+    colorCode: 0
+    quantity: 2
+  - partId: 28621
+    colorCode: 19
+    quantity: 2
+  - partId: 28621
+    colorCode: 84
+    quantity: 2
+  - partId: 28621
+    colorCode: 330
+    quantity: 2
+  - partId: 28653
+    colorCode: 0
+    quantity: 97
+  - partId: 28653
+    colorCode: 1
+    quantity: 33
+  - partId: 28653
+    colorCode: 19
+    quantity: 18
+  - partId: 28653
+    colorCode: 25
+    quantity: 1
+  - partId: 28653
+    colorCode: 28
+    quantity: 15
+  - partId: 28653
+    colorCode: 46
+    quantity: 15
+  - partId: 28653
+    colorCode: 70
+    quantity: 58
+  - partId: 28653
+    colorCode: 71
+    quantity: 22
+  - partId: 28653
+    colorCode: 72
+    quantity: 95
+  - partId: 28653
+    colorCode: 84
+    quantity: 4
+  - partId: 28653
+    colorCode: 484
+    quantity: 30
+  - partId: 2877
+    colorCode: 0
+    quantity: 172
+  - partId: 2877
+    colorCode: 70
+    quantity: 9
+  - partId: 29111
+    colorCode: 0
+    quantity: 1
+  - partId: 29119
+    colorCode: 0
+    quantity: 1
+  - partId: 29120
+    colorCode: 0
+    quantity: 1
+  - partId: 3001
+    colorCode: 0
+    quantity: 3
+  - partId: 3001
+    colorCode: 19
+    quantity: 5
+  - partId: 3001
+    colorCode: 71
+    quantity: 3
+  - partId: 3001
+    colorCode: 72
+    quantity: 26
+  - partId: 3001
+    colorCode: 84
+    quantity: 4
+  - partId: 3002
+    colorCode: 0
+    quantity: 2
+  - partId: 3002
+    colorCode: 15
+    quantity: 1
+  - partId: 3002
+    colorCode: 70
+    quantity: 4
+  - partId: 3003
+    colorCode: 0
+    quantity: 10
+  - partId: 3003
+    colorCode: 4
+    quantity: 2
+  - partId: 3003
+    colorCode: 28
+    quantity: 2
+  - partId: 3003
+    colorCode: 71
+    quantity: 5
+  - partId: 3003
+    colorCode: 72
+    quantity: 9
+  - partId: 3003
+    colorCode: 84
+    quantity: 1
+  - partId: 3003
+    colorCode: 484
+    quantity: 8
+  - partId: 3004
+    colorCode: 4
+    quantity: 7
+  - partId: 3004
+    colorCode: 14
+    quantity: 2
+  - partId: 3004
+    colorCode: 15
+    quantity: 3
+  - partId: 3004
+    colorCode: 19
+    quantity: 7
+  - partId: 3004
+    colorCode: 28
+    quantity: 10
+  - partId: 3004
+    colorCode: 71
+    quantity: 1
+  - partId: 3004
+    colorCode: 72
+    quantity: 45
+  - partId: 3004
+    colorCode: 84
+    quantity: 5
+  - partId: 3004
+    colorCode: 308
+    quantity: 30
+  - partId: 3004
+    colorCode: 484
+    quantity: 8
+  - partId: 3005
+    colorCode: 0
+    quantity: 10
+  - partId: 3005
+    colorCode: 4
+    quantity: 5
+  - partId: 3005
+    colorCode: 19
+    quantity: 2
+  - partId: 3005
+    colorCode: 28
+    quantity: 3
+  - partId: 3005
+    colorCode: 57
+    quantity: 8
+  - partId: 3005
+    colorCode: 70
+    quantity: 40
+  - partId: 3005
+    colorCode: 72
+    quantity: 26
+  - partId: 3005
+    colorCode: 84
+    quantity: 10
+  - partId: 30068
+    colorCode: 0
+    quantity: 21
+  - partId: 30069
+    colorCode: 47
+    quantity: 4
+  - partId: 3007
+    colorCode: 0
+    quantity: 2
+  - partId: 3007
+    colorCode: 19
+    quantity: 1
+  - partId: 3008
+    colorCode: 0
+    quantity: 5
+  - partId: 3008
+    colorCode: 72
+    quantity: 5
+  - partId: 3009
+    colorCode: 0
+    quantity: 20
+  - partId: 3009
+    colorCode: 1
+    quantity: 1
+  - partId: 3009
+    colorCode: 14
+    quantity: 3
+  - partId: 3009
+    colorCode: 70
+    quantity: 16
+  - partId: 3009
+    colorCode: 72
+    quantity: 2
+  - partId: 3009
+    colorCode: 484
+    quantity: 4
+  - partId: 30099
+    colorCode: 484
+    quantity: 4
+  - partId: 3010
+    colorCode: 0
+    quantity: 25
+  - partId: 3010
+    colorCode: 14
+    quantity: 4
+  - partId: 3010
+    colorCode: 28
+    quantity: 11
+  - partId: 3010
+    colorCode: 70
+    quantity: 1
+  - partId: 3010
+    colorCode: 72
+    quantity: 14
+  - partId: 3010
+    colorCode: 322
+    quantity: 1
+  - partId: 3010
+    colorCode: 484
+    quantity: 1
+  - partId: 30106
+    colorCode: 47
+    quantity: 1
+  - partId: 30136
+    colorCode: 70
+    quantity: 4
+  - partId: 30153
+    colorCode: 35
+    quantity: 1
+  - partId: 30153
+    colorCode: 47
+    quantity: 1
+  - partId: 3020
+    colorCode: 0
+    quantity: 13
+  - partId: 3020
+    colorCode: 19
+    quantity: 8
+  - partId: 3020
+    colorCode: 25
+    quantity: 4
+  - partId: 3020
+    colorCode: 70
+    quantity: 5
+  - partId: 3020
+    colorCode: 71
+    quantity: 21
+  - partId: 3020
+    colorCode: 72
+    quantity: 23
+  - partId: 3020
+    colorCode: 191
+    quantity: 1
+  - partId: 3020
+    colorCode: 484
+    quantity: 9
+  - partId: 3021
+    colorCode: 0
+    quantity: 28
+  - partId: 3021
+    colorCode: 19
+    quantity: 8
+  - partId: 3021
+    colorCode: 25
+    quantity: 4
+  - partId: 3021
+    colorCode: 71
+    quantity: 3
+  - partId: 3021
+    colorCode: 72
+    quantity: 17
+  - partId: 3021
+    colorCode: 484
+    quantity: 1
+  - partId: 3022
+    colorCode: 0
+    quantity: 43
+  - partId: 3022
+    colorCode: 1
+    quantity: 3
+  - partId: 3022
+    colorCode: 25
+    quantity: 5
+  - partId: 3022
+    colorCode: 71
+    quantity: 4
+  - partId: 3022
+    colorCode: 72
+    quantity: 14
+  - partId: 3022
+    colorCode: 484
+    quantity: 7
+  - partId: 3024
+    colorCode: 0
+    quantity: 61
+  - partId: 3024
+    colorCode: 28
+    quantity: 8
+  - partId: 3024
+    colorCode: 46
+    quantity: 13
+  - partId: 3024
+    colorCode: 57
+    quantity: 4
+  - partId: 3024
+    colorCode: 70
+    quantity: 35
+  - partId: 3024
+    colorCode: 71
+    quantity: 20
+  - partId: 3024
+    colorCode: 72
+    quantity: 43
+  - partId: 3024
+    colorCode: 84
+    quantity: 6
+  - partId: 3024
+    colorCode: 484
+    quantity: 8
+  - partId: 3029
+    colorCode: 71
+    quantity: 6
+  - partId: 30292a
+    colorCode: 0
+    quantity: 2
+  - partId: 3030
+    colorCode: 0
+    quantity: 3
+  - partId: 3030
+    colorCode: 25
+    quantity: 6
+  - partId: 3030
+    colorCode: 70
+    quantity: 1
+  - partId: 3031
+    colorCode: 0
+    quantity: 6
+  - partId: 3031
+    colorCode: 72
+    quantity: 5
+  - partId: 3032
+    colorCode: 25
+    quantity: 5
+  - partId: 3032
+    colorCode: 72
+    quantity: 11
+  - partId: 3033
+    colorCode: 72
+    quantity: 14
+  - partId: 3034
+    colorCode: 0
+    quantity: 15
+  - partId: 3034
+    colorCode: 19
+    quantity: 2
+  - partId: 3034
+    colorCode: 27
+    quantity: 8
+  - partId: 3034
+    colorCode: 70
+    quantity: 6
+  - partId: 3034
+    colorCode: 71
+    quantity: 1
+  - partId: 3034
+    colorCode: 72
+    quantity: 5
+  - partId: 3035
+    colorCode: 0
+    quantity: 1
+  - partId: 3035
+    colorCode: 15
+    quantity: 6
+  - partId: 3035
+    colorCode: 71
+    quantity: 1
+  - partId: 3035
+    colorCode: 72
+    quantity: 2
+  - partId: 3036
+    colorCode: 0
+    quantity: 4
+  - partId: 3036
+    colorCode: 25
+    quantity: 5
+  - partId: 3036
+    colorCode: 70
+    quantity: 1
+  - partId: 3036
+    colorCode: 72
+    quantity: 5
+  - partId: 30363
+    colorCode: 71
+    quantity: 5
+  - partId: 30363
+    colorCode: 72
+    quantity: 2
+  - partId: 3037
+    colorCode: 72
+    quantity: 1
+  - partId: 30374
+    colorCode: 71
+    quantity: 2
+  - partId: 30374
+    colorCode: 72
+    quantity: 7
+  - partId: 30377
+    colorCode: 72
+    quantity: 2
+  - partId: 30383
+    colorCode: 0
+    quantity: 2
+  - partId: 3039
+    colorCode: 71
+    quantity: 2
+  - partId: 3039
+    colorCode: 484
+    quantity: 3
+  - partId: 3040b
+    colorCode: 0
+    quantity: 6
+  - partId: 3040b
+    colorCode: 28
+    quantity: 10
+  - partId: 3040b
+    colorCode: 57
+    quantity: 16
+  - partId: 3040b
+    colorCode: 71
+    quantity: 8
+  - partId: 3040b
+    colorCode: 72
+    quantity: 19
+  - partId: 3040b
+    colorCode: 84
+    quantity: 21
+  - partId: 3040b
+    colorCode: 308
+    quantity: 8
+  - partId: 3040b
+    colorCode: 484
+    quantity: 16
+  - partId: 30414
+    colorCode: 71
+    quantity: 17
+  - partId: 3043
+    colorCode: 0
+    quantity: 16
+  - partId: 3045
+    colorCode: 0
+    quantity: 8
+  - partId: 3049d
+    colorCode: 0
+    quantity: 35
+  - partId: 3049d
+    colorCode: 70
+    quantity: 7
+  - partId: 30503
+    colorCode: 0
+    quantity: 4
+  - partId: 30503
+    colorCode: 71
+    quantity: 2
+  - partId: 30503
+    colorCode: 72
+    quantity: 5
+  - partId: 30504
+    colorCode: 71
+    quantity: 2
+  - partId: 30562
+    colorCode: 72
+    quantity: 10
+  - partId: 3065
+    colorCode: 57
+    quantity: 4
+  - partId: 3068b
+    colorCode: 0
+    quantity: 9
+  - partId: 3068b
+    colorCode: 15
+    quantity: 1
+  - partId: 3068b
+    colorCode: 19
+    quantity: 1
+  - partId: 3068b
+    colorCode: 71
+    quantity: 2
+  - partId: 3068b
+    colorCode: 72
+    quantity: 5
+  - partId: 3068b
+    colorCode: 308
+    quantity: 2
+  - partId: 3068b
+    colorCode: 484
+    quantity: 19
+  - partId: 3069b
+    colorCode: 0
+    quantity: 31
+  - partId: 3069b
+    colorCode: 28
+    quantity: 1
+  - partId: 3069b
+    colorCode: 36
+    quantity: 42
+  - partId: 3069b
+    colorCode: 70
+    quantity: 11
+  - partId: 3069b
+    colorCode: 71
+    quantity: 11
+  - partId: 3069b
+    colorCode: 72
+    quantity: 18
+  - partId: 3069b
+    colorCode: 308
+    quantity: 2
+  - partId: 3069b
+    colorCode: 484
+    quantity: 20
+  - partId: 3069bp87
+    colorCode: 15
+    quantity: 1
+  - partId: 3070b
+    colorCode: 0
+    quantity: 4
+  - partId: 3070b
+    colorCode: 28
+    quantity: 2
+  - partId: 3070b
+    colorCode: 71
+    quantity: 1
+  - partId: 3070b
+    colorCode: 72
+    quantity: 6
+  - partId: 3171
+    colorCode: 0
+    quantity: 12
+  - partId: 3172
+    colorCode: 71
+    quantity: 4
+  - partId: 32000
+    colorCode: 70
+    quantity: 1
+  - partId: 32001
+    colorCode: 0
+    quantity: 2
+  - partId: 32028
+    colorCode: 0
+    quantity: 25
+  - partId: 32028
+    colorCode: 72
+    quantity: 8
+  - partId: 32034
+    colorCode: 72
+    quantity: 1
+  - partId: 32062
+    colorCode: 4
+    quantity: 9
+  - partId: 32064c
+    colorCode: 0
+    quantity: 1
+  - partId: 32064c
+    colorCode: 322
+    quantity: 6
+  - partId: 32073
+    colorCode: 14
+    quantity: 2
+  - partId: 32123b
+    colorCode: 71
+    quantity: 8
+  - partId: 32270
+    colorCode: 0
+    quantity: 5
+  - partId: 3245c
+    colorCode: 71
+    quantity: 1
+  - partId: 3245c
+    colorCode: 84
+    quantity: 1
+  - partId: 32523
+    colorCode: 72
+    quantity: 2
+  - partId: 32555
+    colorCode: 0
+    quantity: 2
+  - partId: 32803
+    colorCode: 0
+    quantity: 6
+  - partId: 32803
+    colorCode: 72
+    quantity: 5
+  - partId: 32828
+    colorCode: 71
+    quantity: 4
+  - partId: 32952
+    colorCode: 0
+    quantity: 3
+  - partId: 32952
+    colorCode: 71
+    quantity: 9
+  - partId: 32952
+    colorCode: 72
+    quantity: 50
+  - partId: 32952
+    colorCode: 84
+    quantity: 2
+  - partId: 32952
+    colorCode: 322
+    quantity: 6
+  - partId: 3298
+    colorCode: 72
+    quantity: 9
+  - partId: 3298
+    colorCode: 84
+    quantity: 2
+  - partId: 3299
+    colorCode: 0
+    quantity: 41
+  - partId: 33078
+    colorCode: 4
+    quantity: 2
+  - partId: 33172
+    colorCode: 25
+    quantity: 1
+  - partId: 3386
+    colorCode: 0
+    quantity: 39
+  - partId: 3386
+    colorCode: 15
+    quantity: 21
+  - partId: 33909
+    colorCode: 0
+    quantity: 1
+  - partId: 33909
+    colorCode: 15
+    quantity: 8
+  - partId: 33909
+    colorCode: 28
+    quantity: 2
+  - partId: 33909
+    colorCode: 70
+    quantity: 2
+  - partId: 33909
+    colorCode: 71
+    quantity: 1
+  - partId: 33909
+    colorCode: 72
+    quantity: 2
+  - partId: 3396
+    colorCode: 0
+    quantity: 10
+  - partId: 34103
+    colorCode: 0
+    quantity: 2
+  - partId: 3460
+    colorCode: 0
+    quantity: 7
+  - partId: 3460
+    colorCode: 19
+    quantity: 8
+  - partId: 3460
+    colorCode: 70
+    quantity: 8
+  - partId: 3460
+    colorCode: 71
+    quantity: 2
+  - partId: 3460
+    colorCode: 72
+    quantity: 6
+  - partId: 3504
+    colorCode: 70
+    quantity: 2
+  - partId: 35044
+    colorCode: 0
+    quantity: 14
+  - partId: 3505
+    colorCode: 70
+    quantity: 2
+  - partId: 35480
+    colorCode: 0
+    quantity: 6
+  - partId: 35480
+    colorCode: 14
+    quantity: 4
+  - partId: 35480
+    colorCode: 72
+    quantity: 4
+  - partId: 35787
+    colorCode: 0
+    quantity: 28
+  - partId: 35787
+    colorCode: 71
+    quantity: 27
+  - partId: 3622
+    colorCode: 0
+    quantity: 7
+  - partId: 3622
+    colorCode: 4
+    quantity: 2
+  - partId: 3622
+    colorCode: 71
+    quantity: 13
+  - partId: 3622
+    colorCode: 72
+    quantity: 56
+  - partId: 3622
+    colorCode: 84
+    quantity: 3
+  - partId: 3623
+    colorCode: 0
+    quantity: 29
+  - partId: 3623
+    colorCode: 14
+    quantity: 4
+  - partId: 3623
+    colorCode: 71
+    quantity: 2
+  - partId: 3623
+    colorCode: 72
+    quantity: 27
+  - partId: 3623
+    colorCode: 484
+    quantity: 4
+  - partId: 3626c
+    colorCode: 15
+    quantity: 1
+  - partId: 3626c
+    colorCode: 78
+    quantity: 2
+  - partId: 3659
+    colorCode: 308
+    quantity: 2
+  - partId: 3660b
+    colorCode: 72
+    quantity: 9
+  - partId: 3665a
+    colorCode: 0
+    quantity: 12
+  - partId: 3665a
+    colorCode: 71
+    quantity: 2
+  - partId: 3665a
+    colorCode: 72
+    quantity: 11
+  - partId: 3666
+    colorCode: 0
+    quantity: 5
+  - partId: 3666
+    colorCode: 14
+    quantity: 1
+  - partId: 3666
+    colorCode: 28
+    quantity: 2
+  - partId: 3666
+    colorCode: 70
+    quantity: 7
+  - partId: 3666
+    colorCode: 71
+    quantity: 1
+  - partId: 3666
+    colorCode: 72
+    quantity: 19
+  - partId: 3666
+    colorCode: 84
+    quantity: 3
+  - partId: 3666
+    colorCode: 484
+    quantity: 1
+  - partId: 3676
+    colorCode: 0
+    quantity: 2
+  - partId: 36840
+    colorCode: 0
+    quantity: 16
+  - partId: 36841
+    colorCode: 0
+    quantity: 1
+  - partId: 3684c
+    colorCode: 28
+    quantity: 2
+  - partId: 3684c
+    colorCode: 71
+    quantity: 4
+  - partId: 3684c
+    colorCode: 72
+    quantity: 2
+  - partId: 3700
+    colorCode: 4
+    quantity: 1
+  - partId: 3700
+    colorCode: 19
+    quantity: 2
+  - partId: 3700
+    colorCode: 70
+    quantity: 2
+  - partId: 3700
+    colorCode: 71
+    quantity: 5
+  - partId: 3702
+    colorCode: 4
+    quantity: 1
+  - partId: 3705
+    colorCode: 4
+    quantity: 5
+  - partId: 3710
+    colorCode: 0
+    quantity: 58
+  - partId: 3710
+    colorCode: 4
+    quantity: 2
+  - partId: 3710
+    colorCode: 19
+    quantity: 2
+  - partId: 3710
+    colorCode: 25
+    quantity: 3
+  - partId: 3710
+    colorCode: 70
+    quantity: 1
+  - partId: 3710
+    colorCode: 71
+    quantity: 6
+  - partId: 3710
+    colorCode: 72
+    quantity: 26
+  - partId: 3710
+    colorCode: 308
+    quantity: 7
+  - partId: 3710
+    colorCode: 484
+    quantity: 6
+  - partId: 3713
+    colorCode: 0
+    quantity: 1
+  - partId: 3713
+    colorCode: 71
+    quantity: 2
+  - partId: 3749
+    colorCode: 19
+    quantity: 4
+  - partId: 37762
+    colorCode: 0
+    quantity: 6
+  - partId: 37775
+    colorCode: 57
+    quantity: 5
+  - partId: 3795
+    colorCode: 0
+    quantity: 14
+  - partId: 3795
+    colorCode: 4
+    quantity: 1
+  - partId: 3795
+    colorCode: 28
+    quantity: 1
+  - partId: 3795
+    colorCode: 71
+    quantity: 6
+  - partId: 3795
+    colorCode: 72
+    quantity: 8
+  - partId: 3795
+    colorCode: 484
+    quantity: 3
+  - partId: 3815c01
+    colorCode: 0
+    quantity: 1
+  - partId: 3815c01
+    colorCode: 87
+    quantity: 6
+  - partId: 3832
+    colorCode: 0
+    quantity: 5
+  - partId: 3832
+    colorCode: 1
+    quantity: 2
+  - partId: 3832
+    colorCode: 25
+    quantity: 4
+  - partId: 3832
+    colorCode: 72
+    quantity: 1
+  - partId: 3832
+    colorCode: 484
+    quantity: 2
+  - partId: 3894
+    colorCode: 15
+    quantity: 9
+  - partId: 3937
+    colorCode: 0
+    quantity: 1
+  - partId: 3937
+    colorCode: 70
+    quantity: 1
+  - partId: 3937
+    colorCode: 71
+    quantity: 7
+  - partId: 3938
+    colorCode: 72
+    quantity: 1
+  - partId: 3941
+    colorCode: 0
+    quantity: 2
+  - partId: 3941
+    colorCode: 72
+    quantity: 3
+  - partId: 3958
+    colorCode: 0
+    quantity: 2
+  - partId: 3958
+    colorCode: 28
+    quantity: 1
+  - partId: 3958
+    colorCode: 84
+    quantity: 1
+  - partId: 4032a
+    colorCode: 0
+    quantity: 9
+  - partId: 4032a
+    colorCode: 14
+    quantity: 4
+  - partId: 4032a
+    colorCode: 27
+    quantity: 2
+  - partId: 4032a
+    colorCode: 70
+    quantity: 8
+  - partId: 4032a
+    colorCode: 71
+    quantity: 2
+  - partId: 4032a
+    colorCode: 308
+    quantity: 6
+  - partId: 41539
+    colorCode: 71
+    quantity: 1
+  - partId: 4162
+    colorCode: 0
+    quantity: 8
+  - partId: 4162
+    colorCode: 70
+    quantity: 1
+  - partId: 4162
+    colorCode: 72
+    quantity: 8
+  - partId: 41682
+    colorCode: 0
+    quantity: 4
+  - partId: 41740
+    colorCode: 0
+    quantity: 2
+  - partId: 41740
+    colorCode: 70
+    quantity: 1
+  - partId: 41748
+    colorCode: 0
+    quantity: 2
+  - partId: 41769a
+    colorCode: 0
+    quantity: 11
+  - partId: 41770a
+    colorCode: 0
+    quantity: 11
+  - partId: 41770a
+    colorCode: 72
+    quantity: 2
+  - partId: 42195
+    colorCode: 71
+    quantity: 5
+  - partId: 4274
+    colorCode: 71
+    quantity: 1
+  - partId: 4282
+    colorCode: 72
+    quantity: 7
+  - partId: 4286
+    colorCode: 28
+    quantity: 8
+  - partId: 4286
+    colorCode: 71
+    quantity: 2
+  - partId: 4286
+    colorCode: 72
+    quantity: 6
+  - partId: 4286
+    colorCode: 84
+    quantity: 5
+  - partId: 42876
+    colorCode: 484
+    quantity: 3
+  - partId: 4287c
+    colorCode: 70
+    quantity: 9
+  - partId: 4287c
+    colorCode: 71
+    quantity: 6
+  - partId: 42924
+    colorCode: 1
+    quantity: 6
+  - partId: 4304
+    colorCode: 0
+    quantity: 24
+  - partId: 4304
+    colorCode: 70
+    quantity: 2
+  - partId: 4304
+    colorCode: 71
+    quantity: 10
+  - partId: 43093
+    colorCode: 1
+    quantity: 3
+  - partId: 4341
+    colorCode: 0
+    quantity: 1
+  - partId: 43708
+    colorCode: 71
+    quantity: 3
+  - partId: 43710
+    colorCode: 0
+    quantity: 2
+  - partId: 43710
+    colorCode: 71
+    quantity: 3
+  - partId: 43711
+    colorCode: 0
+    quantity: 2
+  - partId: 43711
+    colorCode: 72
+    quantity: 1
+  - partId: 43722a
+    colorCode: 0
+    quantity: 2
+  - partId: 43722a
+    colorCode: 71
+    quantity: 1
+  - partId: 43722a
+    colorCode: 72
+    quantity: 1
+  - partId: 43723a
+    colorCode: 0
+    quantity: 3
+  - partId: 43723a
+    colorCode: 72
+    quantity: 2
+  - partId: 43723a
+    colorCode: 84
+    quantity: 1
+  - partId: 4460b
+    colorCode: 72
+    quantity: 1
+  - partId: 44728
+    colorCode: 14
+    quantity: 2
+  - partId: 44728
+    colorCode: 72
+    quantity: 5
+  - partId: 4477
+    colorCode: 0
+    quantity: 6
+  - partId: 4477
+    colorCode: 70
+    quantity: 5
+  - partId: 4477
+    colorCode: 71
+    quantity: 7
+  - partId: 4477
+    colorCode: 72
+    quantity: 7
+  - partId: 44861
+    colorCode: 0
+    quantity: 8
+  - partId: 44861
+    colorCode: 71
+    quantity: 3
+  - partId: 4490
+    colorCode: 72
+    quantity: 2
+  - partId: 4510
+    colorCode: 4
+    quantity: 2
+  - partId: 4519
+    colorCode: 14
+    quantity: 1
+  - partId: 4519
+    colorCode: 71
+    quantity: 1
+  - partId: 4529
+    colorCode: 0
+    quantity: 1
+  - partId: 4588
+    colorCode: 72
+    quantity: 2
+  - partId: 4599b
+    colorCode: 0
+    quantity: 1
+  - partId: 4697b
+    colorCode: 0
+    quantity: 2
+  - partId: 4733
+    colorCode: 72
+    quantity: 10
+  - partId: 47397
+    colorCode: 72
+    quantity: 1
+  - partId: 4740
+    colorCode: 15
+    quantity: 2
+  - partId: 47905
+    colorCode: 70
+    quantity: 2
+  - partId: 48092
+    colorCode: 72
+    quantity: 16
+  - partId: 48336
+    colorCode: 72
+    quantity: 3
+  - partId: 49307
+    colorCode: 71
+    quantity: 1
+  - partId: 49668
+    colorCode: 0
+    quantity: 68
+  - partId: 49668
+    colorCode: 57
+    quantity: 12
+  - partId: 49668
+    colorCode: 179
+    quantity: 4
+  - partId: 50231
+    colorCode: 0
+    quantity: 1
+  - partId: 50304
+    colorCode: 72
+    quantity: 2
+  - partId: 50340
+    colorCode: 71
+    quantity: 1
+  - partId: 50340
+    colorCode: 72
+    quantity: 1
+  - partId: 50950
+    colorCode: 0
+    quantity: 6
+  - partId: 52107
+    colorCode: 71
+    quantity: 11
+  - partId: 53451
+    colorCode: 0
+    quantity: 18
+  - partId: 53454
+    colorCode: 179
+    quantity: 2
+  - partId: 54200
+    colorCode: 0
+    quantity: 49
+  - partId: 54200
+    colorCode: 28
+    quantity: 23
+  - partId: 54200
+    colorCode: 46
+    quantity: 2
+  - partId: 54200
+    colorCode: 57
+    quantity: 1
+  - partId: 54200
+    colorCode: 72
+    quantity: 23
+  - partId: 54200
+    colorCode: 84
+    quantity: 46
+  - partId: 54200
+    colorCode: 484
+    quantity: 6
+  - partId: 54384
+    colorCode: 71
+    quantity: 1
+  - partId: 54657
+    colorCode: 0
+    quantity: 2
+  - partId: 5477pr0001
+    colorCode: 19
+    quantity: 1
+  - partId: 5480pr0001
+    colorCode: 87
+    quantity: 4
+  - partId: 5483a
+    colorCode: 87
+    quantity: 1
+  - partId: 5483b
+    colorCode: 87
+    quantity: 1
+  - partId: 5483c
+    colorCode: 87
+    quantity: 3
+  - partId: 5483d
+    colorCode: 87
+    quantity: 3
+  - partId: 5639
+    colorCode: 87
+    quantity: 1
+  - partId: 5695pat0001
+    colorCode: 87
+    quantity: 1
+  - partId: 5711
+    colorCode: 0
+    quantity: 2
+  - partId: 5711
+    colorCode: 308
+    quantity: 2
+  - partId: 5830
+    colorCode: 308
+    quantity: 2
+  - partId: 59349
+    colorCode: 0
+    quantity: 3
+  - partId: 59349
+    colorCode: 70
+    quantity: 5
+  - partId: 59349
+    colorCode: 84
+    quantity: 2
+  - partId: 59426
+    colorCode: 72
+    quantity: 1
+  - partId: 59443
+    colorCode: 72
+    quantity: 10
+  - partId: 59900
+    colorCode: 19
+    quantity: 3
+  - partId: 59900
+    colorCode: 35
+    quantity: 1
+  - partId: 60474
+    colorCode: 72
+    quantity: 2
+  - partId: 60475b
+    colorCode: 70
+    quantity: 2
+  - partId: 60475b
+    colorCode: 71
+    quantity: 2
+  - partId: 60477
+    colorCode: 0
+    quantity: 6
+  - partId: 60477
+    colorCode: 70
+    quantity: 6
+  - partId: 60477
+    colorCode: 71
+    quantity: 2
+  - partId: 60477
+    colorCode: 72
+    quantity: 1
+  - partId: 60479
+    colorCode: 0
+    quantity: 9
+  - partId: 60479
+    colorCode: 70
+    quantity: 1
+  - partId: 60479
+    colorCode: 71
+    quantity: 2
+  - partId: 60479
+    colorCode: 72
+    quantity: 5
+  - partId: 60484
+    colorCode: 71
+    quantity: 1
+  - partId: 60485
+    colorCode: 71
+    quantity: 1
+  - partId: 6060
+    colorCode: 308
+    quantity: 4
+  - partId: 60601
+    colorCode: 308
+    quantity: 3
+  - partId: 60897
+    colorCode: 71
+    quantity: 6
+  - partId: 6106
+    colorCode: 0
+    quantity: 2
+  - partId: 6106
+    colorCode: 72
+    quantity: 2
+  - partId: 6111
+    colorCode: 0
+    quantity: 3
+  - partId: 61332
+    colorCode: 0
+    quantity: 5
+  - partId: 6134
+    colorCode: 0
+    quantity: 7
+  - partId: 6134
+    colorCode: 70
+    quantity: 1
+  - partId: 61406p03
+    colorCode: 484
+    quantity: 2
+  - partId: 6141
+    colorCode: 43
+    quantity: 1
+  - partId: 61485
+    colorCode: 15
+    quantity: 2
+  - partId: 6179
+    colorCode: 0
+    quantity: 5
+  - partId: 6179
+    colorCode: 72
+    quantity: 1
+  - partId: 62113
+    colorCode: 0
+    quantity: 1
+  - partId: 62361
+    colorCode: 226
+    quantity: 2
+  - partId: 6266
+    colorCode: 15
+    quantity: 2
+  - partId: 63864
+    colorCode: 0
+    quantity: 4
+  - partId: 63864
+    colorCode: 28
+    quantity: 1
+  - partId: 63864
+    colorCode: 71
+    quantity: 11
+  - partId: 63864
+    colorCode: 72
+    quantity: 3
+  - partId: 63864
+    colorCode: 308
+    quantity: 6
+  - partId: 63864
+    colorCode: 484
+    quantity: 6
+  - partId: 63868
+    colorCode: 70
+    quantity: 5
+  - partId: 63965a
+    colorCode: 0
+    quantity: 4
+  - partId: 63965a
+    colorCode: 72
+    quantity: 6
+  - partId: 64567a
+    colorCode: 71
+    quantity: 2
+  - partId: 64647
+    colorCode: 57
+    quantity: 15
+  - partId: 64648
+    colorCode: 179
+    quantity: 1
+  - partId: 64781
+    colorCode: 0
+    quantity: 2
+  - partId: 64799
+    colorCode: 0
+    quantity: 2
+  - partId: 65249
+    colorCode: 15
+    quantity: 3
+  - partId: 6541
+    colorCode: 72
+    quantity: 6
+  - partId: 65487
+    colorCode: 71
+    quantity: 4
+  - partId: 65509
+    colorCode: 71
+    quantity: 1
+  - partId: 65509
+    colorCode: 72
+    quantity: 2
+  - partId: 65578
+    colorCode: 0
+    quantity: 2
+  - partId: 65734
+    colorCode: 70
+    quantity: 4
+  - partId: 6632
+    colorCode: 0
+    quantity: 2
+  - partId: 6636
+    colorCode: 0
+    quantity: 2
+  - partId: 6636
+    colorCode: 28
+    quantity: 1
+  - partId: 6636
+    colorCode: 71
+    quantity: 11
+  - partId: 66906
+    colorCode: 0
+    quantity: 2
+  - partId: 66909
+    colorCode: 0
+    quantity: 5
+  - partId: 67329
+    colorCode: 0
+    quantity: 4
+  - partId: 67329
+    colorCode: 15
+    quantity: 4
+  - partId: 67329
+    colorCode: 71
+    quantity: 2
+  - partId: 67329
+    colorCode: 72
+    quantity: 14
+  - partId: 68211
+    colorCode: 10
+    quantity: 1
+  - partId: 68211
+    colorCode: 19
+    quantity: 1
+  - partId: 68297
+    colorCode: 0
+    quantity: 1
+  - partId: 68297
+    colorCode: 72
+    quantity: 1
+  - partId: 68498pat0002
+    colorCode: 70
+    quantity: 2
+  - partId: 68568
+    colorCode: 0
+    quantity: 6
+  - partId: 69729
+    colorCode: 0
+    quantity: 10
+  - partId: 69729
+    colorCode: 71
+    quantity: 6
+  - partId: 69729
+    colorCode: 72
+    quantity: 7
+  - partId: 70681
+    colorCode: 0
+    quantity: 14
+  - partId: 73230
+    colorCode: 71
+    quantity: 2
+  - partId: 73562
+    colorCode: 0
+    quantity: 2
+  - partId: 73825
+    colorCode: 0
+    quantity: 6
+  - partId: 73825
+    colorCode: 70
+    quantity: 2
+  - partId: 73878
+    colorCode: 70
+    quantity: 3
+  - partId: 75904
+    colorCode: 71
+    quantity: 1
+  - partId: 75937
+    colorCode: 0
+    quantity: 1
+  - partId: 75937
+    colorCode: 179
+    quantity: 2
+  - partId: 76959
+    colorCode: 0
+    quantity: 3
+  - partId: 76959
+    colorCode: 70
+    quantity: 2
+  - partId: 77844
+    colorCode: 0
+    quantity: 2
+  - partId: 78132
+    colorCode: 15
+    quantity: 1
+  - partId: 78258
+    colorCode: 15
+    quantity: 3
+  - partId: 78329
+    colorCode: 0
+    quantity: 17
+  - partId: 78329
+    colorCode: 71
+    quantity: 9
+  - partId: 78329
+    colorCode: 72
+    quantity: 15
+  - partId: 79393
+    colorCode: 0
+    quantity: 2
+  - partId: 79393
+    colorCode: 71
+    quantity: 2
+  - partId: 79741
+    colorCode: 179
+    quantity: 2
+  - partId: 79811
+    colorCode: 179
+    quantity: 1
+  - partId: 80177
+    colorCode: 0
+    quantity: 1
+  - partId: 80178
+    colorCode: 0
+    quantity: 1
+  - partId: 80545
+    colorCode: 0
+    quantity: 7
+  - partId: 85080
+    colorCode: 0
+    quantity: 2
+  - partId: 85861
+    colorCode: 57
+    quantity: 8
+  - partId: 85861
+    colorCode: 70
+    quantity: 55
+  - partId: 85861
+    colorCode: 71
+    quantity: 8
+  - partId: 85861
+    colorCode: 72
+    quantity: 6
+  - partId: 85984
+    colorCode: 0
+    quantity: 34
+  - partId: 85984
+    colorCode: 25
+    quantity: 2
+  - partId: 85984
+    colorCode: 70
+    quantity: 21
+  - partId: 85984
+    colorCode: 308
+    quantity: 59
+  - partId: 85984
+    colorCode: 484
+    quantity: 4
+  - partId: 86876
+    colorCode: 0
+    quantity: 18
+  - partId: 86996
+    colorCode: 323
+    quantity: 21
+  - partId: 87079
+    colorCode: 0
+    quantity: 29
+  - partId: 87079
+    colorCode: 70
+    quantity: 5
+  - partId: 87079
+    colorCode: 71
+    quantity: 4
+  - partId: 87079
+    colorCode: 72
+    quantity: 1
+  - partId: 87079
+    colorCode: 484
+    quantity: 21
+  - partId: 87087
+    colorCode: 0
+    quantity: 3
+  - partId: 87087
+    colorCode: 71
+    quantity: 7
+  - partId: 87087
+    colorCode: 72
+    quantity: 2
+  - partId: 87580
+    colorCode: 70
+    quantity: 5
+  - partId: 87580
+    colorCode: 71
+    quantity: 1
+  - partId: 87580
+    colorCode: 72
+    quantity: 12
+  - partId: 87620
+    colorCode: 0
+    quantity: 2
+  - partId: 87693
+    colorCode: 15
+    quantity: 1
+  - partId: 87994
+    colorCode: 0
+    quantity: 3
+  - partId: 88295
+    colorCode: 28
+    quantity: 2
+  - partId: 88930
+    colorCode: 0
+    quantity: 18
+  - partId: 90258
+    colorCode: 72
+    quantity: 1
+  - partId: 91988
+    colorCode: 71
+    quantity: 5
+  - partId: 92338-f1
+    colorCode: 72
+    quantity: 1
+  - partId: 92691
+    colorCode: 15
+    quantity: 1
+  - partId: 93061
+    colorCode: 19
+    quantity: 2
+  - partId: 93160
+    colorCode: 15
+    quantity: 4
+  - partId: 93273
+    colorCode: 0
+    quantity: 3
+  - partId: 93273
+    colorCode: 72
+    quantity: 2
+  - partId: 93609
+    colorCode: 15
+    quantity: 2
+  - partId: 93789
+    colorCode: 0
+    quantity: 8
+  - partId: 93789
+    colorCode: 179
+    quantity: 1
+  - partId: 95343
+    colorCode: 70
+    quantity: 1
+  - partId: 95344
+    colorCode: 72
+    quantity: 1
+  - partId: 96874
+    colorCode: 3
+    quantity: 1
+  - partId: 96910
+    colorCode: 87
+    quantity: 3
+  - partId: 973
+    colorCode: 0
+    quantity: 1
+  - partId: 973
+    colorCode: 28
+    quantity: 1
+  - partId: 973
+    colorCode: 70
+    quantity: 1
+  - partId: 973
+    colorCode: 87
+    quantity: 5
+  - partId: 973e136pr0001
+    colorCode: 87
+    quantity: 1
+  - partId: 98137
+    colorCode: 0
+    quantity: 6
+  - partId: 98138
+    colorCode: 34
+    quantity: 2
+  - partId: 98138
+    colorCode: 36
+    quantity: 4
+  - partId: 98138
+    colorCode: 71
+    quantity: 1
+  - partId: 98283
+    colorCode: 71
+    quantity: 5
+  - partId: 98284
+    colorCode: 0
+    quantity: 7
+  - partId: 98313
+    colorCode: 72
+    quantity: 2
+  - partId: 99021
+    colorCode: 72
+    quantity: 1
+  - partId: 99207
+    colorCode: 4
+    quantity: 6
+  - partId: 99207
+    colorCode: 72
+    quantity: 1
+  - partId: 99780
+    colorCode: 19
+    quantity: 5
+  - partId: 99780
+    colorCode: 72
+    quantity: 4
+  - partId: 99781
+    colorCode: 0
+    quantity: 4
+  - partId: u9158
+    colorCode: 36
+    quantity: 1

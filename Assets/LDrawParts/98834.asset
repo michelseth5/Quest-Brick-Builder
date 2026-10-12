@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 98834
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 98834
+  description: Vehicle Spoiler 2 x 4 with Handle
+  category: Vehicle
+  mesh: {fileID: 4300000, guid: 8306fa91c215bba4c9d2bedc8aa34346, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds: []
+  connectors:
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0, z: 0}
+    axis: {x: 1, y: -0, z: 0}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0112
+    center: 1
+    slide: 1
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:28
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: 0.00255, z: 0.0019999999}
+    m_Extent: {x: 0.01565, y: 0.00465, z: 0.0059999996}

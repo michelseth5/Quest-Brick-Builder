@@ -32,6 +32,7 @@ MonoBehaviour:
     openEnded: 1
     profile: R6 R2
     group: 
+    sections: R6:4 R2:12
   - kind: 0
     male: 1
     position: {x: 0, y: -0.0032, z: 0}
@@ -43,6 +44,8 @@ MonoBehaviour:
     openEnded: 1
     profile: R10 R4
     group: 
+    sections: R10:8 R4:8
+  components: []
   bodyBounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.0039999997, y: 0.0032, z: 0.0039999997}

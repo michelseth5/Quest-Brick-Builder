@@ -126,35 +126,31 @@ public class Articulation
     // shapes), or if they connect along two different lines. A joint if everything spins on one line.
     static bool Classify(Brick a, Brick b, out Link link)
     {
-        link = new Link { a = a, b = b };
+        var found = new Link { a = a, b = b };
         bool connected = false;
         bool rigid = false;
-        foreach (Connector ca in a.Connectors)
+        Brick.ForEachMatedPair(a, b, (i, j) =>
         {
-            Connector wa = ca.InWorld(a.transform);
-            foreach (Connector cb in b.Connectors)
+            Connector ca = a.Connectors[i], cb = b.Connectors[j];
+            Connector wb = cb.InWorld(b.transform);
+            if (Connections.QuarterTurns(ca, cb) || ca.kind == Connector.Kind.Generic)
             {
-                Connector wb = cb.InWorld(b.transform);
-                if (!Connections.AreMated(wa, wb))
-                    continue;
-
-                if (Connections.QuarterTurns(ca, cb) || wa.kind == Connector.Kind.Generic)
-                {
-                    rigid = true;
-                }
-                else if (!connected)
-                {
-                    link.point = wb.Start;
-                    link.axis = wb.axis;
-                }
-                else if (!OnSameLine(link.point, link.axis, wb.Start, wb.axis))
-                {
-                    rigid = true; // two different spin axes lock each other
-                }
-                connected = true;
+                rigid = true;
             }
-        }
-        link.joint = connected && !rigid;
+            else if (!connected)
+            {
+                found.point = wb.Start;
+                found.axis = wb.axis;
+            }
+            else if (!OnSameLine(found.point, found.axis, wb.Start, wb.axis))
+            {
+                rigid = true; // two different spin axes lock each other
+            }
+            connected = true;
+            return false; // look at every pair
+        });
+        found.joint = connected && !rigid;
+        link = found;
         return connected;
     }
 

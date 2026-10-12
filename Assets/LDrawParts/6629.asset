@@ -1,0 +1,144 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 6629
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 6629
+  description: Technic Beam 4 x 6 Liftarm Bent 53.13
+  category: Technic
+  mesh: {fileID: 4300000, guid: 40a84a4fbc029a7489343133831f0e81, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: 0.0015818008, y: -0.0039999997, z: 0.007181891}
+  - {x: 0.0015818008, y: -0.0039999997, z: 0.015181891}
+  - {x: 0.0015818008, y: -0.0039999997, z: 0.023181891}
+  - {x: 0.0015818008, y: -0.0039999997, z: 0.03118189}
+  - {x: 0.0015818008, y: -0.0039999997, z: 0.039181888}
+  - {x: 0.0015818008, y: -0.0039999997, z: 0.04718189}
+  - {x: 0.009581801, y: -0.0039999997, z: 0.039181888}
+  - {x: 0.009581801, y: -0.0039999997, z: 0.04718189}
+  - {x: 0.009581801, y: -0.0039999997, z: 0.05518189}
+  - {x: 0.0175818, y: -0.0039999997, z: 0.04718189}
+  connectors:
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0039999997, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: A6
+    group: 
+    sections: A6:20
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0, z: 0.007999999}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0, z: 0.015999999}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0, z: 0.024}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0, z: 0.031999998}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: 0.0064, y: -0, z: 0.0448}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0.6, y: -0, z: -0.8}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: 0.0128, y: -0, z: 0.049599998}
+    axis: {x: -0, y: 1, z: 0}
+    reference: {x: -0.6, y: -0, z: 0.8}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: 0.019199999, y: -0.0039999997, z: 0.054399997}
+    axis: {x: 0, y: 1, z: -0}
+    reference: {x: 0.6, y: -0, z: -0.8}
+    length: 0.007999999
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: A6
+    group: 
+    sections: A6:20
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0, z: 0.04}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  components: []
+  bodyBounds:
+    m_Center: {x: 0.009581801, y: 0, z: 0.027181892}
+    m_Extent: {x: 0.013181983, y: 0.0039999997, z: 0.030781891}

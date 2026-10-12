@@ -21,6 +21,8 @@ public static class ModelFile
         public Vector3 position;    // Unity meters, relative to the model's bottom center
         public Quaternion rotation; // relative to the model's facing
         public int bond;            // parts with the same non-zero bond are bonded together
+        public bool fromSet;        // taken out of the Build It Yourself bin (see SetProgress)
+        public int lockSection;     // 0 = loose; otherwise the numbered section it was locked into
     }
 
     /// <summary>A saved wrist inventory stack: which wrist, how many copies, and one copy's parts.</summary>
@@ -28,11 +30,20 @@ public static class ModelFile
     {
         public int hand; // 0 = left, 1 = right
         public int count;
+        public bool fromSet; // these came out of the Build It Yourself bin
         public List<Placement> parts = new List<Placement>(); // relative to the first part
     }
 
     // Inventory stacks are written as comment lines, which other LDraw programs ignore.
     const string InventoryPrefix = "0 !QUESTBRICK";
+
+    /// <summary>A Build It Yourself set in progress: which set, and where its instructions were open.</summary>
+    public class SetProgress
+    {
+        public string setNumber;
+        public int booklet;
+        public int page;
+    }
 
     public class Info
     {
@@ -81,24 +92,32 @@ public static class ModelFile
 
     /// <summary>
     /// Saves the bricks as a new model. The first brick decides which way the model faces.
-    /// With includeInventory, everything on both wrists is saved too.
+    /// With includeInventory, everything on both wrists is saved too. With a set in progress, the set, its
+    /// instruction page, and which parts came out of its bin (fromSet) are saved so the build can be resumed.
     /// </summary>
-    public static Info Save(string title, IList<Brick> bricks, bool includeInventory = false)
+    public static Info Save(string title, IList<Brick> bricks, bool includeInventory = false,
+                            SetProgress progress = null, Func<Brick, bool> fromSet = null)
     {
         Directory.CreateDirectory(Folder);
         string path = Path.Combine(Folder, $"model-{DateTime.Now:yyyyMMdd-HHmmss-fff}.ldr");
-        File.WriteAllText(path, Write(title, bricks, includeInventory));
+        File.WriteAllText(path, Write(title, bricks, includeInventory, progress, fromSet));
         return new Info { path = path, title = title, saved = DateTime.Now };
     }
 
     public static List<Placement> Load(string path, out string title)
     {
-        return Read(File.ReadAllLines(path), out title, out _);
+        return Read(File.ReadAllLines(path), out title, out _, out _);
     }
 
     public static List<Placement> Load(string path, out string title, out List<InventoryStack> inventory)
     {
-        return Read(File.ReadAllLines(path), out title, out inventory);
+        return Read(File.ReadAllLines(path), out title, out inventory, out _);
+    }
+
+    /// <summary>Loads a model, its wrist inventory, and the Build It Yourself set it was saved during (or null).</summary>
+    public static List<Placement> Load(string path, out string title, out List<InventoryStack> inventory, out SetProgress progress)
+    {
+        return Read(File.ReadAllLines(path), out title, out inventory, out progress);
     }
 
     public static void Rename(string path, string newTitle)
@@ -129,13 +148,19 @@ public static class ModelFile
     // LDraw is Y-down in LDU; Unity is Y-up in meters. Flipping Y both ways converts positions and rotations.
     static readonly Matrix4x4 FlipY = Matrix4x4.Scale(new Vector3(1f, -1f, 1f));
 
-    static string Write(string title, IList<Brick> bricks, bool includeInventory)
+    static string Write(string title, IList<Brick> bricks, bool includeInventory, SetProgress progress, Func<Brick, bool> fromSet)
     {
         var text = new StringBuilder();
         text.AppendLine("0 " + title);
         text.AppendLine("0 Name: " + title + ".ldr");
         text.AppendLine("0 Author: Quest Brick Builder");
         text.AppendLine("0 BFC CERTIFY CCW");
+        if (progress != null)
+        {
+            text.Append(InventoryPrefix).Append(" SET ").Append(progress.setNumber)
+                .Append(" BOOK ").Append(progress.booklet).Append(' ').Append(progress.page).AppendLine();
+        }
+        bool FromSet(Brick brick) => progress != null && fromSet != null && fromSet(brick);
 
         if (bricks.Count > 0)
         {
@@ -146,15 +171,34 @@ public static class ModelFile
             var bondIds = new Dictionary<Brick.Bond, int>();
             foreach (Brick brick in bricks)
             {
+                int bondId = 0;
+                if (brick.CurrentBond != null && !bondIds.TryGetValue(brick.CurrentBond, out bondId))
+                    bondIds[brick.CurrentBond] = bondId = bondIds.Count + 1;
+
+                if (brick.IsLockedBody)
+                {
+                    // A locked body is saved as the pieces it's made of, each with the lock it belongs to.
+                    foreach (LockedBody.Piece piece in brick.Locked.Explode(brick.transform))
+                    {
+                        if (bondId != 0)
+                            text.Append(InventoryPrefix).Append(" BOND ").Append(bondId).AppendLine();
+                        text.Append(InventoryPrefix).Append(" LOCK ").Append(piece.section).AppendLine();
+                        if (progress != null && piece.fromSet)
+                            text.Append(InventoryPrefix).AppendLine(" FROMSET");
+                        AppendPartLine(text, piece.part.partId, piece.colorCode, toModel * (piece.position - origin), toModel * piece.rotation);
+                        text.AppendLine();
+                    }
+                    continue;
+                }
                 if (brick.part == null)
                     continue; // simple test bricks have no LDraw part
 
-                if (brick.CurrentBond != null)
-                {
-                    if (!bondIds.TryGetValue(brick.CurrentBond, out int bondId))
-                        bondIds[brick.CurrentBond] = bondId = bondIds.Count + 1;
+                if (bondId != 0)
                     text.Append(InventoryPrefix).Append(" BOND ").Append(bondId).AppendLine();
-                }
+                if (brick.IsSectionLocked)
+                    text.Append(InventoryPrefix).Append(" LOCK ").Append(brick.LockedSection).AppendLine(); // applies to the next part line
+                if (FromSet(brick))
+                    text.Append(InventoryPrefix).AppendLine(" FROMSET"); // applies to the next part line
 
                 AppendPartLine(text, brick, toModel * (brick.transform.position - origin), toModel * brick.transform.rotation);
                 text.AppendLine();
@@ -165,7 +209,10 @@ public static class ModelFile
         {
             foreach (WristInventory.StackRecord stack in WristInventory.Export())
             {
-                text.Append(InventoryPrefix).Append(" WRIST ").Append(stack.hand == 0 ? "L" : "R").Append(' ').Append(stack.count).AppendLine();
+                text.Append(InventoryPrefix).Append(" WRIST ").Append(stack.hand == 0 ? "L" : "R").Append(' ').Append(stack.count);
+                if (stack.members.Count > 0 && stack.members.TrueForAll(FromSet))
+                    text.Append(" FROMSET");
+                text.AppendLine();
 
                 // Positions relative to the stack's first brick. (InverseTransformPoint undoes the shrinking.)
                 Transform root = stack.members[0].transform;
@@ -186,26 +233,32 @@ public static class ModelFile
     }
 
     // "1 <color> x y z a b c d e f g h i <part>.dat" in LDraw units and axes.
-    static void AppendPartLine(StringBuilder text, Brick brick, Vector3 position, Quaternion rotation)
+    static void AppendPartLine(StringBuilder text, Brick brick, Vector3 position, Quaternion rotation) =>
+        AppendPartLine(text, brick.part.partId, brick.colorCode, position, rotation);
+
+    static void AppendPartLine(StringBuilder text, string partId, int colorCode, Vector3 position, Quaternion rotation)
     {
         Vector3 ld = new Vector3(position.x, -position.y, position.z) / MetersPerLdu;
         Matrix4x4 m = FlipY * Matrix4x4.Rotate(rotation) * FlipY;
 
-        text.Append("1 ").Append(brick.colorCode).Append(' ');
+        text.Append("1 ").Append(colorCode).Append(' ');
         text.Append(F(ld.x)).Append(' ').Append(F(ld.y)).Append(' ').Append(F(ld.z)).Append(' ');
         text.Append(F(m.m00)).Append(' ').Append(F(m.m01)).Append(' ').Append(F(m.m02)).Append(' ');
         text.Append(F(m.m10)).Append(' ').Append(F(m.m11)).Append(' ').Append(F(m.m12)).Append(' ');
         text.Append(F(m.m20)).Append(' ').Append(F(m.m21)).Append(' ').Append(F(m.m22)).Append(' ');
-        text.Append(brick.part.partId).Append(".dat");
+        text.Append(partId).Append(".dat");
     }
 
-    static List<Placement> Read(string[] lines, out string title, out List<InventoryStack> inventory)
+    static List<Placement> Read(string[] lines, out string title, out List<InventoryStack> inventory, out SetProgress progress)
     {
         title = lines.Length > 0 && lines[0].StartsWith("0 ") ? lines[0].Substring(2).Trim() : "Model";
         var result = new List<Placement>();
         inventory = new List<InventoryStack>();
+        progress = null;
         InventoryStack stack = null;
         int pendingBond = 0;
+        bool pendingFromSet = false;
+        int pendingLock = 0;
 
         foreach (string line in lines)
         {
@@ -213,14 +266,32 @@ public static class ModelFile
 
             if (t.Length >= 2 && t[0] == "0" && t[1] == "!QUESTBRICK")
             {
-                if (t.Length >= 4 && t[2] == "BOND")
+                if (t.Length >= 4 && t[2] == "SET")
+                {
+                    // "SET <set number> BOOK <booklet> <page>"
+                    progress = new SetProgress { setNumber = t[3] };
+                    if (t.Length >= 7 && t[4] == "BOOK")
+                    {
+                        int.TryParse(t[5], out progress.booklet);
+                        int.TryParse(t[6], out progress.page);
+                    }
+                }
+                else if (t.Length >= 4 && t[2] == "LOCK")
+                {
+                    int.TryParse(t[3], out pendingLock); // applies to the next part line
+                }
+                else if (t.Length >= 3 && t[2] == "FROMSET")
+                {
+                    pendingFromSet = true; // applies to the next part line
+                }
+                else if (t.Length >= 4 && t[2] == "BOND")
                 {
                     int.TryParse(t[3], out pendingBond); // applies to the next part line
                 }
                 else if (t.Length >= 5 && t[2] == "WRIST")
                 {
                     int.TryParse(t[4], out int count);
-                    stack = new InventoryStack { hand = t[3] == "L" ? 0 : 1, count = Math.Max(1, count) };
+                    stack = new InventoryStack { hand = t[3] == "L" ? 0 : 1, count = Math.Max(1, count), fromSet = t.Length >= 6 && t[5] == "FROMSET" };
                     inventory.Add(stack);
                 }
                 else if (t.Length >= 3 && t[2] == "END")
@@ -237,8 +308,12 @@ public static class ModelFile
             if (TryParsePartLine(t, 0, out Placement placement))
             {
                 placement.bond = pendingBond;
+                placement.fromSet = pendingFromSet;
+                placement.lockSection = pendingLock;
                 result.Add(placement);
                 pendingBond = 0;
+                pendingFromSet = false;
+                pendingLock = 0;
             }
         }
 

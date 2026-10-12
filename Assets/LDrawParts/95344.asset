@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 95344
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 95344
+  description: Handle for Bucket 1 x 1 x 1
+  category: Handle
+  mesh: {fileID: 4300000, guid: e01f1da355e778141bce532900c7c0c4, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds: []
+  connectors:
+  - kind: 2
+    male: 0
+    position: {x: 0, y: -0, z: 0}
+    axis: {x: -1, y: -0, z: 0}
+    reference: {x: 0, y: -0, z: -1}
+    length: 0.0112
+    center: 0
+    slide: 0
+    openEnded: 1
+    profile: F2|F|1 26 1
+    group: 
+    sections: 
+  - kind: 0
+    male: 1
+    position: {x: 0, y: 0.0069999998, z: 0}
+    axis: {x: -1, y: -0, z: 0}
+    reference: {x: 0, y: -0, z: -1}
+    length: 0.0047999998
+    center: 1
+    slide: 1
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:12
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: 0.0035799998, z: 0}
+    m_Extent: {x: 0.0064, y: 0.0050199996, z: 0.0016}

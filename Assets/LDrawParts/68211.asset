@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 68211
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 68211
+  description: Bar 1 L with Three Prongs
+  category: Bar
+  mesh: {fileID: 4300000, guid: c901c45414cd5624ba6441479bd35ff5, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds: []
+  connectors:
+  - kind: 0
+    male: 1
+    position: {x: -0.0024257798, y: 0.00634578, z: 0}
+    axis: {x: -0.7071068, y: 0.7071068, z: 0}
+    reference: {x: 0.7071068, y: 0.7071068, z: 0}
+    length: 0.0015999998
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R2
+    group: 
+    sections: R2:4
+  - kind: 0
+    male: 1
+    position: {x: 0.00140522, y: 0.00881192, z: -0.0024339}
+    axis: {x: 0.32139295, y: 0.7660437, z: -0.5566719}
+    reference: {x: 0.38302034, y: -0.64278847, z: -0.6634142}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R2
+    group: 
+    sections: R2:4
+  - kind: 0
+    male: 1
+    position: {x: 0.00133288, y: 0.0071058, z: 0.00230864}
+    axis: {x: 0.3535525, y: 0.7071058, z: 0.6123741}
+    reference: {x: 0.35355148, y: -0.7071078, z: 0.6123724}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R2
+    group: 
+    sections: R2:4
+  - kind: 0
+    male: 1
+    position: {x: 0, y: 0.0028, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0044
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:11
+  components: []
+  bodyBounds:
+    m_Center: {x: -0.00075561507, y: 0.004514974, z: -0.000029169489}
+    m_Extent: {x: 0.0034324243, y: 0.006114974, z: 0.003984825}

@@ -1,0 +1,125 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 10353
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 10353
+  description: ~Animal Horse Poseable Body Right
+  category: Animal
+  mesh: {fileID: 4300000, guid: 330437a89533b6e4a8fa3176b035778f, type: 2}
+  submeshColors: 10000000i
+  studs:
+  - {x: 0.0039999997, y: -0.0053999997, z: -0.01636}
+  - {x: -0.0039999997, y: -0.0053999997, z: -0.01636}
+  antiStuds:
+  - {x: -0.0039999997, y: -0.028199999, z: -0.03236}
+  connectors:
+  - kind: 0
+    male: 1
+    position: {x: 0.0039999997, y: -0.0053999997, z: -0.01636}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0, y: -0, z: -1}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: 0.0039999997, y: -0.0037999998, z: -0.01636}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 0, y: -0, z: -1}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:4
+  - kind: 0
+    male: 1
+    position: {x: -0.0039999997, y: -0.0053999997, z: -0.01636}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0, y: -0, z: -1}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: -0.0039999997, y: -0.0037999998, z: -0.01636}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 0, y: -0, z: -1}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:4
+  - kind: 0
+    male: 0
+    position: {x: -0.0039999997, y: -0.028199999, z: -0.0268}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: -0.0039999997, y: 0.00256, z: -0.029879998}
+    axis: {x: 1, y: -0, z: 0}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0039999997
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R12.6
+    group: horseHead
+    sections: R12.6:10
+  - kind: 3
+    male: 0
+    position: {x: -0.0039999997, y: -0, z: 0}
+    axis: {x: 1, y: -0, z: 0}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: G:horseRearRight
+    group: horseRearRight
+    sections: 
+  - kind: 3
+    male: 1
+    position: {x: 0, y: -0.0067999996, z: -0.0164}
+    axis: {x: 1, y: -0, z: 0}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: G:horse
+    group: horse
+    sections: 
+  components: []
+  bodyBounds:
+    m_Center: {x: -0.0007999996, y: -0.008947, z: -0.014655199}
+    m_Extent: {x: 0.0072, y: 0.019252999, z: 0.0231}

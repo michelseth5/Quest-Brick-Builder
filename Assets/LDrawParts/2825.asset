@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 2825
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 2825
+  description: Technic Beam 4 x 0.5 Liftarm with Boss
+  category: Technic
+  mesh: {fileID: 4300000, guid: 94b2a2d818e4ee044ba356cf31a0240e, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: 0, y: -0.0039999997, z: 0}
+  - {x: 0, y: -0.0039999997, z: 0.007999999}
+  - {x: 0, y: -0.0039999997, z: 0.015999999}
+  - {x: 0, y: -0.0039999997, z: 0.024}
+  connectors:
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0019999999, z: 0.015999999}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: -1, y: -0, z: 0}
+    length: 0.0039999997
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:6 R8:2
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0019999999, z: 0.007999999}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0039999997
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:6 R8:2
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0019999999, z: 0.024}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0039999997
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: A6
+    group: 
+    sections: A6:10
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: A6 R6
+    group: 
+    sections: A6:10 R6:10
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: 0, z: 0.012}
+    m_Extent: {x: 0.0036, y: 0.0039999997, z: 0.0156}

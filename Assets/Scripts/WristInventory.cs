@@ -101,6 +101,14 @@ public class WristInventory : MonoBehaviour
     // ---------- Hands ----------
 
     /// <summary>Which hand is nearest the point: 0 = left, 1 = right, -1 if unknown.</summary>
+    /// <summary>The anchor that follows a hand or its controller (0 = left, 1 = right), or null before startup.</summary>
+    public static Transform HandTransform(int hand) =>
+        _instance != null && _instance._wrists[hand] != null ? _instance._wrists[hand].hand : null;
+
+    /// <summary>Where a hand (0 = left, 1 = right) is, in the room.</summary>
+    public static Vector3 HandPosition(int hand) =>
+        _instance != null && _instance._wrists[hand] != null ? _instance._wrists[hand].hand.position : Vector3.one * 1000f;
+
     public static int ClosestHand(Vector3 point)
     {
         if (_instance == null || _instance._wrists[0] == null)
@@ -135,6 +143,13 @@ public class WristInventory : MonoBehaviour
         Wrist wrist = _instance.TargetWrist(released);
         if (wrist == null)
             return false;
+
+        // Locked bodies aren't single parts and can't be shrunk into a slot.
+        if (released.IsLockedBody || released.CarriedBricks.Any(b => b.IsLockedBody))
+        {
+            Sandbox.Message("Locked pieces can't go on a wrist. Unlock them first (X)");
+            return false;
+        }
 
         var members = new List<Brick> { released };
         members.AddRange(released.CarriedBricks);

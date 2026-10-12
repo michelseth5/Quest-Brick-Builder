@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 5846
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 5846
+  description: Brick 2 x 2 x 1 with Curved Corner Top
+  category: Brick
+  mesh: {fileID: 4300000, guid: 9c4c85d9a3ba4f2478ac08a534df283d, type: 2}
+  submeshColors: 10000000i
+  studs:
+  - {x: 0, y: -0.0032, z: 0}
+  antiStuds:
+  - {x: -0.007999999, y: -0.0095999995, z: -0.007999999}
+  - {x: -0.007999999, y: -0.0095999995, z: 0}
+  - {x: 0, y: -0.0095999995, z: -0.007999999}
+  - {x: 0, y: -0.0064, z: 0}
+  connectors:
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0.0032, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: -1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: -0.007999999, y: -0.0095999995, z: -0.007999999}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: 0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: 
+  - kind: 0
+    male: 0
+    position: {x: -0.007999999, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: 0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: 
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0095999995, z: -0.007999999}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: 0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: 
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0064, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: 0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: 
+  components: []
+  bodyBounds:
+    m_Center: {x: -0.0040000007, y: -0.0047999998, z: -0.0040000007}
+    m_Extent: {x: 0.007999999, y: 0.0047999998, z: 0.007999999}

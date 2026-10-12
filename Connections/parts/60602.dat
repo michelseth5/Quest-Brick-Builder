@@ -1,0 +1,6 @@
+0 Extra connection info for "Glass for Window 1 x 2 x 3" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // This glass is drawn in the coordinates of its frame (60593 Window 1 x 2 x 3), so it takes the frame's
+0 // own slot: the same pattern and place as the frame's, opposite gender (like the newer glass 35287).
+0 !LDCAD SNAP_FGR [genderOfs=M] [seq=1 60 1] [radius=2] [pos=0 33.5 -5]

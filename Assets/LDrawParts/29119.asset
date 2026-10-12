@@ -20,7 +20,7 @@ MonoBehaviour:
   studs: []
   antiStuds:
   - {x: 0, y: -0, z: -0.0033999998}
-  - {x: 0, y: -0, z: 0.0046}
+  - {x: 0, y: 0.0032, z: 0.0046}
   connectors:
   - kind: 0
     male: 0
@@ -33,6 +33,8 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
+    sections: R6:4
+  components: []
   bodyBounds:
     m_Center: {x: 0, y: 0.0032, z: 0.0005999999}
     m_Extent: {x: 0.0039999997, y: 0.0032, z: 0.0073999995}

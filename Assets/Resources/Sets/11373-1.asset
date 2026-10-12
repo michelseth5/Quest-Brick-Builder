@@ -102,7 +102,7 @@ MonoBehaviour:
   - partId: 28192
     colorCode: 72
     quantity: 2
-  - partId: 28621pr9915
+  - partId: 28621
     colorCode: 0
     quantity: 1
   - partId: 28653
@@ -267,6 +267,9 @@ MonoBehaviour:
   - partId: 3795
     colorCode: 72
     quantity: 5
+  - partId: 3815c01
+    colorCode: 87
+    quantity: 1
   - partId: 3832
     colorCode: 0
     quantity: 1
@@ -387,7 +390,7 @@ MonoBehaviour:
   - partId: 6179
     colorCode: 72
     quantity: 4
-  - partId: 6180pr0044
+  - partId: 6180
     colorCode: 0
     quantity: 1
   - partId: 63864
@@ -462,10 +465,7 @@ MonoBehaviour:
   - partId: 96874
     colorCode: 25
     quantity: 1
-  - partId: 970c75pr0008
-    colorCode: 87
-    quantity: 1
-  - partId: 973c75h12pr0001
+  - partId: 973
     colorCode: 87
     quantity: 1
   - partId: 99207

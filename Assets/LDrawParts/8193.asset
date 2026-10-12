@@ -19,9 +19,7 @@ MonoBehaviour:
   submeshColors: 10000000i
   studs:
   - {x: 0, y: -0, z: 0}
-  antiStuds:
-  - {x: 0, y: -0.0095999995, z: -0.007999999}
-  - {x: 0, y: -0.0095999995, z: 0}
+  antiStuds: []
   connectors:
   - kind: 0
     male: 1
@@ -34,6 +32,7 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
+    sections: R6:4
   - kind: 0
     male: 0
     position: {x: 0, y: 0.0016, z: 0}
@@ -45,9 +44,10 @@ MonoBehaviour:
     openEnded: 0
     profile: R4
     group: 
+    sections: R4:4
   - kind: 0
     male: 0
-    position: {x: 0, y: -0.0095999995, z: -0.007999999}
+    position: {x: 0, y: -0.0095999995, z: -0.0019999999}
     axis: {x: 0, y: 1, z: 0}
     reference: {x: 1, y: 0, z: 0}
     length: 0.0016
@@ -56,17 +56,8 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
-  - kind: 0
-    male: 0
-    position: {x: 0, y: -0.0095999995, z: 0}
-    axis: {x: 0, y: 1, z: 0}
-    reference: {x: 1, y: 0, z: 0}
-    length: 0.0016
-    center: 0
-    slide: 0
-    openEnded: 0
-    profile: R6
-    group: 
+    sections: 
+  components: []
   bodyBounds:
     m_Center: {x: 0, y: -0.0047999998, z: -0.0019999999}
     m_Extent: {x: 0.0039999997, y: 0.0047999998, z: 0.0059999996}

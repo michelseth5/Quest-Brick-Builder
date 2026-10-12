@@ -33,6 +33,8 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
+    sections: R6:9
+  components: []
   bodyBounds:
     m_Center: {x: 0, y: -0.0026, z: -0.0014}
     m_Extent: {x: 0.00744, y: 0.0026, z: 0.0052}

@@ -1,0 +1,346 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 75937
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 75937
+  description: Plate 2 x 2 with Rod Frame Octagonal Reinforced
+  category: Plate
+  mesh: {fileID: 4300000, guid: caabe3e3b1280bf449eb2c223fef524e, type: 2}
+  submeshColors: 10000000i
+  studs:
+  - {x: 0.0039999997, y: -0, z: 0.0039999997}
+  - {x: 0.0039999997, y: -0, z: -0.0039999997}
+  - {x: -0.0039999997, y: -0, z: -0.0039999997}
+  - {x: -0.0039999997, y: -0, z: 0.0039999997}
+  antiStuds:
+  - {x: -0.0039999997, y: -0.0032, z: -0.0039999997}
+  - {x: -0.0039999997, y: -0.0032, z: 0.0039999997}
+  - {x: 0.0039999997, y: -0.0032, z: -0.0039999997}
+  - {x: 0.0039999997, y: -0.0032, z: 0.0039999997}
+  connectors:
+  - kind: 0
+    male: 1
+    position: {x: -0.0028, y: -0.0008, z: 0.012}
+    axis: {x: 1, y: -0, z: 0}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0056
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: -0.006520101, y: -0.0008, z: 0.010479898}
+    axis: {x: -0.7071068, y: -0, z: -0.7071068}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.005600001
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: -0.012, y: -0.0008, z: 0.0028}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0056
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: -0.010479898, y: -0.0008, z: 0.006520101}
+    axis: {x: 0.7071068, y: -0, z: 0.7071068}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.005600001
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: 0.0028, y: -0.0008, z: 0.012}
+    axis: {x: -1, y: -0, z: 0}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0056
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: 0.006520101, y: -0.0008, z: 0.010479898}
+    axis: {x: 0.7071068, y: -0, z: -0.7071068}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.005600001
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: -0.012, y: -0.0008, z: -0.0028}
+    axis: {x: 0, y: -0, z: 1}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0056
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: -0.010479898, y: -0.0008, z: -0.006520101}
+    axis: {x: 0.7071068, y: -0, z: -0.7071068}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.005600001
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: -0.0028, y: -0.0008, z: -0.012}
+    axis: {x: 1, y: -0, z: 0}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0056
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: -0.006520101, y: -0.0008, z: -0.010479898}
+    axis: {x: -0.7071068, y: -0, z: 0.7071068}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.005600001
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: 0.0028, y: -0.0008, z: -0.012}
+    axis: {x: -1, y: -0, z: 0}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0056
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: 0.006520101, y: -0.0008, z: -0.010479898}
+    axis: {x: 0.7071068, y: -0, z: 0.7071068}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.005600001
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: 0.012, y: -0.0008, z: -0.0028}
+    axis: {x: 0, y: -0, z: 1}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0056
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: 0.010479898, y: -0.0008, z: -0.006520101}
+    axis: {x: -0.7071068, y: -0, z: -0.7071068}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.005600001
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: 0.012, y: -0.0008, z: 0.0028}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0056
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: 0.010479898, y: -0.0008, z: 0.006520101}
+    axis: {x: -0.7071068, y: -0, z: 0.7071068}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.005600001
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:14
+  - kind: 0
+    male: 1
+    position: {x: 0.0039999997, y: -0, z: 0.0039999997}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: 0.0039999997, y: -0, z: -0.0039999997}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: -0.0039999997, y: -0, z: -0.0039999997}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: -0.0039999997, y: -0, z: 0.0039999997}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0016, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: A6
+    group: 
+    sections: A6:4
+  - kind: 0
+    male: 0
+    position: {x: -0.0039999997, y: -0.0032, z: -0.0039999997}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: -0.0039999997, y: -0.0032, z: 0.0039999997}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: 0.0039999997, y: -0.0032, z: -0.0039999997}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: 0.0039999997, y: -0.0032, z: 0.0039999997}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0032, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0047999998
+    center: 0
+    slide: 0
+    openEnded: 1
+    profile: R6 A6 R8
+    group: 
+    sections: R6:4 A6:4 R8:4
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: -0.00080000004, z: 0}
+    m_Extent: {x: 0.014238399, y: 0.0023999999, z: 0.014238399}

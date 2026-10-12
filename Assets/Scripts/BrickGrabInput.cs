@@ -13,7 +13,36 @@ public static class BrickGrabInput
 {
     // The Meta rig only grabs with the grip button by default. Let the index trigger grab too.
     // Only close-range grabbing is changed; grabbing from a distance stays on the grip.
+    // Runs at startup and again whenever the scene is reloaded (Start Over).
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void Initialize()
+    {
+        EnableTriggerGrab();
+        DisableComfortTunneling();
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += (scene, mode) =>
+        {
+            EnableTriggerGrab();
+            DisableComfortTunneling();
+        };
+    }
+
+    // The rig's locomotion comes with a comfort vignette that narrows the view whenever the head gets near a
+    // collider (meant for walls), and every brick has one, so leaning in to a model closed the view in.
+    // There's no walking in this game, so it's switched off.
+    static void DisableComfortTunneling()
+    {
+        foreach (var wall in Object.FindObjectsByType<Oculus.Interaction.Locomotion.WallPenetrationTunneling>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            wall.enabled = false;
+        foreach (var moving in Object.FindObjectsByType<Oculus.Interaction.Locomotion.LocomotionTunneling>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            moving.enabled = false;
+        foreach (TunnelingEffect effect in Object.FindObjectsByType<TunnelingEffect>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            effect.enabled = false;
+            foreach (Renderer renderer in effect.GetComponentsInChildren<Renderer>(true))
+                renderer.enabled = false;
+        }
+    }
+
     static void EnableTriggerGrab()
     {
         GrabInteractor[] interactors =

@@ -21,7 +21,6 @@ MonoBehaviour:
   - {x: 0, y: -0, z: 0}
   antiStuds:
   - {x: 0, y: -0.0032, z: 0}
-  - {x: 0.007999999, y: -0.0032, z: 0}
   connectors:
   - kind: 0
     male: 0
@@ -34,6 +33,7 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
+    sections: R6:5
   - kind: 0
     male: 1
     position: {x: 0, y: -0, z: 0}
@@ -45,6 +45,7 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
+    sections: R6:4
   - kind: 0
     male: 0
     position: {x: 0, y: 0.0016, z: 0}
@@ -56,6 +57,7 @@ MonoBehaviour:
     openEnded: 0
     profile: R4
     group: 
+    sections: R4:4
   - kind: 0
     male: 1
     position: {x: 0.0064, y: -0.0008, z: 0}
@@ -67,6 +69,7 @@ MonoBehaviour:
     openEnded: 0
     profile: R4
     group: 
+    sections: R4:14
   - kind: 0
     male: 0
     position: {x: 0, y: -0.0032, z: 0}
@@ -78,17 +81,8 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
-  - kind: 0
-    male: 0
-    position: {x: 0.007999999, y: -0.0032, z: 0}
-    axis: {x: 0, y: 1, z: 0}
-    reference: {x: 1, y: 0, z: 0}
-    length: 0.0016
-    center: 0
-    slide: 0
-    openEnded: 0
-    profile: R6
-    group: 
+    sections: 
+  components: []
   bodyBounds:
     m_Center: {x: 0.004000019, y: -0.0012, z: 0}
     m_Extent: {x: 0.007999982, y: 0.0019999999, z: 0.003999963}

@@ -72,6 +72,7 @@ public class Sandbox : MonoBehaviour
         _instance = this;
         _colorIndex = Mathf.Max(0, BrickColors.IndexOfCode(DefaultColorCode));
         Brick.PreviewTaken += OnPreviewTaken;
+        Brick.AssemblyPlaced += OnAssemblyPlaced;
 
         WristInventory inventory = gameObject.AddComponent<WristInventory>();
         inventory.ghostMaterial = brickPrefab != null ? brickPrefab.ghostMaterial : null;
@@ -87,6 +88,7 @@ public class Sandbox : MonoBehaviour
     void OnDestroy()
     {
         Brick.PreviewTaken -= OnPreviewTaken;
+        Brick.AssemblyPlaced -= OnAssemblyPlaced;
     }
 
     void Start()
@@ -120,6 +122,9 @@ public class Sandbox : MonoBehaviour
 
         _partsBin = gameObject.AddComponent<PartsBin>();
         _partsBin.Init(this);
+
+        gameObject.AddComponent<PerformanceHud>();
+        gameObject.AddComponent<LockLight>();
 
         _book = gameObject.AddComponent<InstructionBook>();
         _book.Init(this, bookPageMaterial != null ? bookPageMaterial : MenuStyle.Material);
@@ -183,7 +188,36 @@ public class Sandbox : MonoBehaviour
             buttons.Add(("Stop Building It Yourself", () => { _partsBin.End(); ShowStartHome(); }));
         }
         buttons.Add(("Settings", ShowSettings));
-        FillStartMenu("Brick Builder", "The left controller's menu button brings you back here", buttons);
+        buttons.Add(("Start Over", OnStartOverClicked));
+        List<MenuButton> created = FillStartMenu("Brick Builder", "The left controller's menu button brings you back here", buttons);
+        _startOverButton = created[created.Count - 1];
+        _startOverArmedUntil = 0f;
+    }
+
+    MenuButton _startOverButton;
+    float _startOverArmedUntil;
+
+    // First click asks for confirmation; a second click within 3 seconds starts over.
+    void OnStartOverClicked()
+    {
+        if (Time.time < _startOverArmedUntil)
+        {
+            StartOver();
+            return;
+        }
+        _startOverArmedUntil = Time.time + 3f;
+        if (_startOverButton != null && _startOverButton.Label != null)
+            _startOverButton.Label.text = "Click again to clear everything";
+    }
+
+    /// <summary>
+    /// Clears everything (bricks, sets, bins, books, wrists, trash cans, undo) by reloading the scene, just
+    /// like opening the app. Saved models, instruction PDFs, and settings are kept.
+    /// </summary>
+    void StartOver()
+    {
+        UndoHistory.Clear();
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
     }
 
     // Every set with a parts list (or building steps to work one out from).
@@ -217,6 +251,12 @@ public class Sandbox : MonoBehaviour
              () => { GameSettings.Ghosts = (GameSettings.GhostVisibility)(((int)GameSettings.Ghosts + 1) % ghostCount); ShowSettings(); }),
             ($"Joints: {GameSettings.JointStepNames[GameSettings.JointStep]}",
              () => { GameSettings.JointStep = (GameSettings.JointStep + 1) % jointCount; ShowSettings(); }),
+            ($"Performance readout: {(GameSettings.ShowPerformance ? "On" : "Off")}",
+             () => { GameSettings.ShowPerformance = !GameSettings.ShowPerformance; ShowSettings(); }),
+            ($"Fast drawing for big models: {(GameSettings.MergeModels ? "On" : "Off")}",
+             () => { GameSettings.MergeModels = !GameSettings.MergeModels; ShowSettings(); }),
+            ($"Locked pieces as one object: {(GameSettings.CollapseLocked ? "On" : "Off")}",
+             () => { GameSettings.CollapseLocked = !GameSettings.CollapseLocked; ShowSettings(); }),
             ("Back", ShowStartHome),
         };
         FillStartMenu("Settings", "Click a setting to change it", buttons);
@@ -269,6 +309,14 @@ public class Sandbox : MonoBehaviour
 
     void Update()
     {
+        // The Start Over confirmation times out.
+        if (_startOverArmedUntil > 0f && Time.time >= _startOverArmedUntil)
+        {
+            _startOverArmedUntil = 0f;
+            if (_startOverButton != null && _startOverButton.Label != null)
+                _startOverButton.Label.text = "Start Over";
+        }
+
         if (OVRInput.GetDown(OVRInput.RawButton.Y))
             TogglePartsMenu();
         if (OVRInput.GetDown(OVRInput.RawButton.B))
@@ -276,7 +324,8 @@ public class Sandbox : MonoBehaviour
         if (OVRInput.GetDown(OVRInput.RawButton.A))
             DuplicateHeld();
         if (OVRInput.GetDown(OVRInput.RawButton.X))
-            SaveHeldModel();
+            ToggleLock();
+        UpdatePendingLock();
         if (OVRInput.GetDown(OVRInput.RawButton.Start))
             ToggleStartMenu();
         if (OVRInput.GetDown(OVRInput.RawButton.LThumbstick))
@@ -699,39 +748,312 @@ public class Sandbox : MonoBehaviour
 
     void SaveEverything()
     {
-        List<Brick> bricks = Brick.AllPlaced().Where(b => b.part != null).ToList();
+        List<Brick> bricks = Brick.AllPlaced().Where(b => b.part != null || b.IsLockedBody).ToList();
         if (bricks.Count == 0 && WristInventory.Export().Count == 0)
         {
             ShowMessage("Nothing to save yet");
             return;
         }
-        SaveModel(bricks, includeInventory: true);
+        // Building a set from its bin: also save the set, which parts came out of it, and the instruction page.
+        ModelFile.SetProgress progress = null;
+        if (_partsBin.IsActive)
+        {
+            (int booklet, int page) = InstructionBook.SavedPlace(_partsBin.Set.setNumber);
+            progress = new ModelFile.SetProgress { setNumber = _partsBin.Set.setNumber, booklet = booklet, page = page };
+        }
+        SaveModel(bricks, includeInventory: true, progress);
     }
 
-    // X while gripping a model saves that model (the held brick plus everything connected to it).
-    void SaveHeldModel()
+    // X locks the loose pieces of a model into it (so they can't be knocked or pulled off), or, when the
+    // model has none, unlocks the pieces locked most recently. The model is the one being held, or else
+    // the one the left controller is touching.
+    //
+    // Locked pieces are collapsed into locked bodies (see LockedBody): one object per rigid part of the
+    // model, split at hinges and other joints so those still pose. That swaps bricks for other objects,
+    // which can't be done under a hand, so a model that's being held is locked once it's put down.
+    Brick _pendingLock;
+
+    void ToggleLock()
     {
-        Brick held = Brick.Held.FirstOrDefault();
-        if (held == null)
+        Brick target = Brick.Held.FirstOrDefault();
+        bool held = target != null;
+        if (target == null)
+            target = Brick.Nearest(WristInventory.HandPosition(0), 0.12f);
+        if (target == null)
         {
-            ShowMessage("Grip a model, then press X to save it");
+            ShowMessage("Hold a model, or touch it with your left controller, then press X to lock it");
             return;
         }
 
-        var bricks = new List<Brick> { held };
-        bricks.AddRange(held.CarriedBricks);
-        SaveModel(bricks);
+        if (held && GameSettings.CollapseLocked)
+        {
+            _pendingLock = target;
+            ShowMessage(target.WholeModel().Any(b => !b.IsSectionLocked)
+                ? "It will lock when you put it down"
+                : "The last pieces you locked will unlock when you put it down");
+            return;
+        }
+        ApplyLockToggle(target);
     }
 
-    void SaveModel(List<Brick> bricks, bool includeInventory = false)
+    void UpdatePendingLock()
+    {
+        if (_pendingLock == null || Brick.Held.Count > 0)
+            return;
+        Brick target = _pendingLock;
+        _pendingLock = null;
+        if (target.isActiveAndEnabled)
+            ApplyLockToggle(target);
+    }
+
+    void ApplyLockToggle(Brick target)
+    {
+        List<Brick> model = target.WholeModel();
+        List<Brick> loose = model.Where(b => !b.IsSectionLocked).ToList();
+        if (loose.Count > 0)
+        {
+            int section = Brick.NewestSection + 1;
+            foreach (Brick brick in loose)
+                brick.SetLockedSection(section);
+            int total = model.Sum(b => b.PieceCount);
+            if (GameSettings.CollapseLocked)
+                Collapse(model);
+            ShowMessage(loose.Count == total
+                ? $"Locked {Pieces(total)}. Press X again to unlock"
+                : $"Locked {Pieces(loose.Count)} more ({total} locked). Press X again to unlock them");
+        }
+        else
+        {
+            // Everything's locked: undo the most recent lock only.
+            int newest = model.Max(b => b.LockedSection);
+            int total = model.Sum(b => b.PieceCount);
+            int unlocked = Unlock(model, newest);
+            ShowMessage(unlocked == total
+                ? $"Unlocked {Pieces(unlocked)}"
+                : $"Unlocked the last {Pieces(unlocked)} ({total - unlocked} still locked)");
+        }
+        UndoHistory.Clear(); // its steps refer to bricks that may have just been swapped for other objects
+    }
+
+    static string Pieces(int count) => count == 1 ? "1 piece" : $"{count} pieces";
+
+    // Swaps every locked brick and locked body of a model for freshly built locked bodies.
+    void Collapse(List<Brick> model)
+    {
+        var pieces = new List<LockedBody.Piece>();
+        foreach (Brick brick in model)
+        {
+            if (brick.IsLockedBody)
+                pieces.AddRange(PiecesOf(brick));
+            else if (brick.IsSectionLocked && brick.part != null)
+                pieces.Add(PieceOf(brick));
+            else
+                continue;
+            Remove(brick);
+        }
+        SpawnLockedBodies(pieces);
+    }
+
+    // Turns the pieces locked in the given section back into loose bricks. Returns how many.
+    int Unlock(List<Brick> model, int section)
+    {
+        int unlocked = 0;
+        var stay = new List<LockedBody.Piece>();
+        foreach (Brick brick in model)
+        {
+            if (!brick.IsLockedBody)
+            {
+                if (brick.LockedSection == section)
+                {
+                    brick.SetLockedSection(0);
+                    unlocked++;
+                }
+                continue;
+            }
+            if (brick.Locked.newestSection < section)
+                continue; // nothing of this body was in that lock
+
+            foreach (LockedBody.Piece piece in PiecesOf(brick))
+            {
+                if (piece.section == section)
+                {
+                    SpawnPiece(piece);
+                    unlocked++;
+                }
+                else
+                {
+                    stay.Add(piece);
+                }
+            }
+            Remove(brick);
+        }
+        SpawnLockedBodies(stay);
+        return unlocked;
+    }
+
+    LockedBody.Piece PieceOf(Brick brick) => new LockedBody.Piece
+    {
+        part = brick.part,
+        colorCode = brick.colorCode,
+        color = brick.color,
+        position = brick.transform.position,
+        rotation = brick.transform.rotation,
+        section = brick.LockedSection,
+        fromSet = _partsBin.IsFromBin(brick),
+        bond = brick.CurrentBond,
+    };
+
+    // A locked body's pieces where they are in the room, carrying the body's bond.
+    static List<LockedBody.Piece> PiecesOf(Brick body)
+    {
+        List<LockedBody.Piece> pieces = body.Locked.Explode(body.transform);
+        for (int i = 0; i < pieces.Count; i++)
+        {
+            LockedBody.Piece piece = pieces[i];
+            piece.bond = body.CurrentBond;
+            pieces[i] = piece;
+        }
+        return pieces;
+    }
+
+    // Takes a brick out of the game right away (Destroy alone would leave it around until the frame ends).
+    void Remove(Brick brick)
+    {
+        _partsBin.Forget(brick);
+        brick.gameObject.SetActive(false);
+        Destroy(brick.gameObject);
+    }
+
+    // A loose brick for a piece that's been unlocked.
+    Brick SpawnPiece(LockedBody.Piece piece)
+    {
+        Brick brick = SpawnBrickWithColorCode(piece.part, piece.colorCode);
+        if (brick.color != piece.color)
+        {
+            brick.color = piece.color;
+            brick.Rebuild();
+        }
+        brick.transform.SetPositionAndRotation(piece.position, piece.rotation);
+        if (piece.bond is Brick.Bond bond)
+            brick.RejoinBond(bond);
+        if (piece.fromSet)
+            _partsBin.Adopt(brick);
+        return brick;
+    }
+
+    /// <summary>
+    /// Builds locked bodies out of pieces posed in the room: one brick per rigid group. Bodies whose pieces
+    /// belonged to a bond join it (a bond that's still a saved number is left for the caller, in Locked.bonds).
+    /// </summary>
+    List<Brick> SpawnLockedBodies(List<LockedBody.Piece> pieces)
+    {
+        var bricks = new List<Brick>();
+        foreach ((LockedBody body, Vector3 position, Quaternion rotation) in LockedBody.Build(pieces, MenuStyle.Material, transparentMaterial))
+        {
+            Brick brick = Instantiate(brickPrefab, position, rotation);
+            brick.name = $"Locked Body ({body.pieces.Count})";
+            brick.transparentMaterial = transparentMaterial;
+            brick.BecomeLockedBody(body);
+            foreach (object key in body.bonds)
+            {
+                if (key is Brick.Bond bond)
+                {
+                    brick.RejoinBond(bond);
+                    break;
+                }
+            }
+            bricks.Add(brick);
+        }
+        return bricks;
+    }
+
+    // ---------- Assemblies ----------
+
+    void OnAssemblyPlaced(Brick assembly) => SplitAssembly(assembly);
+
+    /// <summary>
+    /// Swaps a brick whose part is a ready-made assembly (e.g. a complete universal joint) for the parts it's
+    /// made of, in the same place, so the joints between them can be posed. Left alone if any of those parts
+    /// isn't imported or they wouldn't hold together by their connection points. Returns the new bricks
+    /// (or just the original).
+    /// </summary>
+    List<Brick> SplitAssembly(Brick assembly)
+    {
+        var whole = new List<Brick> { assembly };
+        if (assembly == null || assembly.part == null || !assembly.part.IsAssembly || assembly.IsPreview || assembly.IsStored)
+            return whole;
+
+        var pieces = new List<Brick>();
+        foreach (BrickPartData.Component component in assembly.part.components)
+        {
+            BrickPartData part = FindPart(component.partId);
+            if (part == null)
+                break;
+            Brick piece = SpawnBrickWithColorCode(part, assembly.colorCode);
+            if (piece.color != assembly.color)
+            {
+                piece.color = assembly.color;
+                piece.Rebuild();
+            }
+            piece.transform.SetPositionAndRotation(assembly.transform.TransformPoint(component.position),
+                                                   assembly.transform.rotation * component.rotation);
+            pieces.Add(piece);
+        }
+
+        // Every piece must be plugged into the others, or the assembly would fall apart in the hand.
+        bool holds = pieces.Count == assembly.part.components.Length;
+        if (holds)
+        {
+            Physics.SyncTransforms();
+            var joined = new List<Brick> { pieces[0] };
+            for (int i = 0; i < joined.Count; i++)
+            {
+                foreach (Brick other in pieces)
+                {
+                    if (!joined.Contains(other) && joined[i].IsConnectedTo(other))
+                        joined.Add(other);
+                }
+            }
+            holds = joined.Count == pieces.Count;
+        }
+        if (!holds)
+        {
+            foreach (Brick piece in pieces)
+                Destroy(piece.gameObject);
+            return whole;
+        }
+
+        bool fromBin = _partsBin.IsFromBin(assembly);
+        foreach (Brick piece in pieces)
+        {
+            piece.SetLockedSection(assembly.LockedSection);
+            if (assembly.CurrentBond != null)
+                piece.RejoinBond(assembly.CurrentBond);
+            if (fromBin)
+                _partsBin.Adopt(piece);
+        }
+        Remove(assembly);
+        return pieces;
+    }
+
+    static Color ColorOf(int colorCode)
+    {
+        int index = BrickColors.IndexOfCode(colorCode);
+        return index >= 0 ? BrickColors.All[index].color : LDrawColors.Get(colorCode);
+    }
+
+    void SaveModel(List<Brick> bricks, bool includeInventory = false, ModelFile.SetProgress progress = null)
     {
         string name = ModelFile.NextAutoName();
-        ModelFile.Save(name, bricks, includeInventory);
+        ModelFile.Save(name, bricks, includeInventory, progress, _partsBin.IsFromBin);
 
-        string details = $"{bricks.Count} {(bricks.Count == 1 ? "part" : "parts")}";
+        int partCount = bricks.Sum(b => b.PieceCount);
+        string details = $"{partCount} {(partCount == 1 ? "part" : "parts")}";
         int stacks = includeInventory ? WristInventory.Export().Count : 0;
         if (stacks > 0)
             details += $" + {stacks} on wrists";
+        if (progress != null)
+            details += $", {_partsBin.SetTitle} in progress";
         ShowMessage($"Saved \"{name}\" ({details})");
         if (_modelMenu.IsOpen)
             _modelMenu.Refresh();
@@ -751,24 +1073,66 @@ public class Sandbox : MonoBehaviour
     /// <summary>Builds a saved model from real bricks, sitting in front of you, ready to grab.</summary>
     public void LoadModel(string path)
     {
-        List<ModelFile.Placement> placements = ModelFile.Load(path, out string title, out List<ModelFile.InventoryStack> inventory);
+        List<ModelFile.Placement> placements = ModelFile.Load(path, out string title, out List<ModelFile.InventoryStack> inventory,
+                                                              out ModelFile.SetProgress progress);
+        var fromSet = new List<Brick>(); // parts that came out of the saved set's bin
+        int sectionBase = Brick.NewestSection;
         (Vector3 origin, Quaternion facing) = InFrontOfUser(0f, 0.3f, menuDistance + 0.1f);
 
         int missing = 0;
         var bonds = new Dictionary<int, List<Brick>>();
+        // Locked pieces go straight into locked bodies, without ever existing as separate bricks.
+        var lockedPieces = new List<LockedBody.Piece>();
         foreach (ModelFile.Placement placement in placements)
         {
+            if (placement.lockSection > 0 && GameSettings.CollapseLocked)
+            {
+                BrickPartData part = FindPart(placement.partId);
+                if (part == null)
+                {
+                    missing++;
+                    continue;
+                }
+                lockedPieces.Add(new LockedBody.Piece
+                {
+                    part = part,
+                    colorCode = placement.colorCode,
+                    color = ColorOf(placement.colorCode),
+                    position = origin + facing * placement.position,
+                    rotation = facing * placement.rotation,
+                    section = sectionBase + placement.lockSection, // after the sections already in the room
+                    fromSet = placement.fromSet,
+                    bond = placement.bond != 0 ? (object)placement.bond : null,
+                });
+                continue;
+            }
+
             Brick brick = SpawnPlacement(placement, origin, facing);
             if (brick == null)
             {
                 missing++;
                 continue;
             }
+            if (placement.lockSection > 0)
+                brick.SetLockedSection(sectionBase + placement.lockSection); // after the sections already in the room
+            if (placement.fromSet)
+                fromSet.Add(brick);
             if (placement.bond != 0)
             {
                 if (!bonds.TryGetValue(placement.bond, out List<Brick> members))
                     bonds[placement.bond] = members = new List<Brick>();
                 members.Add(brick);
+            }
+        }
+        foreach (Brick body in SpawnLockedBodies(lockedPieces))
+        {
+            foreach (object key in body.Locked.bonds)
+            {
+                if (!(key is int id))
+                    continue;
+                if (!bonds.TryGetValue(id, out List<Brick> members))
+                    bonds[id] = members = new List<Brick>();
+                members.Add(body);
             }
         }
         foreach (List<Brick> members in bonds.Values)
@@ -789,13 +1153,43 @@ public class Sandbox : MonoBehaviour
                     else if (copy == 0)
                         missing++;
                 }
+                if (stack.fromSet)
+                    fromSet.AddRange(members);
                 WristInventory.AddLoaded(stack.hand, members);
             }
         }
 
-        ShowMessage(missing == 0
+        // Saved partway through building a set from its bin: pick that back up.
+        string resumed = progress != null ? ResumeSet(progress, fromSet) : null;
+        if (resumed != null)
+        {
+            foreach (LockedBody.Piece piece in lockedPieces)
+            {
+                if (piece.fromSet)
+                    _partsBin.TakePiece(piece.part, piece.colorCode);
+            }
+        }
+
+        ShowMessage(resumed != null
+            ? $"Loaded \"{title}\" and picked up {resumed} where you left off"
+            : missing == 0
             ? $"Loaded \"{title}\""
             : $"Loaded \"{title}\" ({missing} parts not imported yet)");
+    }
+
+    // Reopens a set's parts bin with the loaded set parts already taken out, and its instructions at the saved
+    // page. Returns the set's title, or null if that set isn't in the game any more.
+    string ResumeSet(ModelFile.SetProgress progress, List<Brick> alreadyTaken)
+    {
+        SetData set = SetData.LoadAll().FirstOrDefault(s => s.setNumber == progress.setNumber);
+        if (set == null)
+            return null;
+
+        CloseBuildMenus();
+        _setBuilder.ExitSet();
+        _partsBin.Resume(set, alreadyTaken);
+        _book.ResumeAt(set, progress.booklet, progress.page);
+        return set.title;
     }
 
     // A saved part as a real brick, placed relative to the given origin and facing. Null if the part isn't imported.
@@ -847,6 +1241,11 @@ public class Sandbox : MonoBehaviour
         {
             List<Brick> members = new List<Brick> { held };
             members.AddRange(held.CarriedBricks);
+            if (members.Any(m => m.IsLockedBody))
+            {
+                ShowMessage("Locked pieces can't be copied. Unlock them first (X)");
+                continue;
+            }
 
             float height = GroupHeight(members);
             Brick copy = CloneBrick(held, held.transform.position + Vector3.up * (height + 0.02f), held.transform.rotation);

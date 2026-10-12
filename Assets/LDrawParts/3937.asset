@@ -33,6 +33,7 @@ MonoBehaviour:
     openEnded: 0
     profile: S6
     group: 
+    sections: S6:4
   - kind: 0
     male: 0
     position: {x: 0.0039999997, y: -0.0095999995, z: 0}
@@ -44,6 +45,7 @@ MonoBehaviour:
     openEnded: 0
     profile: S6
     group: 
+    sections: S6:4
   - kind: 2
     male: 0
     position: {x: 0, y: -0.0039999997, z: 0}
@@ -53,8 +55,10 @@ MonoBehaviour:
     center: 0
     slide: 0
     openEnded: 1
-    profile: F4
+    profile: F4|F|18 4 18
     group: hgBrC
+    sections: 
+  components: []
   bodyBounds:
     m_Center: {x: 0, y: -0.0051999995, z: 0}
     m_Extent: {x: 0.007999999, y: 0.0044, z: 0.0039999997}

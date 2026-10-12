@@ -28,6 +28,9 @@ public static class UndoHistory
 
     public static bool CanUndo => Steps.Count > 0;
 
+    /// <summary>Forgets everything (e.g. when starting over).</summary>
+    public static void Clear() => Steps.Clear();
+
     /// <summary>Starts a step remembering where these bricks are now.</summary>
     public static Step RecordMove(IEnumerable<Brick> bricks)
     {

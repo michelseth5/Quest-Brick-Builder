@@ -1,0 +1,181 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 3815c01
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 3815c01
+  description: ~Minifig Hips and Legs (Obsolete)
+  category: Minifig
+  mesh: {fileID: 4300000, guid: eb4b561aa292bfa4a9781c8f72e42e97, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: -0.0039999997, y: -0.015999999, z: -0.0002}
+  - {x: 0.0039999997, y: -0.015999999, z: -0.0002}
+  connectors:
+  - kind: 0
+    male: 1
+    position: {x: 0.0039999997, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0044
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:11
+  - kind: 0
+    male: 1
+    position: {x: -0.0039999997, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: -1, y: -0, z: 0}
+    length: 0.0044
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:11
+  - kind: 0
+    male: 1
+    position: {x: -0.0008, y: -0.0047999998, z: 0}
+    axis: {x: -1, y: -0, z: 0}
+    reference: {x: 0, y: 1, z: 0}
+    length: 0.0032
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R3
+    group: 
+    sections: R3:8
+  - kind: 0
+    male: 1
+    position: {x: 0.0008, y: -0.0047999998, z: 0}
+    axis: {x: 1, y: -0, z: 0}
+    reference: {x: 0, y: -1, z: 0}
+    length: 0.0032
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R3
+    group: 
+    sections: R3:8
+  - kind: 0
+    male: 0
+    position: {x: -0.0008, y: -0.0047999998, z: 0}
+    axis: {x: -1, y: -0, z: 0}
+    reference: {x: 0, y: 1, z: 0}
+    length: 0.0032
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R3
+    group: 
+    sections: R3:8
+  - kind: 0
+    male: 0
+    position: {x: -0.0039999997, y: -0.015999999, z: -0.0004}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: -0.0039999997, y: -0.012, z: 0.0036}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: -0.0039999997, y: -0.0039999997, z: 0.0036}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: 0.0008, y: -0.0047999998, z: 0}
+    axis: {x: 1, y: -0, z: 0}
+    reference: {x: 0, y: 1, z: 0}
+    length: 0.0032
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R3
+    group: 
+    sections: R3:8
+  - kind: 0
+    male: 0
+    position: {x: 0.0039999997, y: -0.015999999, z: -0.0004}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: -1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: 0.0039999997, y: -0.012, z: 0.0036}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: -1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: 0.0039999997, y: -0.0039999997, z: 0.0036}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: -1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  components:
+  - partId: 3815
+    position: {x: 0, y: -0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+  - partId: 3816
+    position: {x: 0, y: -0.0047999998, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+  - partId: 3817
+    position: {x: 0, y: -0.0047999998, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+  bodyBounds:
+    m_Center: {x: 0, y: -0.0057999995, z: -0.00020000013}
+    m_Extent: {x: 0.0078, y: 0.010199999, z: 0.0042}

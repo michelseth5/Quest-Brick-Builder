@@ -41,6 +41,48 @@ public static class GameSettings
         }
     }
 
+    const string PerformanceKey = "ShowPerformance";
+
+    /// <summary>Whether the performance readout (frame rate, parts, triangles, draw calls) is shown.</summary>
+    public static bool ShowPerformance
+    {
+        get => PlayerPrefs.GetInt(PerformanceKey, 0) == 1;
+        set
+        {
+            PlayerPrefs.SetInt(PerformanceKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
+
+    const string MergeKey = "MergeModels";
+
+    /// <summary>Whether bricks sitting still are drawn as combined meshes (far fewer draw calls for big models).</summary>
+    public static bool MergeModels
+    {
+        get => PlayerPrefs.GetInt(MergeKey, 1) == 1;
+        set
+        {
+            PlayerPrefs.SetInt(MergeKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
+
+    const string CollapseKey = "CollapseLocked";
+
+    /// <summary>
+    /// Whether locked pieces are collapsed into a few lightweight objects (needed for very big models).
+    /// Off, a lock only stops pieces coming off and every piece stays its own brick.
+    /// </summary>
+    public static bool CollapseLocked
+    {
+        get => PlayerPrefs.GetInt(CollapseKey, 1) == 1;
+        set
+        {
+            PlayerPrefs.SetInt(CollapseKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
+
     /// <summary>Degrees between joint clicks, or 0 for free turning.</summary>
     public static float JointStepDegrees => JointSteps[JointStep];
 }

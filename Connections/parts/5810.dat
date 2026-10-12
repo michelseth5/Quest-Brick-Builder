@@ -1,0 +1,6 @@
+0 Extra connection info for "Tyre 11/ 15 x 21 with Racing Tread" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // The tyre's centre, matching the "rim11x21" point added to wheel 7834 (see 7834.dat here).
+0 // The tyre is symmetric about its origin, so it fits either way round.
+0 !LDCAD SNAP_GEN [group=rim11x21] [gender=F] [bounding=cyl 12 7] [ori=1 0 0 0 0 -1 0 1 0]

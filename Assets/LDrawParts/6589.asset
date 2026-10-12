@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 6589
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 6589
+  description: Technic Gear 12 Tooth Bevel
+  category: Technic
+  mesh: {fileID: 4300000, guid: ee73adc4048dd1240b25bfae3cb39eeb, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: -0.0039999997, y: -0.0064, z: 0.0008}
+  - {x: 0.0039999997, y: -0.0064, z: 0.0008}
+  connectors:
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0, z: -0.0011999999}
+    axis: {x: 0, y: -0, z: 1}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0039999997
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: R9 A6
+    group: 
+    sections: R9:3 A6:7
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0, z: 0}
+    axis: {x: 0, y: -0, z: -1}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0011999999
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: R12
+    group: 
+    sections: R12:3
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: 0, z: 0.0007999999}
+    m_Extent: {x: 0.0064, y: 0.0064, z: 0.0019999999}

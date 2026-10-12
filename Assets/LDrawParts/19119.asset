@@ -1,0 +1,113 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 19119
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 19119
+  description: Plant Flower Stem with Bar and 6 Stems
+  category: Plant
+  mesh: {fileID: 4300000, guid: 95ae4393329268f4281a1ba7383ffe34, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: -0.0058709583, y: -0, z: 0}
+  - {x: 0.0021290416, y: -0.0039999997, z: 0}
+  - {x: 0.010129042, y: -0.0039999997, z: 0}
+  connectors:
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0039999997
+    center: 0
+    slide: 1
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:10
+  - kind: 0
+    male: 1
+    position: {x: -0.0025999981, y: 0.0040249573, z: 0}
+    axis: {x: -0.5000002, y: 0.8660253, z: 0}
+    reference: {x: -0.8660253, y: -0.5000002, z: 0}
+    length: 0.010199999
+    center: 0
+    slide: 1
+    openEnded: 0
+    profile: R2.3 R2
+    group: 
+    sections: R2.25:18.5 R2:7
+  - kind: 0
+    male: 1
+    position: {x: 0.0012999912, y: 0.004024965, z: 0.0022514646}
+    axis: {x: 0.25000092, y: 0.86602443, z: 0.4330141}
+    reference: {x: 0.43301237, y: -0.50000167, z: 0.7499991}
+    length: 0.010199999
+    center: 0
+    slide: 1
+    openEnded: 0
+    profile: R2.3 R2
+    group: 
+    sections: R2.25:18.5 R2:7
+  - kind: 0
+    male: 1
+    position: {x: -0.0015034102, y: 0.002294627, z: -0.002603858}
+    axis: {x: -0.46984673, y: 0.34201878, z: -0.813798}
+    reference: {x: 0.17100947, y: 0.93969315, z: 0.29619694}
+    length: 0.0098
+    center: 0
+    slide: 1
+    openEnded: 0
+    profile: R2.3 R2
+    group: 
+    sections: R2.25:17.5 R2:7
+  - kind: 0
+    male: 1
+    position: {x: 0.0012999912, y: 0.004024965, z: -0.0022514646}
+    axis: {x: 0.25000092, y: 0.86602443, z: -0.4330141}
+    reference: {x: 0.43301237, y: -0.50000167, z: -0.7499991}
+    length: 0.010199999
+    center: 0
+    slide: 1
+    openEnded: 0
+    profile: R2.3 R2
+    group: 
+    sections: R2.25:18.5 R2:7
+  - kind: 0
+    male: 1
+    position: {x: -0.0015034102, y: 0.002294627, z: 0.002603858}
+    axis: {x: -0.46984673, y: 0.34201878, z: 0.813798}
+    reference: {x: 0.17100947, y: 0.93969315, z: -0.29619694}
+    length: 0.0098
+    center: 0
+    slide: 1
+    openEnded: 0
+    profile: R2.3 R2
+    group: 
+    sections: R2.25:17.5 R2:7
+  - kind: 0
+    male: 1
+    position: {x: 0.0030068248, y: 0.0022946228, z: 0}
+    axis: {x: 0.939693, y: 0.34201926, z: 0}
+    reference: {x: 0.34201926, y: -0.939693, z: 0}
+    length: 0.0098
+    center: 0
+    slide: 1
+    openEnded: 0
+    profile: R2.3 R2
+    group: 
+    sections: R2.25:17.5 R2:7
+  components: []
+  bodyBounds:
+    m_Center: {x: 0.0021290416, y: 0.0045659887, z: 0}
+    m_Extent: {x: 0.010322218, y: 0.008565988, z: 0.01088077}

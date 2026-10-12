@@ -20,10 +20,10 @@ public static class RoomSurfaces
 
         MRUK mruk = MRUK.Instance;
         if (mruk == null || !mruk.IsInitialized)
-            return false;
+            return TryFloor(point, maxDistance, out surfacePoint);
         MRUKRoom room = mruk.GetCurrentRoom();
         if (room == null)
-            return false;
+            return TryFloor(point, maxDistance, out surfacePoint);
 
         float bestDistance = float.MaxValue;
         foreach (MRUKAnchor anchor in room.Anchors)
@@ -47,6 +47,29 @@ public static class RoomSurfaces
             surfacePoint = point - t.forward * local.z;
         }
 
-        return bestDistance < float.MaxValue;
+        if (bestDistance < float.MaxValue)
+            return true;
+        return TryFloor(point, maxDistance, out surfacePoint);
+    }
+
+    static OVRCameraRig s_rig;
+
+    // The headset's own floor height (its tracking space is floor-level), for when the room scan has no
+    // floor here: no scan yet, or standing outside the scanned room.
+    static bool TryFloor(Vector3 point, float maxDistance, out Vector3 surfacePoint)
+    {
+        surfacePoint = default;
+        if (OVRManager.instance == null || OVRManager.instance.trackingOriginType == OVRManager.TrackingOrigin.EyeLevel)
+            return false;
+        if (s_rig == null)
+            s_rig = Object.FindFirstObjectByType<OVRCameraRig>();
+        if (s_rig == null || s_rig.trackingSpace == null)
+            return false;
+
+        float floor = s_rig.trackingSpace.position.y;
+        if (Mathf.Abs(point.y - floor) > maxDistance)
+            return false;
+        surfacePoint = new Vector3(point.x, floor, point.z);
+        return true;
     }
 }

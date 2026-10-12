@@ -1,0 +1,190 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 24121
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 24121
+  description: Technic Gear Ring Quarter 11 x 11 with 35 Teeth
+  category: Technic
+  mesh: {fileID: 4300000, guid: dd65002a05303194e92e8e72084f119f, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: -0.08, y: -0.0039999997, z: 0}
+  - {x: -0.08, y: -0.0039999997, z: 0.015999999}
+  - {x: -0.08, y: -0.0039999997, z: 0.024}
+  - {x: -0.08, y: -0.0039999997, z: 0.031999998}
+  - {x: -0.072, y: -0.0039999997, z: 0.015999999}
+  - {x: -0.072, y: -0.0039999997, z: 0.024}
+  - {x: -0.072, y: -0.0039999997, z: 0.031999998}
+  - {x: -0.072, y: -0.0039999997, z: 0.048}
+  - {x: -0.063999996, y: -0.0039999997, z: 0.015999999}
+  - {x: -0.063999996, y: -0.0039999997, z: 0.024}
+  - {x: -0.063999996, y: -0.0039999997, z: 0.04}
+  - {x: -0.063999996, y: -0.0039999997, z: 0.048}
+  - {x: -0.063999996, y: -0.0039999997, z: 0.055999998}
+  - {x: -0.055999998, y: -0.0039999997, z: 0.04}
+  - {x: -0.055999998, y: -0.0039999997, z: 0.048}
+  - {x: -0.055999998, y: -0.0039999997, z: 0.055999998}
+  - {x: -0.055999998, y: -0.0039999997, z: 0.063999996}
+  - {x: -0.048, y: -0.0039999997, z: 0.048}
+  - {x: -0.048, y: -0.0039999997, z: 0.055999998}
+  - {x: -0.048, y: -0.0039999997, z: 0.063999996}
+  - {x: -0.048, y: -0.0039999997, z: 0.072}
+  - {x: -0.04, y: -0.0039999997, z: 0.055999998}
+  - {x: -0.04, y: -0.0039999997, z: 0.063999996}
+  - {x: -0.031999998, y: -0.0039999997, z: 0.072}
+  - {x: -0.031999998, y: -0.0039999997, z: 0.08}
+  - {x: -0.024, y: -0.0039999997, z: 0.063999996}
+  - {x: -0.024, y: -0.0039999997, z: 0.072}
+  - {x: -0.024, y: -0.0039999997, z: 0.08}
+  - {x: -0.015999999, y: -0.0039999997, z: 0.063999996}
+  - {x: -0.015999999, y: -0.0039999997, z: 0.072}
+  - {x: -0.015999999, y: -0.0039999997, z: 0.08}
+  - {x: 0, y: -0.0039999997, z: 0.08}
+  connectors:
+  - kind: 0
+    male: 0
+    position: {x: -0.077273995, y: -0, z: 0.02070552}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0.9659258, y: -0, z: -0.2588189}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: -0.0565684, y: -0.0039999997, z: 0.0565684}
+    axis: {x: -0, y: 1, z: 0}
+    reference: {x: -0.70710677, y: -0, z: 0.70710677}
+    length: 0.007999999
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: A6
+    group: 
+    sections: A6:20
+  - kind: 0
+    male: 0
+    position: {x: -0.069281995, y: -0, z: 0.04}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0.8660266, y: -0, z: -0.49999803}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: -0.04, y: -0, z: 0.069281995}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0.49999803, y: -0, z: -0.8660266}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: -0.02070552, y: -0, z: 0.077273995}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0.2588189, y: -0, z: -0.9659258}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: -0.063999996, y: -0, z: 0.048}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0.8, y: -0, z: -0.6}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: -0.048, y: -0, z: 0.063999996}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0.6, y: -0, z: -0.8}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: -0.01131372, y: -0, z: 0.079196}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0.14141998, y: -0, z: -0.98994976}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: -0.079196, y: -0, z: 0.01131372}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0.98994976, y: -0, z: -0.14141998}
+    length: 0.007999999
+    center: 1
+    slide: 1
+    openEnded: 1
+    profile: R8 R6
+    group: 
+    sections: R8:2 R6:16 R8:2
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0039999997, z: 0.08}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 0, y: -0, z: 1}
+    length: 0.0039999997
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: A6
+    group: 
+    sections: A6:10
+  - kind: 0
+    male: 0
+    position: {x: -0.08, y: -0.0039999997, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: -1, y: -0, z: 0}
+    length: 0.0039999997
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: A6
+    group: 
+    sections: A6:10
+  components: []
+  bodyBounds:
+    m_Center: {x: -0.04, y: 0, z: 0.04}
+    m_Extent: {x: 0.0436, y: 0.0039999997, z: 0.0436}

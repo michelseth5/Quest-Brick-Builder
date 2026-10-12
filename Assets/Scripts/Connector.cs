@@ -24,6 +24,7 @@ public struct Connector
     public bool openEnded;
     public string profile;     // what it fits: "R6" round radius 6 LDU, "S6" square, "A6" axle, "F6" hinge, "G:name" special
     public string group;
+    public string sections;    // cylinders: each section from the start as <shape><radius>:<width> in LDU (see Connections.Fouls)
 
     public Vector3 Start => center ? position - axis * (length * 0.5f) : position;
 
@@ -78,7 +79,8 @@ public static class Connections
         if (a.kind == Connector.Kind.Generic || b.kind == Connector.Kind.Generic)
             return a.kind == b.kind && a.profile == b.profile && a.male != b.male;
         if (a.kind == Connector.Kind.Finger || b.kind == Connector.Kind.Finger)
-            return a.kind == b.kind && a.profile == b.profile && a.male != b.male;
+            return a.kind == b.kind && string.Equals(a.group ?? "", b.group ?? "", StringComparison.Ordinal)
+                   && FingersInterlock(a, b);
 
         // A clip holds a bar (a male cylinder) of its own radius.
         if (a.kind == Connector.Kind.Clip || b.kind == Connector.Kind.Clip)
@@ -117,6 +119,9 @@ public static class Connections
         }
         return false;
     }
+
+    static bool FingersInterlock(in Connector a, in Connector b) =>
+        FingerPattern.Interlock(a.profile, a.male, b.profile, b.male);
 
     static (char, float)[] ParseTokens(string profile)
     {
@@ -266,7 +271,20 @@ public static class Connections
                 // Pins, axles, and holes that may slide still click into place: at plate-height or half-stud
                 // steps from the fixed shape's ends and from the parts already on it, so a pin goes fully in,
                 // a gear sits at a set spot on an axle, and a part can rest against the one below it.
-                shift = SlideShift(Mathf.Min(a0, a1), Mathf.Max(a0, a1), fixedWorld.length, slideAnchors);
+                // The steps line up each shape's reference face (see FaceOffset), which is its start unless it's
+                // a hole of an odd length, like the 18 LDU holes of the 6 x 8 Technic frame.
+                float lowEnd = Mathf.Min(a0, a1);
+                float movingFace = a0 + direction * FaceOffset(turned);
+                float phase = FaceOffset(fixedWorld) - (movingFace - lowEnd);
+                var shapes = new SlideShapes
+                {
+                    fixedSections = ParseSections(fixedWorld.sections),
+                    movingSections = ParseSections(turned.sections),
+                    movingStart = a0,
+                    direction = direction,
+                    movingMale = turned.male,
+                };
+                shift = SlideShift(lowEnd, Mathf.Max(a0, a1), fixedWorld.length, slideAnchors, phase, shapes);
             }
             else if (sliding)
             {
@@ -282,8 +300,9 @@ public static class Connections
                     shift = Mathf.Clamp(middle, 0f, fixedWorld.length) - middle; // e.g. a clip along a long bar
                 }
             }
-            else if (turned.center && fixedWorld.center)
+            else if ((turned.center && fixedWorld.center) || turned.kind == Connector.Kind.Finger)
             {
+                // (Hinge fingers interlock centre to centre; see FingerPattern.)
                 shift = fixedWorld.length * 0.5f - middle;                       // middles meet
             }
             else
@@ -310,14 +329,107 @@ public static class Connections
     const float HalfStudStep = Brick.StudPitch * 0.5f; // half a stud (10 LDU)
     const float RestMagnet = 0.003f;                    // within 3 mm, rest flush against a neighbor
 
+    // How far along a shape (from its start) the face that sliding steps are counted from is. Normally the
+    // start. A hole whose length isn't a whole number of half studs is described from inside the part, and
+    // its open face is the end with the wider section (the recess a pin's collar sits in), e.g. the
+    // 6 x 8 Technic frame's holes: 16 LDU of bore, then a 2 LDU recess at the outer face.
+    static float FaceOffset(in Connector c)
+    {
+        if (c.kind != Connector.Kind.Cylinder || c.male)
+            return 0f;
+        float steps = c.length / HalfStudStep;
+        if (Mathf.Abs(steps - Mathf.Round(steps)) < 0.02f)
+            return 0f;
+        (char shape, float radius)[] tokens = ParseTokens(c.profile);
+        return tokens.Length >= 2 && tokens[tokens.Length - 1].radius > tokens[0].radius + 0.05f ? c.length : 0f;
+    }
+
+    // One stretch of a pin, axle or hole: where it runs (meters from the shape's start) and how wide it is.
+    struct Section
+    {
+        public float from, to;
+        public float radius;   // LDU
+        public bool flexible;  // the springy lips at a pin's ends, which squeeze through anything
+    }
+
+    static readonly Dictionary<string, Section[]> SectionCache = new Dictionary<string, Section[]>();
+    static readonly Section[] NoSections = new Section[0];
+
+    // "R8:2 R6:16 R8:2" -> sections in order from the shape's start.
+    static Section[] ParseSections(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return NoSections;
+        if (SectionCache.TryGetValue(text, out Section[] parsed))
+            return parsed;
+
+        var list = new List<Section>();
+        float at = 0f;
+        foreach (string token in text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            int colon = token.IndexOf(':');
+            if (colon < 2
+                || !float.TryParse(token.Substring(1, colon - 1), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float radius)
+                || !float.TryParse(token.Substring(colon + 1), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float width))
+                continue;
+            float length = width * 0.0004f; // LDU -> meters
+            list.Add(new Section { from = at, to = at + length, radius = radius, flexible = token[0] == 'L' });
+            at += length;
+        }
+        parsed = list.ToArray();
+        SectionCache[text] = parsed;
+        return parsed;
+    }
+
+    // What SlideShift needs to know about the two shapes to keep wide sections out of narrow ones.
+    struct SlideShapes
+    {
+        public Section[] fixedSections, movingSections;
+        public float movingStart;  // the moving shape's start, along the fixed shape from its start
+        public float direction;    // +1 if the moving shape points the same way as the fixed one, else -1
+        public bool movingMale;
+    }
+
+    // Whether, with the moving shape shifted by `shift`, a wide section of the peg would sit inside a narrower
+    // section of the hole: a pin's collar in the bore instead of the recess made for it, or a part's body
+    // pushed into a stud socket. Real parts stop there.
+    static bool Fouls(in SlideShapes shapes, float shift)
+    {
+        if (shapes.fixedSections == null || shapes.movingSections == null)
+            return false;
+        foreach (Section moving in shapes.movingSections)
+        {
+            if (moving.flexible)
+                continue;
+            float m0 = shapes.movingStart + shift + shapes.direction * moving.from;
+            float m1 = shapes.movingStart + shift + shapes.direction * moving.to;
+            float low = Mathf.Min(m0, m1), high = Mathf.Max(m0, m1);
+            foreach (Section still in shapes.fixedSections)
+            {
+                if (still.flexible || Mathf.Min(high, still.to) - Mathf.Max(low, still.from) < 0.0002f)
+                    continue;
+                float peg = shapes.movingMale ? moving.radius : still.radius;
+                float hole = shapes.movingMale ? still.radius : moving.radius;
+                if (peg > hole + 0.3f)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     // Along a sliding connection, the moving shape (lo..hi, measured from the fixed shape's start) clicks to
-    // half-stud steps from the fixed shape's start. If it's within a few mm of resting flush against a part
-    // already on the same shaft (anchors = those parts' ends), it rests there instead, so stacked parts sit
-    // snugly. Returns how far to move it.
-    static float SlideShift(float lo, float hi, float fixedLength, IReadOnlyList<float> anchors)
+    // half-stud steps: its low end may sit at phase + whole steps (phase is 0 when both shapes are measured
+    // from their starts). If it's within a few mm of resting flush against a part already on the same shaft
+    // (anchors = pairs of those parts' ends), it rests there instead, so stacked parts sit snugly. A spot is
+    // no good if another part is already there or a wide section would be forced into a narrow one (Fouls);
+    // then the nearest good spot is used: a step, resting against a neighbor, or seated section to section
+    // (a collar in its recess). Returns how far to move it.
+    static float SlideShift(float lo, float hi, float fixedLength, IReadOnlyList<float> anchors, float phase, in SlideShapes shapes)
     {
         float length = hi - lo;
+        SlideShapes s = shapes; // (local functions can't capture an `in` parameter)
         bool Overlaps(float newLo) => newLo < fixedLength - 0.0001f && newLo + length > 0.0001f;
+        bool Good(float newLo) => Overlaps(newLo) && (anchors == null || !Blocked(newLo, length, anchors)) && !Fouls(s, newLo - lo);
 
         float restShift = 0f, restDistance = float.MaxValue;
         if (anchors != null)
@@ -325,8 +437,9 @@ public static class Connections
             foreach (float end in anchors)
             {
                 // Our low end against its end, or our high end against it.
-                foreach (float newLo in new[] { end, end - length })
+                for (int side = 0; side < 2; side++)
                 {
+                    float newLo = side == 0 ? end : end - length;
                     float distance = Mathf.Abs(newLo - lo);
                     if (distance < restDistance && distance <= RestMagnet && Overlaps(newLo))
                     {
@@ -336,10 +449,71 @@ public static class Connections
                 }
             }
         }
-        if (restDistance < float.MaxValue)
-            return restShift;
 
-        float stepped = Mathf.Round(lo / HalfStudStep) * HalfStudStep;
-        return (Overlaps(stepped) ? stepped : 0f) - lo;
+        float shift;
+        if (restDistance < float.MaxValue)
+        {
+            shift = restShift;
+        }
+        else
+        {
+            float stepped = Mathf.Round((lo - phase) / HalfStudStep) * HalfStudStep + phase;
+            float home = phase - Mathf.Round(phase / HalfStudStep) * HalfStudStep; // the step nearest the fixed shape's start
+            shift = (Overlaps(stepped) ? stepped : home) - lo;
+        }
+        if (Good(lo + shift))
+            return shift;
+
+        // That spot is taken or impossible: take the nearest good one instead.
+        float best = shift, bestDistance = float.MaxValue;
+        void Try(float newLo)
+        {
+            float distance = Mathf.Abs(newLo - lo);
+            if (distance < bestDistance && Good(newLo))
+            {
+                bestDistance = distance;
+                best = newLo - lo;
+            }
+        }
+        if (anchors != null)
+        {
+            foreach (float end in anchors)
+            {
+                Try(end);
+                Try(end - length);
+            }
+        }
+        float near = Mathf.Round((lo - phase) / HalfStudStep);
+        for (int k = -6; k <= 6; k++)
+            Try((near + k) * HalfStudStep + phase);
+
+        // Seated: an edge of one of our sections meeting an edge of one of the fixed shape's.
+        if (s.fixedSections != null && s.movingSections != null)
+        {
+            foreach (Section moving in s.movingSections)
+            {
+                foreach (Section still in s.fixedSections)
+                {
+                    for (int corner = 0; corner < 4; corner++)
+                    {
+                        float mine = s.movingStart + s.direction * ((corner & 1) == 0 ? moving.from : moving.to);
+                        float theirs = (corner & 2) == 0 ? still.from : still.to;
+                        Try(lo + (theirs - mine));
+                    }
+                }
+            }
+        }
+        return best;
+    }
+
+    // Whether lo..lo+length overlaps a part already on the shaft (anchors = pairs of its from/to).
+    static bool Blocked(float lo, float length, IReadOnlyList<float> anchors)
+    {
+        for (int i = 0; i + 1 < anchors.Count; i += 2)
+        {
+            if (Mathf.Min(anchors[i + 1], lo + length) - Mathf.Max(anchors[i], lo) > 0.0005f)
+                return true;
+        }
+        return false;
     }
 }

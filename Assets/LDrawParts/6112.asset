@@ -1,0 +1,470 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 6112
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 6112
+  description: Brick 1 x 12
+  category: Brick
+  mesh: {fileID: 4300000, guid: 392142ed3ba3e7849a5e396dbfe054d9, type: 2}
+  submeshColors: 10000000i
+  studs:
+  - {x: 0.044, y: -0, z: 0}
+  - {x: 0.036, y: -0, z: 0}
+  - {x: 0.027999999, y: -0, z: 0}
+  - {x: 0.02, y: -0, z: 0}
+  - {x: 0.012, y: -0, z: 0}
+  - {x: 0.0039999997, y: -0, z: 0}
+  - {x: -0.0039999997, y: -0, z: 0}
+  - {x: -0.012, y: -0, z: 0}
+  - {x: -0.02, y: -0, z: 0}
+  - {x: -0.027999999, y: -0, z: 0}
+  - {x: -0.036, y: -0, z: 0}
+  - {x: -0.044, y: -0, z: 0}
+  antiStuds:
+  - {x: -0.044, y: -0.0095999995, z: 0}
+  - {x: -0.036, y: -0.0095999995, z: 0}
+  - {x: -0.027999999, y: -0.0095999995, z: 0}
+  - {x: -0.02, y: -0.0095999995, z: 0}
+  - {x: -0.012, y: -0.0095999995, z: 0}
+  - {x: -0.0039999997, y: -0.0095999995, z: 0}
+  - {x: 0.0039999997, y: -0.0095999995, z: 0}
+  - {x: 0.012, y: -0.0095999995, z: 0}
+  - {x: 0.02, y: -0.0095999995, z: 0}
+  - {x: 0.027999999, y: -0.0095999995, z: 0}
+  - {x: 0.036, y: -0.0095999995, z: 0}
+  - {x: 0.044, y: -0.0095999995, z: 0}
+  connectors:
+  - kind: 0
+    male: 1
+    position: {x: 0.04, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: 0.031999998, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: 0.024, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: 0.015999999, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: 0.007999999, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: 0, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: -0.007999999, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: -0.015999999, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: -0.024, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: -0.031999998, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: -0.04, y: -0.0016, z: 0}
+    axis: {x: 0, y: -1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R4
+    group: 
+    sections: R4:20
+  - kind: 0
+    male: 1
+    position: {x: 0.044, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: 0.036, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: 0.027999999, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: 0.02, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: 0.012, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: 0.0039999997, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: -0.0039999997, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: -0.012, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: -0.02, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: -0.027999999, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: -0.036, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 1
+    position: {x: -0.044, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0016
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: R6
+    group: 
+    sections: R6:4
+  - kind: 0
+    male: 0
+    position: {x: -0.044, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: -0.036, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: -0.027999999, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: -0.02, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: -0.012, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: -0.0039999997, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: 0.0039999997, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: 0.012, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: 0.02, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: 0.027999999, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: 0.036, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  - kind: 0
+    male: 0
+    position: {x: 0.044, y: -0.0095999995, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.007999999
+    center: 0
+    slide: 0
+    openEnded: 0
+    profile: S6
+    group: 
+    sections: S6:20
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: -0.0047999998, z: 0}
+    m_Extent: {x: 0.048, y: 0.0047999998, z: 0.0039999997}

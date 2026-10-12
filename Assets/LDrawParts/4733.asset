@@ -33,6 +33,7 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
+    sections: R6:4
   - kind: 0
     male: 1
     position: {x: 0.0039999997, y: -0.0039999997, z: 0}
@@ -44,6 +45,7 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
+    sections: R6:4
   - kind: 0
     male: 1
     position: {x: 0, y: -0.0039999997, z: -0.0039999997}
@@ -55,6 +57,7 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
+    sections: R6:4
   - kind: 0
     male: 1
     position: {x: -0.0039999997, y: -0.0039999997, z: 0}
@@ -66,6 +69,7 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
+    sections: R6:4
   - kind: 0
     male: 1
     position: {x: 0, y: -0.0039999997, z: 0.0039999997}
@@ -77,6 +81,7 @@ MonoBehaviour:
     openEnded: 0
     profile: R6
     group: 
+    sections: R6:4
   - kind: 0
     male: 0
     position: {x: 0, y: -0.0095999995, z: 0}
@@ -88,6 +93,7 @@ MonoBehaviour:
     openEnded: 1
     profile: S6 R4
     group: 
+    sections: S6:20 R4:8
   - kind: 0
     male: 0
     position: {x: 0, y: -0.0039999997, z: 0}
@@ -99,6 +105,7 @@ MonoBehaviour:
     openEnded: 1
     profile: R4
     group: 
+    sections: R4:28
   - kind: 0
     male: 0
     position: {x: 0, y: -0.0039999997, z: 0}
@@ -110,6 +117,8 @@ MonoBehaviour:
     openEnded: 1
     profile: R4
     group: 
+    sections: R4:28
+  components: []
   bodyBounds:
     m_Center: {x: 0, y: -0.0047999998, z: 0}
     m_Extent: {x: 0.0039999997, y: 0.0047999998, z: 0.0039999997}

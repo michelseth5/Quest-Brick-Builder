@@ -306,8 +306,8 @@ public class SetFinderWindow : EditorWindow
 
         foreach (string id in candidates)
         {
-            string path = Path.Combine(libraryRoot, "parts", id + ".dat");
-            if (!File.Exists(path))
+            string path = LDrawParser.FindPartFile(libraryRoot, id);
+            if (path == null)
                 continue;
             string firstLine = File.ReadLines(path).FirstOrDefault() ?? "";
             if (!firstLine.StartsWith("0 ~Moved"))
@@ -315,7 +315,7 @@ public class SetFinderWindow : EditorWindow
         }
         foreach (string id in candidates)
         {
-            if (File.Exists(Path.Combine(libraryRoot, "parts", id + ".dat")))
+            if (LDrawParser.FindPartFile(libraryRoot, id) != null)
                 return id;
         }
 
@@ -324,7 +324,7 @@ public class SetFinderWindow : EditorWindow
         {
             foreach (string fallback in PlainVersions(id))
             {
-                if (File.Exists(Path.Combine(libraryRoot, "parts", fallback + ".dat")))
+                if (LDrawParser.FindPartFile(libraryRoot, fallback) != null)
                     return fallback;
             }
         }

@@ -79,10 +79,9 @@ public class InstructionBook : MonoBehaviour
         if (_set != set)
         {
             _set = set;
-            _booklet = 0;
-            _page = 0;
+            (int booklet, int page) = SavedPlace(set.setNumber);
             LoadBooklets();
-            OpenBooklet(_booklet);
+            OpenBooklet(booklet, page);
         }
 
         if (!IsOpen)
@@ -93,6 +92,33 @@ public class InstructionBook : MonoBehaviour
             _handle.gameObject.SetActive(true);
         }
         Layout();
+    }
+
+    /// <summary>Puts a set's instructions at the given booklet and page (e.g. from a saved game).</summary>
+    public void ResumeAt(SetData set, int booklet, int page)
+    {
+        RememberPlace(set.setNumber, booklet, page);
+        if (_set == set)
+            OpenBooklet(booklet, page);
+    }
+
+    // ---------- Remembering your place ----------
+
+    // Each set's booklet and page, kept on the headset so the book opens where you left off.
+    const string PlaceKey = "BookPlace:";
+
+    public static (int booklet, int page) SavedPlace(string setNumber)
+    {
+        string[] parts = PlayerPrefs.GetString(PlaceKey + setNumber, "").Split(',');
+        if (parts.Length == 2 && int.TryParse(parts[0], out int booklet) && int.TryParse(parts[1], out int page))
+            return (Mathf.Max(0, booklet), Mathf.Max(0, page));
+        return (0, 0);
+    }
+
+    static void RememberPlace(string setNumber, int booklet, int page)
+    {
+        PlayerPrefs.SetString(PlaceKey + setNumber, $"{booklet},{page}");
+        PlayerPrefs.Save();
     }
 
     public void Close()
@@ -121,7 +147,7 @@ public class InstructionBook : MonoBehaviour
 
     void LoadBooklets() => _booklets = FindBooklets(_set.setNumber);
 
-    void OpenBooklet(int index)
+    void OpenBooklet(int index, int page = 0)
     {
         ClearTextures();
         _booklet = Mathf.Clamp(index, 0, Mathf.Max(0, _booklets.Count - 1));
@@ -147,7 +173,7 @@ public class InstructionBook : MonoBehaviour
         }
 
         ShowMessage(null);
-        ShowPage(0);
+        ShowPage(page);
     }
 
     // ---------- Adding a PDF ----------
@@ -412,6 +438,8 @@ public class InstructionBook : MonoBehaviour
         if (_pageCount == 0)
             return;
         _page = Mathf.Clamp(page, 0, _pageCount - 1);
+        if (_set != null)
+            RememberPlace(_set.setNumber, _booklet, _page);
 
         for (int p = _page - 1; p <= _page + KeepAround; p++)
             RequestPage(p);
@@ -424,9 +452,76 @@ public class InstructionBook : MonoBehaviour
         if (_pageCount == 0)
             return;
         if (direction > 0)
-            ShowPage(_page + (_showingTwo ? 2 : 1));
+        {
+            int next = _page + (_showingTwo ? 2 : 1);
+            // Past the last page: carry on into the next booklet, if the set has one.
+            if (next >= _pageCount && _booklet + 1 < _booklets.Count)
+                OpenBooklet(_booklet + 1);
+            else
+                ShowPage(next);
+        }
+        else if (_page == 0 && _booklet > 0)
+        {
+            // Back from the first page: the end of the booklet before.
+            OpenBooklet(_booklet - 1, int.MaxValue);
+        }
         else
+        {
             ShowPage(_page - (IsLandscape(_page - 1) || _page - 2 < 0 ? 1 : 2));
+        }
+    }
+
+    // Booklets are kept in the order of the numbers in their file names ("<set> booklet <n>.pdf"), which
+    // is the order they were added. This swaps the open booklet with the one before it (files and their
+    // cached pages), for when they were added out of order.
+    void MoveBookletEarlier()
+    {
+        if (_booklets.Count < 2)
+        {
+            Sandbox.Message("This set has only one booklet");
+            return;
+        }
+        if (_booklet == 0)
+        {
+            Sandbox.Message("This is already the first booklet");
+            return;
+        }
+
+        string mine = _booklets[_booklet], before = _booklets[_booklet - 1];
+        try
+        {
+            Swap(mine, before, file: true);
+            Swap(CacheFolder(mine), CacheFolder(before), file: false);
+        }
+        catch (IOException e)
+        {
+            Debug.LogWarning($"Couldn't reorder booklets: {e.Message}");
+            Sandbox.Message("Couldn't change the booklet order");
+        }
+
+        int page = _page;
+        LoadBooklets();
+        OpenBooklet(_booklet - 1, page);
+        Sandbox.Message($"This is now booklet {_booklet + 1} of {_booklets.Count}");
+    }
+
+    static string CacheFolder(string booklet) => Path.Combine(Folder, "cache", Path.GetFileNameWithoutExtension(booklet));
+
+    // Exchanges two files (or folders); either may be missing.
+    static void Swap(string a, string b, bool file)
+    {
+        string spare = a + ".swap";
+        Move(a, spare, file);
+        Move(b, a, file);
+        Move(spare, b, file);
+    }
+
+    static void Move(string from, string to, bool file)
+    {
+        if (file && File.Exists(from))
+            File.Move(from, to);
+        else if (!file && Directory.Exists(from))
+            Directory.Move(from, to);
     }
 
     bool IsLandscape(int page) =>
@@ -617,7 +712,7 @@ public class InstructionBook : MonoBehaviour
         // Controls under the pages.
         _controls = new GameObject("Controls").transform;
         _controls.SetParent(_root, false);
-        float x = -0.25f;
+        float x = -0.285f;
         AddButton("First", "|<", 0.03f, ref x, () => ShowPage(0));
         AddButton("Back", "<", 0.04f, ref x, () => Turn(-1));
         _pageLabel = MenuStyle.CreateText(_controls, "", new Vector3(x + 0.055f, 0f, -0.001f), new Vector2(0.1f, 0.012f));
@@ -625,6 +720,7 @@ public class InstructionBook : MonoBehaviour
         AddButton("Next", ">", 0.04f, ref x, () => Turn(1));
         AddButton("Booklet", "Book", 0.045f, ref x, () => { if (_booklets.Count > 1) OpenBooklet((_booklet + 1) % _booklets.Count); });
         _bookLabel = MenuStyle.CreateText(_controls, "", new Vector3(x - 0.0225f, -0.018f, -0.001f), new Vector2(0.05f, 0.008f));
+        AddButton("Earlier", "Move Earlier", 0.066f, ref x, MoveBookletEarlier);
         AddButton("Add", "Add PDF", 0.06f, ref x, () => ShowDownloads(0));
         AddButton("Turn", "Rotate", 0.05f, ref x, () => { _quarterTurns = (_quarterTurns + 1) % 4; Layout(); });
         AddButton("Smaller", "-", 0.03f, ref x, () => { _pageHeight = Mathf.Max(0.12f, _pageHeight - 0.03f); Layout(); });

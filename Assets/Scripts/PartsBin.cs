@@ -53,6 +53,10 @@ public class PartsBin : MonoBehaviour
     /// <summary>True while a set is being built from its parts (even if the panel is hidden).</summary>
     public bool IsActive => _set != null;
     public string SetTitle => _set != null ? _set.title : "";
+    public SetData Set => _set;
+
+    /// <summary>Whether this brick was taken out of the bin (so a save can tell set parts from extras).</summary>
+    public bool IsFromBin(Brick brick) => _set != null && _built.Contains(brick);
 
     public void Init(Sandbox sandbox)
     {
@@ -127,6 +131,65 @@ public class PartsBin : MonoBehaviour
             Sandbox.Message($"{missing} parts aren't available and were left out");
     }
 
+    /// <summary>
+    /// Picks a saved build back up: the set's bin again, minus the parts already in the loaded model
+    /// (and on the wrists), which count as taken out of it.
+    /// </summary>
+    public void Resume(SetData set, IEnumerable<Brick> alreadyTaken)
+    {
+        Begin(set);
+        foreach (Brick brick in alreadyTaken)
+        {
+            if (TakeFromBin(brick.part, brick.colorCode))
+                _built.Add(brick);
+        }
+        if (_panel.IsOpen)
+            Rebuild();
+    }
+
+    // Set parts that are ready-made assemblies are built as their separate pieces (see Sandbox.SplitAssembly):
+    // how many of each assembly's pieces have been counted, so every full set of them takes one from the bin.
+    readonly Dictionary<Entry, int> _assemblyPieces = new Dictionary<Entry, int>();
+
+    // Counts a part as taken out of the bin. False if it isn't one of the set's parts (or none are left).
+    bool TakeFromBin(BrickPartData part, int colorCode)
+    {
+        if (part == null)
+            return false;
+        Entry entry = _entries.Find(e => e.part == part && e.colorCode == colorCode && e.remaining > 0);
+        if (entry != null)
+        {
+            entry.remaining--;
+            return true;
+        }
+
+        entry = _entries.Find(e => e.colorCode == colorCode && e.part.IsAssembly && e.part.components.Any(c => c.partId == part.partId));
+        if (entry == null)
+            return false;
+        _assemblyPieces.TryGetValue(entry, out int seen);
+        _assemblyPieces[entry] = seen + 1;
+        if (seen % entry.part.components.Length == 0 && entry.remaining > 0)
+            entry.remaining--;
+        return true;
+    }
+
+    /// <summary>A brick that came from the bin has been collapsed into a locked body (its piece remembers that).</summary>
+    public void Forget(Brick brick) => _built.Remove(brick);
+
+    /// <summary>A brick made from a locked piece that originally came out of the bin.</summary>
+    public void Adopt(Brick brick)
+    {
+        if (_set != null && !_built.Contains(brick))
+            _built.Add(brick);
+    }
+
+    /// <summary>Counts a piece of a loaded locked body as already taken out of the bin.</summary>
+    public void TakePiece(BrickPartData part, int colorCode)
+    {
+        if (TakeFromBin(part, colorCode) && _panel.IsOpen)
+            Rebuild();
+    }
+
     public void Show()
     {
         if (_set == null)
@@ -149,6 +212,7 @@ public class PartsBin : MonoBehaviour
         _entries.Clear();
         _categories.Clear();
         _built.Clear();
+        _assemblyPieces.Clear();
         _set = null;
     }
 

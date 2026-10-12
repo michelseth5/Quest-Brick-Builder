@@ -1,0 +1,6 @@
+0 Extra connection info for "Minifig Cutlery Spoon" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Its handle is a bar: from the end of the handle (the part's origin) 14 LDU toward the bowl,
+0 // the same as the fork's (79741).
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 14]

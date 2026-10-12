@@ -47,6 +47,13 @@ namespace LDrawImport
         public readonly List<ConnectorData> Connectors = new List<ConnectorData>();
 
         public readonly List<string> MissingFiles = new List<string>();
+
+        /// <summary>
+        /// For a part that is really an assembly of other whole parts (e.g. a "complete" universal joint):
+        /// each of them and where it sits, as the 12 numbers of its LDraw line (x y z, then the 3 x 3 matrix).
+        /// Empty for ordinary parts.
+        /// </summary>
+        public readonly List<(string partId, float[] placement)> Components = new List<(string, float[])>();
     }
 
     /// <summary>One connection point on a part, in Unity space (meters, +Y up).</summary>
@@ -62,6 +69,7 @@ namespace LDrawImport
         public bool Slide;
         public bool OpenEnded;     // no closed end: can be entered from either side
         public string Profile;     // what it fits, e.g. "R6" (round, radius 6), "R6 R8", "A6" (axle), clip "R4", "F6", "G:group"
+        public string Sections;    // cylinders: each section from the start as <shape><radius>:<width>, in LDU, e.g. "R8:2 R6:16 R8:2"
         public string Group;
     }
 
@@ -95,6 +103,28 @@ namespace LDrawImport
         public LDrawParser(string libraryRoot)
         {
             _root = libraryRoot;
+            UnofficialRoot = FindUnofficialRoot(libraryRoot);
+        }
+
+        /// <summary>The unofficial parts library (newer parts awaiting review), if it's been unzipped next to the official one.</summary>
+        public string UnofficialRoot { get; }
+
+        /// <summary>LDraw/unofficial, next to the official library folder (LDraw/ldraw).</summary>
+        public static string FindUnofficialRoot(string libraryRoot)
+        {
+            string sibling = Path.Combine(Path.GetDirectoryName(libraryRoot.TrimEnd('/', '\\')) ?? libraryRoot, "unofficial");
+            return Directory.Exists(Path.Combine(sibling, "parts")) ? sibling : null;
+        }
+
+        /// <summary>The file for a part id in the official library or, failing that, the unofficial one (null if neither).</summary>
+        public static string FindPartFile(string libraryRoot, string partId)
+        {
+            string official = Path.Combine(libraryRoot, "parts", partId + ".dat");
+            if (File.Exists(official))
+                return official;
+            string unofficialRoot = FindUnofficialRoot(libraryRoot);
+            string unofficial = unofficialRoot != null ? Path.Combine(unofficialRoot, "parts", partId + ".dat") : null;
+            return unofficial != null && File.Exists(unofficial) ? unofficial : null;
         }
 
         /// <summary>Finds the LDraw library under the project folder, or returns null.</summary>
@@ -136,11 +166,48 @@ namespace LDrawImport
             }
 
             var data = new LDrawMeshData { Description = description };
+            FindComponents(lines, data);
             data.MissingFiles.AddRange(_missing);
             BuildMesh(data);
             BuildConnections(data);
             BuildConnectors(data, snaps);
             return data;
+        }
+
+        // An assembly: a file that does nothing but place two or more other parts (no shapes of its own).
+        void FindComponents(string[] lines, LDrawMeshData data)
+        {
+            // Only assemblies meant to move: LDraw calls them "(Complete)" (a universal joint, a hinge plate)
+            // or "Poseable". Hoses, chains and the like are also drawn from segments but stay one piece.
+            string description = data.Description ?? "";
+            if (description.IndexOf("(Complete)", StringComparison.OrdinalIgnoreCase) < 0
+                && description.IndexOf("Poseable", StringComparison.OrdinalIgnoreCase) < 0)
+                return;
+
+            var found = new List<(string, float[])>();
+            foreach (string line in lines)
+            {
+                string[] t = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                if (t.Length == 0)
+                    continue;
+                if (t[0] == "2" || t[0] == "3" || t[0] == "4" || t[0] == "5")
+                    return; // has geometry of its own
+                if (t[0] != "1" || t.Length < 15)
+                    continue;
+
+                string file = string.Join(" ", t, 14, t.Length - 14);
+                if (file.Contains("\\") || file.Contains("/"))
+                    return; // a sub-part or primitive: an ordinary part
+                string id = Path.GetFileNameWithoutExtension(file);
+                if (FindPartFile(_root, id) == null)
+                    return; // a primitive
+                var placement = new float[12];
+                for (int i = 0; i < 12; i++)
+                    placement[i] = F(t[2 + i]);
+                found.Add((id, placement));
+            }
+            if (found.Count >= 2)
+                data.Components.AddRange(found);
         }
 
         static string ToFileName(string partId)
@@ -198,6 +265,13 @@ namespace LDrawImport
             candidates.Add(Path.Combine(_root, "parts", name));
             candidates.Add(Path.Combine(_root, "p", name));
             candidates.Add(Path.Combine(_root, "models", name));
+
+            // Newer parts not yet in the official release (LDraw/unofficial, from ldrawunf.zip).
+            if (UnofficialRoot != null)
+            {
+                candidates.Add(Path.Combine(UnofficialRoot, "parts", name));
+                candidates.Add(Path.Combine(UnofficialRoot, "p", name));
+            }
 
             string[] lines = null;
             foreach (string path in candidates)
@@ -507,10 +581,12 @@ namespace LDrawImport
             p.TryGetValue(key, out string value) && value.Equals("true", StringComparison.OrdinalIgnoreCase);
 
         // Some parts aren't covered by the shadow library, so their sub-parts give studs on top but nothing
-        // underneath (e.g. 1745, 5847). If a part has upward studs but no sockets on its bottom face, add the
-        // estimated stud grid across its footprint (BuildConnections' AntiStuds). Parts without upward studs
-        // (Technic beams, axles, pins) are left alone.
-        static void AddMissingBottomSockets(LDrawMeshData data)
+        // underneath (e.g. 1745, 5847), and stud-less ones (newer tiles, slopes, wedges, curved bricks) get
+        // nothing at all. If a part has no stud sockets facing down, add the estimated ones across its
+        // footprint (BuildConnections' AntiStuds, each checked against the part's real underside).
+        // Parts that don't build by studs (Technic, minifig gear, wheels, tyres, plants, animals) are left
+        // alone unless they have studs on top.
+        void AddMissingBottomSockets(LDrawMeshData data)
         {
             // Any upward stud socket counts, wherever it is: parts like 1750 have their real underside above
             // the lowest point of a curved skirt, and guessed sockets at the very bottom would be wrong.
@@ -524,10 +600,36 @@ namespace LDrawImport
                 if (!c.Male && (c.Profile.Contains("R6") || c.Profile.Contains("S6")))
                     hasBottomSocket = true;
             }
-            if (!hasTopStud || hasBottomSocket)
+            if (hasBottomSocket || (!hasTopStud && !BuildsByStuds(data.Description)))
                 return;
 
-            foreach (Vector3 socket in data.AntiStuds)
+            var sockets = new List<Vector3>(data.AntiStuds);
+            if (sockets.Count == 0 && _hasBody)
+            {
+                // Nothing on the footprint grid: try the spots half a stud off it, e.g. the single centre
+                // socket under a 2 x 2 dish or a part that sits on one stud.
+                float[] xs = GridAlongAxis(_bodyMin.X, _bodyMax.X, null), zs = GridAlongAxis(_bodyMin.Z, _bodyMax.Z, null);
+                float half = StudPitchLdu * 0.5f;
+                foreach ((float dx, float dz) in new[] { (half, half), (half, 0f), (0f, half) })
+                {
+                    foreach (float x in xs)
+                    {
+                        foreach (float z in zs)
+                        {
+                            float px = x + dx, pz = z + dz;
+                            if (px > _bodyMax.X - half * 0.5f || pz > _bodyMax.Z - half * 0.5f)
+                                continue; // off the edge of the part
+                            float? y = UndersideAt(px, pz);
+                            if (y.HasValue)
+                                sockets.Add(ToUnity(new Vector3(px, y.Value, pz)));
+                        }
+                    }
+                    if (sockets.Count > 0)
+                        break;
+                }
+            }
+
+            foreach (Vector3 socket in sockets)
             {
                 data.Connectors.Add(new ConnectorData
                 {
@@ -541,6 +643,69 @@ namespace LDrawImport
                     Group = "",
                 });
             }
+        }
+
+        static readonly string[] NotStudBuilt =
+        {
+            "Minifig", "Technic", "Tyre", "Wheel", "Animal", "Plant", "Constraction", "Train", "Bar", "Bone",
+            "Claw", "Spike", "Flag", "Rock", "Figure", "Sticker", "Hose", "String", "Electric",
+        };
+
+        // Whether a part with no studs of its own is still the kind that presses onto studs (tiles, slopes,
+        // wedges, curved bricks, dishes, windscreens...), going by the first word of its description.
+        static bool BuildsByStuds(string description)
+        {
+            string text = (description ?? "").TrimStart('~', '=', '_', ' ');
+            foreach (string word in NotStudBuilt)
+            {
+                if (text.StartsWith(word, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+            return text.Length > 0;
+        }
+
+        static readonly System.Text.RegularExpressions.Regex TyreName =
+            new System.Text.RegularExpressions.Regex(@"^[~=_\s]*Tyre\s+([\d.]+)\s*/\s*[\d.]+\s*x\s*([\d.]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        static readonly System.Text.RegularExpressions.Regex RimName =
+            new System.Text.RegularExpressions.Regex(@"^[~=_\s]*Wheel Rim\s+([\d.]+)\s*x\s*([\d.]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Tyres go on rims of the same size, and LDraw names both by size: "Tyre 20/ 48 x 30" fits
+        // "Wheel Rim 20 x 30" (width x rim diameter). Gives each a matching point at its middle on its
+        // axle line, unless a connection file already says where the tyre goes.
+        void AddWheelConnection(LDrawMeshData data)
+        {
+            if (!_hasBody)
+                return;
+            foreach (ConnectorData c in data.Connectors)
+            {
+                if (c.Kind == "generic")
+                    return;
+            }
+
+            var tyre = TyreName.Match(data.Description ?? "");
+            var rim = tyre.Success ? tyre : RimName.Match(data.Description ?? "");
+            if (!rim.Success)
+                return;
+
+            // The axle line: the direction the part is thinnest or longest in, i.e. the odd one out of its
+            // three sizes (a wheel is as tall as it is deep).
+            Vector3 size = _bodyMax - _bodyMin;
+            float xy = Math.Abs(size.X - size.Y), xz = Math.Abs(size.X - size.Z), yz = Math.Abs(size.Y - size.Z);
+            Vector3 axis = yz <= xy && yz <= xz ? Vector3.UnitX : xz <= xy ? Vector3.UnitY : Vector3.UnitZ;
+            Vector3 side = axis == Vector3.UnitY ? Vector3.UnitX : Vector3.UnitY;
+
+            string group = "rim" + rim.Groups[1].Value + "x" + rim.Groups[2].Value;
+            Vector3 centre = (_bodyMin + _bodyMax) * 0.5f;
+            data.Connectors.Add(new ConnectorData
+            {
+                Kind = "generic",
+                Male = !tyre.Success,
+                Position = ToUnity(centre),
+                Axis = new Vector3(axis.X, -axis.Y, axis.Z),
+                Reference = new Vector3(side.X, -side.Y, side.Z),
+                Group = group,
+                Profile = "G:" + group,
+            });
         }
 
         // Turns raw snap metas into connectors in Unity space.
@@ -573,6 +738,7 @@ namespace LDrawImport
                         connector.Male = !(snap.Params.TryGetValue("gender", out string gender) && gender.StartsWith("F", StringComparison.OrdinalIgnoreCase));
                         connector.OpenEnded = snap.Params.TryGetValue("caps", out string caps) && caps.Equals("none", StringComparison.OrdinalIgnoreCase);
                         var profile = new List<string>();
+                        var sections = new List<string>(); // every section in order from the start, with its width
                         float length = 0f;
                         if (snap.Params.TryGetValue("secs", out string secs))
                         {
@@ -580,6 +746,8 @@ namespace LDrawImport
                             for (int i = 0; i + 2 < t.Length; i += 3)
                             {
                                 length += F(t[i + 2]);
+                                sections.Add(t[i].Trim('_').ToUpperInvariant() + F(t[i + 1]).ToString("0.##", CultureInfo.InvariantCulture)
+                                             + ":" + (F(t[i + 2]) * scale).ToString("0.##", CultureInfo.InvariantCulture));
                                 string shape = t[i].Trim('_').ToUpperInvariant(); // "_L"/"L_" are flexible extensions
                                 if (shape == "L")
                                     continue;
@@ -590,6 +758,11 @@ namespace LDrawImport
                         }
                         connector.Length = length * scale * MetersPerLdu;
                         connector.Profile = string.Join(" ", profile);
+                        connector.Sections = string.Join(" ", sections);
+                        // A bar (round, bar-thick, open at the ends, long enough to hold) slides in a hole or clip even
+                        // where the library doesn't say so, e.g. the handle of minifig cutlery.
+                        if (connector.Male && connector.OpenEnded && connector.Profile == "R4" && length * scale >= 8f)
+                            connector.Slide = true;
                         break;
                     }
                     case "CLP":
@@ -605,13 +778,20 @@ namespace LDrawImport
                         connector.Male = !(snap.Params.TryGetValue("genderOfs", out string gender) && gender.StartsWith("F", StringComparison.OrdinalIgnoreCase));
                         connector.OpenEnded = true;
                         float total = 0f;
+                        var widths = new List<string>();
                         if (snap.Params.TryGetValue("seq", out string seq))
                         {
                             foreach (string width in seq.Split((char[])null, StringSplitOptions.RemoveEmptyEntries))
+                            {
                                 total += F(width);
+                                widths.Add(F(width).ToString("0.###", CultureInfo.InvariantCulture));
+                            }
                         }
                         connector.Length = total * scale * MetersPerLdu;
-                        connector.Profile = "F" + (Floats(snap.Params, "radius", 1)?[0] ?? 6f).ToString("0.#", CultureInfo.InvariantCulture);
+                        // "F<radius>|<first segment's gender>|<segment widths>": segments alternate finger and gap,
+                        // so the runtime can check that two hinges' fingers interlock (Connections.FingersInterlock).
+                        connector.Profile = "F" + (Floats(snap.Params, "radius", 1)?[0] ?? 6f).ToString("0.#", CultureInfo.InvariantCulture)
+                                            + "|" + (connector.Male ? "M" : "F") + "|" + string.Join(" ", widths);
                         break;
                     }
                     case "GEN":
@@ -638,6 +818,7 @@ namespace LDrawImport
             }
 
             AddMissingBottomSockets(data);
+            AddWheelConnection(data);
         }
 
         void AddPolygon(Matrix4x4 transform, int color, bool certified, bool frontAsListed, bool inStud, Vector3 a, Vector3 b, Vector3 c)
@@ -1028,8 +1209,79 @@ namespace LDrawImport
             foreach (float x in xs)
             {
                 foreach (float z in zs)
-                    data.AntiStuds.Add(ToUnity(new Vector3(x, _bodyMax.Y, z)));
+                {
+                    float? y = UndersideAt(x, z);
+                    if (y.HasValue)
+                        data.AntiStuds.Add(ToUnity(new Vector3(x, y.Value, z)));
+                }
             }
+        }
+
+        // Where a stud pushed up from below at (x, z) would seat: the lowest flat face around that stud
+        // position (the rim a stud plugs into), with room above it for the stud. Car bases are thin at
+        // the ends but solid and deep in the middle, and mudguards stand on legs over a wheel arch,
+        // so the part's very bottom isn't always right. Null where nothing can plug in.
+        float? UndersideAt(float x, float z)
+        {
+            const float StudHeight = 4f;
+            const float HalfCell = StudPitchLdu * 0.45f;
+            float rim = float.NegativeInfinity; // LDraw Y points down, so lowest = largest
+            float ceiling = float.NegativeInfinity;
+            for (int i = 0; i + 2 < _corners.Count; i += 3)
+            {
+                Vector3 a = _corners[i], b = _corners[i + 1], c = _corners[i + 2];
+                Vector3 normal = Vector3.Cross(b - a, c - a);
+                float length = normal.Length();
+                if (length < 1e-6f)
+                    continue;
+                if (Math.Abs(normal.Y) / length > 0.99f && a.Y > rim && OverlapsSquare(a, b, c, x, z, HalfCell))
+                    rim = a.Y;
+                if (VerticalHit(a, b, c, x, z, out float y) && y > ceiling)
+                    ceiling = y;
+            }
+            if (float.IsNegativeInfinity(rim))
+                return float.IsNegativeInfinity(ceiling) ? (float?)null : _bodyMax.Y; // nothing there at all: a gap in the footprint
+            // The first thing above the stud position's centre must leave room for a stud.
+            if (!float.IsNegativeInfinity(ceiling) && ceiling > rim - StudHeight + 0.5f)
+                return null;
+            return rim;
+        }
+
+        // Height at which a vertical line through (x, z) crosses triangle abc, if it does.
+        static bool VerticalHit(Vector3 a, Vector3 b, Vector3 c, float x, float z, out float y)
+        {
+            y = 0f;
+            float d = (b.Z - c.Z) * (a.X - c.X) + (c.X - b.X) * (a.Z - c.Z);
+            if (Math.Abs(d) < 1e-6f)
+                return false;
+            float u = ((b.Z - c.Z) * (x - c.X) + (c.X - b.X) * (z - c.Z)) / d;
+            float v = ((c.Z - a.Z) * (x - c.X) + (a.X - c.X) * (z - c.Z)) / d;
+            float w = 1f - u - v;
+            const float Edge = -1e-4f;
+            if (u < Edge || v < Edge || w < Edge)
+                return false;
+            y = u * a.Y + v * b.Y + w * c.Y;
+            return true;
+        }
+
+        // Whether triangle abc, seen from above, overlaps the square of half-size h around (x, z).
+        static bool OverlapsSquare(Vector3 a, Vector3 b, Vector3 c, float x, float z, float h)
+        {
+            if (Math.Max(a.X, Math.Max(b.X, c.X)) < x - h || Math.Min(a.X, Math.Min(b.X, c.X)) > x + h
+                || Math.Max(a.Z, Math.Max(b.Z, c.Z)) < z - h || Math.Min(a.Z, Math.Min(b.Z, c.Z)) > z + h)
+                return false;
+            Vector3[] tri = { a, b, c };
+            for (int i = 0; i < 3; i++)
+            {
+                Vector3 p = tri[i], q = tri[(i + 1) % 3], r = tri[(i + 2) % 3];
+                float nx = q.Z - p.Z, nz = p.X - q.X; // edge normal in the XZ plane
+                float side = nx * (r.X - p.X) + nz * (r.Z - p.Z);
+                float centre = nx * (x - p.X) + nz * (z - p.Z);
+                float reach = (Math.Abs(nx) + Math.Abs(nz)) * h;
+                if (side > 0f ? centre < -reach : centre > reach)
+                    return false;
+            }
+            return true;
         }
 
         static float[] GridAlongAxis(float min, float max, float? alignTo)

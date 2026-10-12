@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 42876
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 42876
+  description: Minifig Food Turkey Leg with Oval Opening on Back
+  category: Minifig
+  mesh: {fileID: 4300000, guid: e0b328238f6beff41969d98e32a8420f, type: 2}
+  submeshColors: 10000000i
+  studs: []
+  antiStuds:
+  - {x: 0, y: -0, z: -0.0033230002}
+  connectors: []
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: 0.0034110001, z: 0.004677}
+    m_Extent: {x: 0.004688, y: 0.0040678, z: 0.0108902}

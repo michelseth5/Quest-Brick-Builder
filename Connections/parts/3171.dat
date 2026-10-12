@@ -1,0 +1,5 @@
+0 Extra connection info for "Constraction Finger Angled with Clip" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Its only connection is the clip at its base: at the part's origin, gripping a bar that runs along X.
+0 !LDCAD SNAP_CLP [radius=4] [length=8] [center=true] [ori=0 -1 0 1 0 0 0 0 1]

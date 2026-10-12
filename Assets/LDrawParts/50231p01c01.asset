@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 50231p01c01
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 50231p01c01
+  description: Minifig Cape Cloth with Inside Dark Red Pattern (Formed)
+  category: Minifig
+  mesh: {fileID: 4300000, guid: 61d140c54c58405489a5eacbad06f007, type: 2}
+  submeshColors: 1000000040010000i
+  studs: []
+  antiStuds:
+  - {x: -0.012, y: 0.000120000004, z: 0.00029000035}
+  - {x: -0.012, y: -0.026464, z: 0.00829}
+  - {x: 0.012, y: 0.000004, z: 0.00029000035}
+  - {x: 0.012, y: -0.026464, z: 0.00829}
+  connectors:
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0002
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: R6
+    group: 
+    sections: R6:0.5
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: -0.01313, z: 0.0042899996}
+    m_Extent: {x: 0.016816, y: 0.01337, z: 0.0099059995}

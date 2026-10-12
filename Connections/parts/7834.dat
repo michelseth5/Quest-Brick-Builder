@@ -1,0 +1,5 @@
+0 Extra connection info for "Wheel Rim 11 x 21 with Five Spokes" (adds to the LDCad shadow library's own)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Where an 11 x 21 tyre (e.g. 5810) centres on this rim: the middle of its 30 LDU width along the axle.
+0 !LDCAD SNAP_GEN [group=rim11x21] [gender=M] [bounding=cyl 12 7.5] [pos=0 0 -15] [ori=1 0 0 0 0 -1 0 1 0]

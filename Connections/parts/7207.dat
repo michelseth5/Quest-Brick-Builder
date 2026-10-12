@@ -1,0 +1,8 @@
+0 Extra connection info for "Windscreen 4 x 8 x 1 Curved" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // The curved bottom edge has stud cut-outs 4.8 LDU deep. Only the two at the front centre grip a stud
+0 // firmly (the edge wraps most of the way round them), so those are the ones it snaps by. The cut-outs
+0 // further round the curve hold too little, and offering them made it snap in the wrong places.
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 0 0]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 0 0]

@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f47602bd88e8c48b8ce29a010ae50e, type: 3}
+  m_Name: 2723p02
+  m_EditorClassIdentifier: Assembly-CSharp::BrickPartData
+  partId: 2723p02
+  description: Technic Disc 3 x 3 with Axlehole with Dark Bluish Grey Hubcap Pattern
+  category: Technic
+  mesh: {fileID: 4300000, guid: 8d888df56a2a861438c86611b587db4c, type: 2}
+  submeshColors: 1000000048000000i
+  studs: []
+  antiStuds:
+  - {x: 0, y: -0.0039999997, z: 0}
+  connectors:
+  - kind: 0
+    male: 0
+    position: {x: 0, y: -0.0039999997, z: 0}
+    axis: {x: 0, y: 1, z: 0}
+    reference: {x: 1, y: -0, z: 0}
+    length: 0.0039999997
+    center: 0
+    slide: 1
+    openEnded: 1
+    profile: A6
+    group: 
+    sections: A6:10
+  components: []
+  bodyBounds:
+    m_Center: {x: 0, y: -0.0019999999, z: 0}
+    m_Extent: {x: 0.012, y: 0.0019999999, z: 0.012}
