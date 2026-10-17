@@ -35,6 +35,7 @@ MonoBehaviour:
     group: horseHead
     sections: R12.6:10
   components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0.0022134, y: 0.009209001, z: -0.008674201}
     m_Extent: {x: 0.0022134, y: 0.017195001, z: 0.016660199}

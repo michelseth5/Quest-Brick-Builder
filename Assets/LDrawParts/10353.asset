@@ -120,6 +120,22 @@ MonoBehaviour:
     group: horse
     sections: 
   components: []
+  details:
+  - position: {x: 0.0039999997, y: -0.0053999997, z: -0.01636}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 0
+    count: 144
+  - position: {x: -0.0039999997, y: -0.0053999997, z: -0.01636}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 144
+    count: 144
+  - position: {x: -0.0039999997, y: -0.028199999, z: -0.02676}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 288
+    count: 30
   bodyBounds:
     m_Center: {x: -0.0007999996, y: -0.008947, z: -0.014655199}
     m_Extent: {x: 0.0072, y: 0.019252999, z: 0.0231}

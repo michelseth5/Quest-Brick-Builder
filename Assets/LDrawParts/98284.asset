@@ -198,6 +198,32 @@ MonoBehaviour:
     group: 
     sections: S16:4
   components: []
+  details:
+  - position: {x: 0, y: -0.0016, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 0
+    count: 144
+  - position: {x: 0.0039999997, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 576
+    count: 126
+  - position: {x: -0.0039999997, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 702
+    count: 126
+  - position: {x: 0.0039999997, y: -0, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 828
+    count: 126
+  - position: {x: -0.0039999997, y: -0, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 954
+    count: 126
   bodyBounds:
     m_Center: {x: 0, y: 0.0015999998, z: 0}
     m_Extent: {x: 0.013599999, y: 0.0047999998, z: 0.013599999}

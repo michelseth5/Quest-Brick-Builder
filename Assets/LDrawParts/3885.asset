@@ -22,6 +22,7 @@ MonoBehaviour:
   - {x: 0, y: -0, z: -0.00066}
   connectors: []
   components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: 0.01593, z: -0.00066000014}
     m_Extent: {x: 0.0016, y: 0.01593, z: 0.00226}

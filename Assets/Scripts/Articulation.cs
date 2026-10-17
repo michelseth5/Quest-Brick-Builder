@@ -17,22 +17,25 @@ public class Articulation
         public bool joint;
         public Vector3 point; // a point on the joint's axis (world)
         public Vector3 axis;  // the joint's axis direction (world)
+        public bool ball;     // a ball joint: turns any way around the point, not around a line
     }
 
     readonly Brick _grabbed;
     readonly Transform _frame;               // the holding brick in two-handed posing; null = the world
     readonly Vector3 _pivot, _axis;           // joint axis, in _frame's space
+    readonly bool _ball;                      // a ball joint: swings freely around _pivot
     readonly List<(Brick brick, Vector3 position, Quaternion rotation)> _start = new List<(Brick, Vector3, Quaternion)>();
     Vector3 _handStart;                       // in _frame's space
     bool _hasHand;
     readonly TextMeshPro _label;
 
-    Articulation(Brick grabbed, Transform frame, Vector3 pivotWorld, Vector3 axisWorld, List<Brick> moving)
+    Articulation(Brick grabbed, Transform frame, Vector3 pivotWorld, Vector3 axisWorld, bool ball, List<Brick> moving)
     {
         _grabbed = grabbed;
         _frame = frame;
         _pivot = ToFrame(pivotWorld);
         _axis = ToFrameDirection(axisWorld).normalized;
+        _ball = ball;
         foreach (Brick brick in moving)
             _start.Add((brick, ToFrame(brick.transform.position), ToFrameRotation(brick.transform.rotation)));
 
@@ -96,7 +99,7 @@ public class Articulation
         if (best == null)
             return null;
 
-        var session = new Articulation(grabbed, holder.transform, best.Value.point, best.Value.axis, bestMoving);
+        var session = new Articulation(grabbed, holder.transform, best.Value.point, best.Value.axis, best.Value.ball, bestMoving);
         session.SetHand(handPosition);
         return session;
     }
@@ -133,6 +136,7 @@ public class Articulation
         {
             Connector ca = a.Connectors[i], cb = b.Connectors[j];
             Connector wb = cb.InWorld(b.transform);
+            bool ball = ca.kind == Connector.Kind.Ball;
             if (Connections.QuarterTurns(ca, cb) || ca.kind == Connector.Kind.Generic)
             {
                 rigid = true;
@@ -141,8 +145,9 @@ public class Articulation
             {
                 found.point = wb.Start;
                 found.axis = wb.axis;
+                found.ball = ball;
             }
-            else if (!OnSameLine(found.point, found.axis, wb.Start, wb.axis))
+            else if (found.ball || ball || !OnSameLine(found.point, found.axis, wb.Start, wb.axis))
             {
                 rigid = true; // two different spin axes lock each other
             }
@@ -229,6 +234,13 @@ public class Articulation
             angle = Mathf.Round(angle / step) * step;
 
         Quaternion spin = Quaternion.AngleAxis(angle, _axis);
+        if (_ball)
+        {
+            // A ball joint swings whichever way the hand goes around the ball.
+            Vector3 was = _handStart - _pivot, now = _handNow - _pivot;
+            spin = was.sqrMagnitude > 1e-6f && now.sqrMagnitude > 1e-6f ? Quaternion.FromToRotation(was, now) : Quaternion.identity;
+            angle = Quaternion.Angle(Quaternion.identity, spin);
+        }
         foreach ((Brick brick, Vector3 position, Quaternion rotation) in _start)
         {
             if (brick == null)

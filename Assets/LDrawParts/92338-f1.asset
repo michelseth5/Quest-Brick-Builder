@@ -76,28 +76,28 @@ MonoBehaviour:
     profile: R6
     group: 
     sections: R6:4
-  components:
-  - partId: 30104k01
-    position: {x: 0, y: -0, z: 0}
-    rotation: {x: 0, y: 0, z: 0, w: 1}
-  - partId: 30104k02
-    position: {x: 0, y: -0.00059999997, z: 0.011132}
-    rotation: {x: 0.5, y: 0.5, z: -0.5, w: -0.5}
-  - partId: 30104k02
-    position: {x: 0, y: -0.00059999997, z: 0.016468}
-    rotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
-  - partId: 30104k02
-    position: {x: 0, y: -0.00059999997, z: 0.0218}
-    rotation: {x: 0.5, y: -0.5, z: 0.5, w: -0.5}
-  - partId: 30104k02
-    position: {x: 0, y: -0.00059999997, z: 0.027132}
-    rotation: {x: 0, y: 0.7071068, z: -0.7071068, w: 0}
-  - partId: 30104k02
-    position: {x: 0, y: -0.00059999997, z: 0.032468}
-    rotation: {x: 0.5, y: 0.5, z: -0.5, w: -0.5}
-  - partId: 30104k01
-    position: {x: 0, y: -0, z: 0.04}
-    rotation: {x: 0, y: 1, z: 0, w: 0}
+  components: []
+  details:
+  - position: {x: 0, y: -0.0016, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 0
+    count: 144
+  - position: {x: 0, y: -0, z: 0}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 528
+    count: 144
+  - position: {x: 0, y: -0.0016, z: 0.04}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 10536
+    count: 144
+  - position: {x: 0, y: -0, z: 0.04}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 11064
+    count: 144
   bodyBounds:
     m_Center: {x: 0, y: -0.00080000004, z: 0.019999998}
     m_Extent: {x: 0.0032, y: 0.0023999999, z: 0.023199998}

@@ -1,0 +1,8 @@
+0 Extra connection info for "Technic Suspension Arm 2 x 6 Reinforced" (adds to what its sub-parts give)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // The same shape as the older arm 57515, so the same ball socket at the narrow end and the same four
+0 // pivot holes at the wide end (taken from the LDCad shadow library's 57515).
+0 !LDCAD SNAP_GEN [gender=F] [bounding=sph 8] [match=size] [placement=free] [pos=0 0 -100]
+0 !LDCAD SNAP_CYL [gender=F] [caps=none] [secs=R 6 8   R 8 2] [center=true] [slide=true] [pos=15 0 -10] [ori=0 -1 0 1 0 0 0 0 1] [grid=1 C 2 0 20]
+0 !LDCAD SNAP_CYL [gender=F] [caps=none] [secs=R 8 2   R 6 8] [center=true] [slide=true] [pos=-15 0 -10] [ori=0 -1 0 1 0 0 0 0 1] [grid=1 C 2 0 20]

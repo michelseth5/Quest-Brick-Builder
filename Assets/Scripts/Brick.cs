@@ -156,7 +156,12 @@ public class Brick : MonoBehaviour
     public void RefreshGroupConnections()
     {
         if (_carried.Count == 0)
+        {
+            // Nothing left to carry: back to this brick's own connection points and preview.
+            _groupConnectors.Clear();
+            DestroyGroupGhost();
             return;
+        }
         var group = new List<Brick> { this };
         group.AddRange(CarriedBricks);
         BuildGroupConnections(group);
@@ -252,6 +257,7 @@ public class Brick : MonoBehaviour
     void OnDisable()
     {
         AllBricks.Remove(this);
+        StopFlash();
         BrickMerger.Unregister(this);
         Held.Remove(this);
         HideGhosts();
@@ -275,6 +281,7 @@ public class Brick : MonoBehaviour
     // Posing runs after the grab system has moved the grabbed part this frame, and overrides it.
     void LateUpdate()
     {
+        ApplyPin();
         _articulation?.Apply();
         if (_articulationTail != null)
         {
@@ -305,8 +312,9 @@ public class Brick : MonoBehaviour
     {
         if (evt.Type == PointerEventType.Select && _grabbable.SelectingPointsCount == 1)
         {
-            // A locked brick can't be pulled off on its own: any grab takes its whole model.
-            bool wholeGroupGrab = BrickGrabInput.IsWholeGroupGrab(evt) || (IsSectionLocked && !IsPreview);
+            // A locked brick can't be pulled off on its own: any grab takes its whole model. A locked group (a
+            // locked body) is different: trigger takes that group alone, off whatever it's attached to.
+            bool wholeGroupGrab = BrickGrabInput.IsWholeGroupGrab(evt) || (IsSectionLocked && !IsPreview && !IsLockedBody);
             bool fromMenu = IsPreview;
             if (IsPreview)
             {
@@ -314,6 +322,21 @@ public class Brick : MonoBehaviour
                 IsPreview = false;
                 transform.SetParent(null, worldPositionStays: true);
                 PreviewTaken?.Invoke(this, wholeGroupGrab);
+            }
+
+            // Is this brick part of a model that's in the other hand right now?
+            Brick otherHand = fromMenu ? null : OtherHandHolding();
+
+            // A locked piece of the model in the other hand doesn't come off or move: the grab does nothing. (Except
+            // a trigger grab on a locked group, which takes that group off the model.)
+            if (otherHand != null && IsSectionLocked && (wholeGroupGrab || !IsLockedBody))
+            {
+                _pinnedTo = otherHand;
+                _pinnedPosition = transform.localPosition;
+                _pinnedRotation = transform.localRotation;
+                _pinFrames = 0;
+                _undoStep = null;
+                return;
             }
 
             if (!Held.Contains(this))
@@ -329,6 +352,15 @@ public class Brick : MonoBehaviour
             if (wholeGroupGrab && !fromInventory && !fromMenu)
                 _articulation = Articulation.TryBegin(this, evt.Pose.position);
 
+            // Otherwise it's coming off the model in the other hand, which stops carrying it.
+            if (otherHand != null && _articulation == null)
+            {
+                otherHand.GiveUp(this);
+                if (wholeGroupGrab)
+                    PickUpGroup(otherHand);
+                otherHand.RefreshGroupConnections();
+            }
+
             // Remember where everything was, for Undo.
             _undoStep = null;
             if (fromMenu)
@@ -341,7 +373,8 @@ public class Brick : MonoBehaviour
             }
             else if (fromInventory || wholeGroupGrab)
             {
-                PickUpGroup();
+                if (otherHand == null)
+                    PickUpGroup(); // (coming off the other hand's model, its group was gathered above)
                 if (!fromInventory)
                     _undoStep = RecordGroupForUndo();
             }
@@ -363,6 +396,14 @@ public class Brick : MonoBehaviour
             // Only snap once every hand has let go.
             Held.Remove(this);
             HideGhosts();
+
+            // It was a locked piece of the model in the other hand: it never moved. Hold it there for a
+            // frame or two more, in case the grab system moves it once more after letting go.
+            if (_pinnedTo != null)
+            {
+                _pinFrames = 2;
+                return;
+            }
 
             // Finished posing a joint: it stays at the angle it was turned to. (Re-applied once more next
             // frame too, in case the grab system moves the part again after letting go.)
@@ -686,10 +727,29 @@ public class Brick : MonoBehaviour
     }
 
     // Every brick connected to this one (above or below), plus bonded bricks, this one first.
-    List<Brick> CollectGroup()
+    //
+    // What's in another hand stays there. Normally that means nothing held or carried by another hand joins
+    // the group. When this brick is itself part of the model in the other hand (`otherHand` is the brick
+    // that hand holds), the group is only the loose pieces that come away with it: it never takes locked
+    // pieces, or the held brick, out of that hand.
+    List<Brick> CollectGroup(Brick otherHand = null)
     {
         var group = new List<Brick> { this };
         var inGroup = new HashSet<Brick> { this };
+        bool MayJoin(Brick other)
+        {
+            if (other == null || !other.IsBuildable || other.IsBaseplate || inGroup.Contains(other))
+                return false;
+            if (otherHand != null)
+                return other != otherHand && otherHand.IsCarrying(other) && !other.IsSectionLocked;
+            foreach (Brick held in Held)
+            {
+                if (held != null && held != this && (held == other || held.IsCarrying(other)))
+                    return false;
+            }
+            return true;
+        }
+
         for (int i = 0; i < group.Count; i++)
         {
             // Bonded bricks come along whether or not they connect by studs.
@@ -697,14 +757,17 @@ public class Brick : MonoBehaviour
             {
                 foreach (Brick bonded in group[i]._bond.members)
                 {
-                    if (bonded != null && bonded.IsBuildable && !bonded.IsBaseplate && inGroup.Add(bonded))
+                    if (MayJoin(bonded))
+                    {
+                        inGroup.Add(bonded);
                         group.Add(bonded);
+                    }
                 }
             }
 
             foreach (Brick other in AllBricks)
             {
-                if (other.IsBuildable && !other.IsBaseplate && !inGroup.Contains(other) && group[i].IsConnectedTo(other))
+                if (MayJoin(other) && group[i].IsConnectedTo(other))
                 {
                     inGroup.Add(other);
                     group.Add(other);
@@ -716,12 +779,16 @@ public class Brick : MonoBehaviour
     }
 
     // Temporarily parents every brick connected to this one to it, so the whole model moves as a unit.
-    void PickUpGroup()
+    // (`otherHand`: the brick in the other hand that was carrying this one, if any; see CollectGroup.)
+    void PickUpGroup(Brick otherHand = null)
     {
-        List<Brick> group = CollectGroup();
+        List<Brick> group = CollectGroup(otherHand);
         for (int i = 1; i < group.Count; i++)
         {
+            // Pieces that were riding in the other hand's model go back to where they belong first.
             Transform t = group[i].transform;
+            if (otherHand != null)
+                otherHand.GiveUp(group[i]);
             _carried.Add((group[i], t.parent));
             _carriedSet.Add(group[i]);
             t.SetParent(transform, worldPositionStays: true);
@@ -730,48 +797,130 @@ public class Brick : MonoBehaviour
         BuildGroupConnections(group);
     }
 
-    static readonly ConnectorGrid GroupGrid = new ConnectorGrid();
+    // Stops carrying one brick (it's being taken by the other hand): it goes back under its own parent.
+    void GiveUp(Brick brick)
+    {
+        for (int i = 0; i < _carried.Count; i++)
+        {
+            if (_carried[i].brick != brick)
+                continue;
+            brick.transform.SetParent(_carried[i].originalParent, worldPositionStays: true);
+            _carried.RemoveAt(i);
+            _carriedSet.Remove(brick);
+            return;
+        }
+    }
 
-    // Collects every member's connection points into this brick's space, leaving out the ones already
-    // plugged into another member, so only the group's exposed studs, sockets, pins, etc. can snap.
+    // The brick in another hand whose model this brick is riding in, if any.
+    Brick OtherHandHolding()
+    {
+        foreach (Brick held in Held)
+        {
+            if (held != null && held != this && held.IsCarrying(this))
+                return held;
+        }
+        return null;
+    }
+
+    // A locked piece gripped while its model is in the other hand: it stays exactly where it is on the
+    // model. (The grab system moves whatever is gripped, so it's put back after it each frame.)
+    Brick _pinnedTo;
+    Vector3 _pinnedPosition;
+    Quaternion _pinnedRotation;
+    int _pinFrames;
+
+    void ApplyPin()
+    {
+        if (_pinnedTo == null)
+            return;
+        if (transform.parent == _pinnedTo.transform)
+        {
+            transform.localPosition = _pinnedPosition;
+            transform.localRotation = _pinnedRotation;
+        }
+        // After letting go: once more on the next frame, then done.
+        if (_pinFrames > 0 && --_pinFrames == 0)
+            _pinnedTo = null;
+    }
+
+    // While carrying a group: every member's connection points in this brick's space, used ones included,
+    // so a pin's occupied stretch can be found when its free end is being plugged in.
+    ConnectorGrid _groupIndex;
+    static readonly List<int> OwnQueryScratch = new List<int>();
+    static readonly List<float> OwnScratch = new List<float>();
+
+    // Collects every member's connection points into this brick's space, leaving out the ones used up by
+    // another member, so only the group's exposed studs, sockets, pins, etc. can snap. A point that's only
+    // partly covered stays: a pin pushed halfway into the group still has its other half to plug in.
     // Also builds the group's preview, since its shape just changed.
     void BuildGroupConnections(List<Brick> group)
     {
-        GroupGrid.Clear();
+        _groupIndex ??= new ConnectorGrid();
+        _groupIndex.Clear();
+        Quaternion toLocal = Quaternion.Inverse(transform.rotation);
+        Vector3 offset = -(toLocal * transform.position);
         foreach (Brick member in group)
         {
             for (int i = 0; i < member._connectors.Count; i++)
             {
-                // (A locked body's points that are used up inside it are only kept to mark what's taken.)
-                if (member._locked != null && member._locked.fullyUsedInside[i])
-                    continue;
-                GroupGrid.Add(member._connectors[i].InWorld(member.transform), member);
+                // (A locked body's points that are used up inside it are only kept to mark what's taken: tag 1.)
+                bool marker = member._locked != null && member._locked.fullyUsedInside[i];
+                _groupIndex.Add(member._connectors[i].InWorld(member.transform).Moved(offset, toLocal), member, false, marker ? 1 : 0);
             }
         }
 
         _groupConnectors.Clear();
-        Quaternion toLocal = Quaternion.Inverse(transform.rotation);
         List<int> found = QueryScratch;
-        for (int i = 0; i < GroupGrid.Count; i++)
+        for (int i = 0; i < _groupIndex.Count; i++)
         {
-            ConnectorGrid.Entry item = GroupGrid[i];
+            ConnectorGrid.Entry item = _groupIndex[i];
+            if (item.tag == 1)
+                continue;
             bool used = false;
-            GroupGrid.Query(item.connector, 0.002f, found);
+            _groupIndex.Query(item.connector, 0.002f, found);
             foreach (int index in found)
             {
-                ConnectorGrid.Entry other = GroupGrid[index];
-                if (other.owner != item.owner && Connections.AreMated(item.connector, other.connector))
+                ConnectorGrid.Entry other = _groupIndex[index];
+                if (other.owner == item.owner || !Connections.AreMated(item.connector, other.connector))
+                    continue;
+                // Covered end to end (a stud in a socket) is used up; partly (a pin half in a hole) isn't.
+                (float from, float to) span = Connections.SpanAlong(item.connector, other.connector);
+                if (item.connector.IsPoint || (span.from <= 0.0002f && span.to >= item.connector.length - 0.0002f))
                 {
                     used = true;
                     break;
                 }
             }
-            if (!used) // world -> this brick's local space
-                _groupConnectors.Add(item.connector.Moved(-(toLocal * transform.position), toLocal));
+            if (!used)
+                _groupConnectors.Add(item.connector);
         }
-        GroupGrid.Clear();
 
         BuildGroupGhost(group);
+    }
+
+    // The stretches of one of our connectors (in this brick's space) that our own pieces already occupy,
+    // as from/to pairs measured along it from its start: the half of a pin that's inside the door it's
+    // carried in. Null if there are none. Whatever it's plugged into next mustn't be put there.
+    IReadOnlyList<float> OwnSpans(in Connector local)
+    {
+        ConnectorGrid index = _carried.Count > 0 ? _groupIndex : _locked != null ? LocalIndex() : null;
+        if (index == null)
+            return null;
+
+        OwnScratch.Clear();
+        index.Query(local, 0.002f, OwnQueryScratch);
+        foreach (int i in OwnQueryScratch)
+        {
+            Connector other = index[i].connector;
+            if (other.position == local.position && other.axis == local.axis && other.male == local.male)
+                continue; // the connector itself
+            if (!Connections.AreMated(other, local))
+                continue;
+            (float from, float to) span = Connections.SpanAlong(local, other);
+            OwnScratch.Add(span.from);
+            OwnScratch.Add(span.to);
+        }
+        return OwnScratch.Count > 0 ? OwnScratch : null;
     }
 
     /// <summary>
@@ -867,8 +1016,12 @@ public class Brick : MonoBehaviour
 
                 Connections.Align(local, position, rotation, theirs, Connections.QuarterTurns(local, theirs),
                                   out Vector3 snappedPosition, out Quaternion snappedRotation,
-                                  local.slide || theirs.slide ? PartnerEnds(theirs) : null);
-                float move = (snappedPosition - position).magnitude;
+                                  local.slide || theirs.slide ? PartnerEnds(theirs) : null,
+                                  local.slide || theirs.slide ? OwnSpans(local) : null);
+                // How far the connection point itself would move (not this brick's origin, which on a big group
+                // can swing a long way for a tiny turn).
+                Vector3 anchor = local.position;
+                float move = (snappedPosition + snappedRotation * anchor - (position + rotation * anchor)).magnitude;
                 float turn = Quaternion.Angle(snappedRotation, rotation);
                 if (move > maxVerticalSnap || turn > maxTiltDegrees)
                     continue;
@@ -877,6 +1030,9 @@ public class Brick : MonoBehaviour
                     theirs = theirs,
                     position = snappedPosition,
                     rotation = snappedRotation,
+                    anchor = anchor,
+                    theirsRotation = item.owner != null ? item.owner.transform.rotation : Quaternion.identity,
+                    spins = !Connections.QuarterTurns(local, theirs) && !theirs.IsPoint,
                     score = move + turn * 0.0003f,
                 });
             }
@@ -889,16 +1045,39 @@ public class Brick : MonoBehaviour
         //    (needed when the first stud's angle means nothing, e.g. a stud on a spinning pin), and prefer
         //    whichever pose plugs in the most connections.
         float bestScore = float.MaxValue;
+        int foundPlugged = 0;
+        SnapCandidate foundFrom = default;
         Vector3 foundPosition = default;
         Quaternion foundRotation = default;
         foreach (SnapCandidate candidate in candidates)
         {
-            Consider(candidate.position, candidate.rotation, candidate.theirs);
+            Consider(candidate.position, candidate.rotation, candidate);
             foreach (float roll in SecondConnectionTurns(candidate, mine))
             {
                 Quaternion spin = Quaternion.AngleAxis(roll, candidate.theirs.axis);
                 Vector3 pivot = candidate.theirs.Start;
-                Consider(pivot + spin * (candidate.position - pivot), spin * candidate.rotation, candidate.theirs);
+                Consider(pivot + spin * (candidate.position - pivot), spin * candidate.rotation, candidate);
+            }
+        }
+
+        // Held by one connection that spins (a single pin): square it up with the part it plugs into, the way
+        // real parts end up once they press against each other, if the hand has it within SquareWithin degrees.
+        if (bestScore < float.MaxValue && foundPlugged == 1 && foundFrom.spins)
+        {
+            SnapCandidate settled = foundFrom;
+            settled.position = foundPosition;
+            settled.rotation = foundRotation;
+            if (SquareTurn(settled) is float square)
+            {
+                Quaternion spin = Quaternion.AngleAxis(square, settled.theirs.axis);
+                Vector3 pivot = settled.theirs.Start;
+                Vector3 squaredPosition = pivot + spin * (foundPosition - pivot);
+                Quaternion squaredRotation = spin * foundRotation;
+                if (CountConnections(squaredPosition, squaredRotation, mine) >= 1 && !UsesTakenConnection(squaredPosition, squaredRotation, mine))
+                {
+                    foundPosition = squaredPosition;
+                    foundRotation = squaredRotation;
+                }
             }
         }
 
@@ -910,14 +1089,16 @@ public class Brick : MonoBehaviour
         // No brick to connect to: try setting it down on a real table or the floor instead.
         return FindSurfaceSnap(out bestPosition, out bestRotation);
 
-        void Consider(Vector3 p, Quaternion r, Connector theirs)
+        void Consider(Vector3 p, Quaternion r, SnapCandidate from)
         {
-            float move = (p - position).magnitude;
+            Connector theirs = from.theirs;
+            Vector3 anchor = from.anchor;
+            float move = (p + r * anchor - (position + rotation * anchor)).magnitude;
             float turn = Quaternion.Angle(r, rotation);
             if (move > maxVerticalSnap || turn > maxTiltDegrees)
                 return;
-            int plugged = CountConnections(p, r, mine);
-            float score = move + turn * 0.0003f - (plugged - 1) * ConnectionBonus;
+            int plugged = CountConnections(p, r, mine, out float misfit);
+            float score = move + turn * 0.0003f - (plugged - 1) * ConnectionBonus + misfit * MisfitCost;
 
             // Hanging on a single connection (e.g. a round plate on one center stud), prefer the placement
             // that centers the part over it, since that's usually what's meant.
@@ -931,7 +1112,40 @@ public class Brick : MonoBehaviour
             bestScore = score;
             foundPosition = p;
             foundRotation = r;
+            foundPlugged = plugged;
+            foundFrom = from;
         }
+    }
+
+    const float SquareWithin = 20f;      // degrees: further than this from square, the hand's angle is kept
+    const float MisfitCost = 0.001f;     // each degree (or mm) a plugged-in connection is out of line counts like 1 mm farther
+
+    // The turn about the candidate's connection that lines this part's sides up with those of the part it
+    // plugs into (any quarter turn), if that's within SquareWithin degrees and not already there.
+    static float? SquareTurn(in SnapCandidate candidate)
+    {
+        Vector3 axis = candidate.theirs.axis;
+        float best = float.MaxValue;
+        Vector3[] sides = { Vector3.right, Vector3.up, Vector3.forward };
+        foreach (Vector3 mineSide in sides)
+        {
+            Vector3 mine = Vector3.ProjectOnPlane(candidate.rotation * mineSide, axis);
+            if (mine.sqrMagnitude < 0.25f)
+                continue; // (nearly along the axis: turning doesn't line it up)
+            foreach (Vector3 theirSide in sides)
+            {
+                Vector3 theirs = Vector3.ProjectOnPlane(candidate.theirsRotation * theirSide, axis);
+                if (theirs.sqrMagnitude < 0.25f)
+                    continue;
+                foreach (float sign in new[] { 1f, -1f })
+                {
+                    float angle = Vector3.SignedAngle(mine, theirs * sign, axis);
+                    if (Mathf.Abs(angle) < Mathf.Abs(best))
+                        best = angle;
+                }
+            }
+        }
+        return Mathf.Abs(best) <= SquareWithin && Mathf.Abs(best) > 0.05f ? best : (float?)null;
     }
 
     // One way of plugging in: the fixed connector used, and where that puts this brick.
@@ -940,13 +1154,15 @@ public class Brick : MonoBehaviour
         public Connector theirs;
         public Vector3 position;
         public Quaternion rotation;
+        public Vector3 anchor; // our connection point, in this brick's space
+        public Quaternion theirsRotation; // the part it plugs into
+        public bool spins;                // the connection turns freely (a pin in a hole), so the angle is open
         public float score; // distance moved, plus a little for turning
     }
 
     const int RefinedCandidates = 6;
     const float ConnectionBonus = 0.002f; // each extra connection plugged in counts like 2 mm closer
     const float CenteringWeight = 0.25f;  // single-connection snaps: 4 mm off-center counts like 1 mm farther
-    const float SecondConnectionReach = 0.05f; // look for a second connection within 5 cm of the first
     static readonly List<float> AnchorScratch = new List<float>();
     static readonly List<int> QueryScratch = new List<int>();
     static readonly List<int> InnerQueryScratch = new List<int>();
@@ -1014,7 +1230,10 @@ public class Brick : MonoBehaviour
     }
 
     // Angles (degrees) to turn around the candidate's connection so that another of our connectors lands
-    // on another nearby connector it fits, the same distance from the turning axis.
+    // on another free connector it fits, the same distance from the turning axis. Looks across the whole
+    // of what's nearby, not just close to the first connection: a group held by pins several studs apart
+    // (a steering assembly on four pins) has to line all of them up, not just the one that snapped first.
+    // The smallest few turns are returned.
     static List<float> SecondConnectionTurns(in SnapCandidate candidate, List<Connector> mine)
     {
         List<float> rolls = RollScratch;
@@ -1022,22 +1241,24 @@ public class Brick : MonoBehaviour
         Vector3 axis = candidate.theirs.axis;
         Vector3 pivot = candidate.theirs.Start;
 
-        // Free connectors around the pivot that run along the same line, with how far they are from it (once,
-        // rather than searching again for each of our connectors).
+        // Free connectors that run along the same direction, with how far each is from the axis, sorted by
+        // that distance so the ones matching one of ours can be found without comparing every pair.
         List<(Connector theirs, Vector3 to, float radius)> around = AroundScratch;
         around.Clear();
-        FreeGrid.Query(pivot, SecondConnectionReach + 0.01f, InnerQueryScratch);
-        foreach (int index in InnerQueryScratch)
+        for (int i = 0; i < FreeGrid.Count; i++)
         {
-            Connector theirs = FreeGrid[index].connector;
+            Connector theirs = FreeGrid[i].connector;
             if (Mathf.Abs(Vector3.Dot(theirs.axis, axis)) < 0.996f)
                 continue;
             Vector3 to = Vector3.ProjectOnPlane(theirs.position - pivot, axis);
-            around.Add((theirs, to, to.magnitude));
+            float radius = to.magnitude;
+            if (radius > 1e-4f)
+                around.Add((theirs, to, radius));
         }
-        if (around.Count == 0)
-            return rolls;
 
+        around.Sort(ByRadius); // (empty if nothing runs the same way: then only the crosswise check below applies)
+
+        const float RadiusTolerance = 0.0008f;
         foreach (Connector local in mine)
         {
             Connector moved = local.Moved(candidate.position, candidate.rotation);
@@ -1045,21 +1266,31 @@ public class Brick : MonoBehaviour
                 continue;
             Vector3 from = Vector3.ProjectOnPlane(moved.position - pivot, axis);
             float radius = from.magnitude;
-            if (radius < 1e-4f || radius > SecondConnectionReach)
-                continue; // on the axis itself (turning doesn't move it), or too far round to matter
+            if (radius < 1e-4f)
+                continue; // on the axis itself: turning doesn't move it
 
-            foreach ((Connector theirs, Vector3 to, float theirRadius) in around)
+            // First entry at least radius - tolerance from the axis.
+            int low = 0, high = around.Count;
+            while (low < high)
             {
-                if (Mathf.Abs(theirRadius - radius) > 0.0008f || !Connections.Fit(local, theirs))
+                int middle = (low + high) / 2;
+                if (around[middle].radius < radius - RadiusTolerance)
+                    low = middle + 1;
+                else
+                    high = middle;
+            }
+            for (int i = low; i < around.Count && around[i].radius <= radius + RadiusTolerance; i++)
+            {
+                if (!Connections.Fit(local, around[i].theirs))
                     continue;
-
-                float roll = Vector3.SignedAngle(from, to, axis);
-                if (Mathf.Abs(roll) < 0.5f)
+                float roll = Vector3.SignedAngle(from, around[i].to, axis);
+                // Only a small correction to where it's being held (it also keeps this quick), but a real one.
+                if (Mathf.Abs(roll) < 0.02f || Mathf.Abs(roll) > MaxSecondTurn)
                     continue;
                 bool seen = false;
                 foreach (float r in rolls)
                 {
-                    if (Mathf.Abs(Mathf.DeltaAngle(r, roll)) < 1f)
+                    if (Mathf.Abs(Mathf.DeltaAngle(r, roll)) < 0.25f)
                     {
                         seen = true;
                         break;
@@ -1069,24 +1300,86 @@ public class Brick : MonoBehaviour
                     rolls.Add(roll);
             }
         }
+
+        // Connectors at right angles to the axis (studs under a part that hangs on a sideways pin): the turn
+        // about the axis that stands each one exactly in line with a hole it fits nearby. Without this, a part
+        // on a pin with studs as well settled a few degrees off, since studs are accepted a little out of line.
+        foreach (Connector local in mine)
+        {
+            Connector moved = local.Moved(candidate.position, candidate.rotation);
+            if (Mathf.Abs(Vector3.Dot(moved.axis, axis)) > 0.2f)
+                continue;
+            Vector3 mineDirection = Vector3.ProjectOnPlane(moved.axis, axis);
+            if (mineDirection.sqrMagnitude < 0.5f)
+                continue;
+            FreeGrid.Query(moved, PerpendicularReach, InnerQueryScratch);
+            foreach (int index in InnerQueryScratch)
+            {
+                Connector theirs = FreeGrid[index].connector;
+                if (Mathf.Abs(Vector3.Dot(theirs.axis, moved.axis)) < 0.95f || !Connections.Fit(local, theirs))
+                    continue;
+                // (Either way along the line, whichever is nearer to how it's held.)
+                Vector3 target = Vector3.ProjectOnPlane(Vector3.Dot(theirs.axis, moved.axis) >= 0f ? theirs.axis : -theirs.axis, axis);
+                if (target.sqrMagnitude < 0.5f)
+                    continue;
+                float roll = Vector3.SignedAngle(mineDirection, target, axis);
+                if (Mathf.Abs(roll) < 0.02f || Mathf.Abs(roll) > MaxSecondTurn)
+                    continue;
+                bool seen = false;
+                foreach (float r in rolls)
+                {
+                    if (Mathf.Abs(Mathf.DeltaAngle(r, roll)) < 0.05f)
+                    {
+                        seen = true;
+                        break;
+                    }
+                }
+                if (!seen)
+                    rolls.Add(roll);
+            }
+        }
+
+        if (rolls.Count > MaxSecondTurns)
+        {
+            rolls.Sort((a, b) => Mathf.Abs(a).CompareTo(Mathf.Abs(b)));
+            rolls.RemoveRange(MaxSecondTurns, rolls.Count - MaxSecondTurns);
+        }
         return rolls;
     }
 
+    const float MaxSecondTurn = 36f; // degrees (anything more is past the tilt limit anyway)
+    const int MaxSecondTurns = 6;
+    const float PerpendicularReach = 0.004f; // how far from a hole a crosswise connector is looked at (about half a stud)
+    static readonly System.Comparison<(Connector theirs, Vector3 to, float radius)> ByRadius =
+        (a, b) => a.radius.CompareTo(b.radius);
+
     // How many of our connectors would be plugged into nearby free connectors at this pose.
-    static int CountConnections(Vector3 position, Quaternion rotation, List<Connector> mine)
+    static int CountConnections(Vector3 position, Quaternion rotation, List<Connector> mine) =>
+        CountConnections(position, rotation, mine, out _);
+
+    // Also how far out of line the plugged-in connections are (`misfit`, in degrees plus millimetres): a
+    // connection is accepted a little out of line, but a pose with everything exactly in line is better.
+    static int CountConnections(Vector3 position, Quaternion rotation, List<Connector> mine, out float misfit)
     {
         int count = 0;
+        misfit = 0f;
         foreach (Connector local in mine)
         {
             Connector moved = local.Moved(position, rotation);
             FreeGrid.Query(moved, 0.002f, InnerQueryScratch);
             foreach (int index in InnerQueryScratch)
             {
-                if (Connections.AreMated(moved, FreeGrid[index].connector))
+                Connector theirs = FreeGrid[index].connector;
+                if (!Connections.AreMated(moved, theirs))
+                    continue;
+                count++;
+                if (!moved.IsPoint)
                 {
-                    count++;
-                    break;
+                    misfit += Vector3.Angle(moved.axis, Vector3.Dot(moved.axis, theirs.axis) >= 0f ? theirs.axis : -theirs.axis);
+                    Vector3 offset = moved.Start - theirs.Start;
+                    misfit += (offset - Vector3.Dot(offset, theirs.axis) * theirs.axis).magnitude * 1000f;
                 }
+                break;
             }
         }
         return count;
@@ -1139,7 +1432,7 @@ public class Brick : MonoBehaviour
                     continue;
                 if (!Connections.AreMated(other.connector, item.connector))
                     continue;
-                if (item.connector.kind == Connector.Kind.Generic)
+                if (item.connector.IsPoint)
                     return true;
                 (float from, float to) used = Connections.SpanAlong(item.connector, other.connector);
                 if (Mathf.Min(used.to, wanted.to) - Mathf.Max(used.from, wanted.from) > 0.0005f)
@@ -1279,7 +1572,7 @@ public class Brick : MonoBehaviour
         Connector mine = me._worldConnectors[i];
         // Covered end to end (a stud in a socket) is used up; partly (an axle through one gear) isn't.
         (float from, float to) span = Connections.SpanAlong(mine, s_useTheirs._worldConnectors[j]);
-        if (mine.kind == Connector.Kind.Generic || (span.from <= 0.0002f && span.to >= mine.length - 0.0002f))
+        if (mine.IsPoint || (span.from <= 0.0002f && span.to >= mine.length - 0.0002f))
             me._fullyUsed[i] = true;
         else
             me._partlyUsed[i] = true;
@@ -1391,7 +1684,7 @@ public class Brick : MonoBehaviour
             return;
         }
 
-        if (_articulation != null || SetBuilder.HasTargetFor(this) || WristInventory.IsOverWrist(this) || TrashCan.Contains(transform.TransformPoint(_body.center)))
+        if (_pinnedTo != null || _articulation != null || SetBuilder.HasTargetFor(this) || WristInventory.IsOverWrist(this) || TrashCan.Contains(transform.TransformPoint(_body.center)))
         {
             HideGhosts();
             return;
@@ -1445,6 +1738,72 @@ public class Brick : MonoBehaviour
             _ghost.SetActive(false);
         if (_groupGhost != null)
             _groupGhost.SetActive(false);
+    }
+
+    // ---------- Flashing ----------
+
+    const int FlashTimes = 3;
+    const float FlashOn = 0.25f, FlashOff = 0.18f;
+    GameObject _flash;
+
+    /// <summary>Blinks the brick in a color a few times (e.g. to show what an unlock just turned loose).</summary>
+    public void Flash(Color color)
+    {
+        if (ghostMaterial == null || !isActiveAndEnabled)
+            return;
+        StopFlash();
+        StartCoroutine(Flashing(color));
+    }
+
+    // The flash is a see-through copy in the flash color, a touch bigger so it shows over the brick. It's a
+    // child of the brick, so it moves with it and can never be left behind: if the brick is locked again,
+    // thrown away or switched off mid-flash, the copy goes with it (see StopFlash in OnDisable).
+    System.Collections.IEnumerator Flashing(Color color)
+    {
+        _flash = new GameObject("Flash");
+        _flash.layer = gameObject.layer;
+        _flash.transform.SetParent(transform, worldPositionStays: false);
+        _flash.transform.localScale = Vector3.one * 1.02f;
+        _flash.transform.localPosition = -_body.center * 0.02f; // enlarged about the brick's middle
+        Material material = BrickPartData.SharedMaterial(ghostMaterial, color);
+        if (_locked != null)
+        {
+            foreach ((Mesh mesh, Material[] materials) in _locked.chunks)
+                AddFlashPart(_flash.transform, mesh, material);
+        }
+        else if (_activeMesh != null)
+        {
+            AddFlashPart(_flash.transform, _activeMesh, material);
+        }
+
+        for (int i = 0; i < FlashTimes && _flash != null; i++)
+        {
+            _flash.SetActive(true);
+            yield return new WaitForSeconds(FlashOn);
+            if (_flash == null)
+                yield break;
+            _flash.SetActive(false);
+            yield return new WaitForSeconds(FlashOff);
+        }
+        StopFlash();
+    }
+
+    void StopFlash()
+    {
+        if (_flash != null)
+            Destroy(_flash);
+        _flash = null;
+    }
+
+    static void AddFlashPart(Transform parent, Mesh mesh, Material material)
+    {
+        var part = new GameObject("Flash Part");
+        part.layer = parent.gameObject.layer;
+        part.transform.SetParent(parent, worldPositionStays: false);
+        part.AddComponent<MeshFilter>().sharedMesh = mesh;
+        MeshRenderer renderer = part.AddComponent<MeshRenderer>();
+        renderer.sharedMaterials = Enumerable.Repeat(material, Mathf.Max(1, mesh.subMeshCount)).ToArray();
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
 
     // The brick's color, with the ghost material's transparency.

@@ -33,7 +33,7 @@ MonoBehaviour:
     profile: R8 A6
     group: 
     sections: R8:2 A6:17
-  - kind: 3
+  - kind: 4
     male: 1
     position: {x: -0.0047999998, y: -0, z: 0}
     axis: {x: 0, y: 1, z: 0}
@@ -42,10 +42,11 @@ MonoBehaviour:
     center: 0
     slide: 0
     openEnded: 0
-    profile: 'G:'
+    profile: B8
     group: 
     sections: 
   components: []
+  details: []
   bodyBounds:
     m_Center: {x: -0.0005999999, y: 0, z: 0}
     m_Extent: {x: 0.0073999995, y: 0.0032, z: 0.0032}

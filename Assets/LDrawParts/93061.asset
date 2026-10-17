@@ -82,6 +82,7 @@ MonoBehaviour:
     group: 
     sections: 
   components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: -0.006432308, z: -0.0027953838}
     m_Extent: {x: 0.0026, y: 0.0082707675, z: 0.005395384}

@@ -136,7 +136,7 @@ MonoBehaviour:
     profile: S16
     group: 
     sections: S16:4
-  - kind: 3
+  - kind: 4
     male: 1
     position: {x: 0, y: -0.0016, z: -0.015999999}
     axis: {x: 0, y: 1, z: 0}
@@ -145,10 +145,36 @@ MonoBehaviour:
     center: 0
     slide: 0
     openEnded: 0
-    profile: 'G:'
+    profile: B8
     group: 
     sections: 
   components: []
+  details:
+  - position: {x: 0, y: -0.0016, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 0
+    count: 144
+  - position: {x: -0.0039999997, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1224
+    count: 72
+  - position: {x: -0.0039999997, y: -0, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1296
+    count: 72
+  - position: {x: 0.0039999997, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1368
+    count: 72
+  - position: {x: 0.0039999997, y: -0, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1440
+    count: 72
   bodyBounds:
     m_Center: {x: 0, y: -0.0015999998, z: -0.0056}
     m_Extent: {x: 0.007999999, y: 0.0032, z: 0.013599999}

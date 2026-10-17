@@ -22,6 +22,12 @@ MonoBehaviour:
   - {x: -0.0039549996, y: -0.0199368, z: 0.0056164}
   connectors: []
   components: []
+  details:
+  - position: {x: 0, y: 0.0019200001, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 0
+    count: 144
   bodyBounds:
     m_Center: {x: 0.00004500011, y: -0.008161, z: 0.0016164002}
     m_Extent: {x: 0.0075093997, y: 0.0119234, z: 0.0074056}

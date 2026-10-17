@@ -76,7 +76,7 @@ MonoBehaviour:
     axis: {x: 0, y: 1, z: 0}
     reference: {x: 1, y: -0, z: 0}
     length: 0.019199999
-    center: 0
+    center: 1
     slide: 0
     openEnded: 1
     profile: F4|F|4 5 30 5 4
@@ -95,6 +95,17 @@ MonoBehaviour:
     group: 
     sections: R4:48
   components: []
+  details:
+  - position: {x: 0, y: 0.0039999997, z: -0.0064}
+    up: {x: 1, y: -0, z: 0}
+    submesh: 0
+    start: 1398
+    count: 144
+  - position: {x: 0, y: -0.0039999997, z: -0.0064}
+    up: {x: 1, y: -0, z: 0}
+    submesh: 0
+    start: 1542
+    count: 144
   bodyBounds:
     m_Center: {x: 0.002200021, y: 0, z: -0.0061999997}
     m_Extent: {x: 0.003800021, y: 0.0095999995, z: 0.0078}

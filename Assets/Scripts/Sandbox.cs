@@ -257,6 +257,8 @@ public class Sandbox : MonoBehaviour
              () => { GameSettings.MergeModels = !GameSettings.MergeModels; ShowSettings(); }),
             ($"Locked pieces as one object: {(GameSettings.CollapseLocked ? "On" : "Off")}",
              () => { GameSettings.CollapseLocked = !GameSettings.CollapseLocked; ShowSettings(); }),
+            ($"Hide covered studs in locked models: {(GameSettings.HideCoveredStuds ? "On" : "Off")}",
+             () => { GameSettings.HideCoveredStuds = !GameSettings.HideCoveredStuds; ShowSettings(); }),
             ("Back", ShowStartHome),
         };
         FillStartMenu("Settings", "Click a setting to change it", buttons);
@@ -816,11 +818,22 @@ public class Sandbox : MonoBehaviour
             foreach (Brick brick in loose)
                 brick.SetLockedSection(section);
             int total = model.Sum(b => b.PieceCount);
+            LockedBody.Drift.Clear();
             if (GameSettings.CollapseLocked)
                 Collapse(model);
-            ShowMessage(loose.Count == total
+            string locked = loose.Count == total
                 ? $"Locked {Pieces(total)}. Press X again to unlock"
-                : $"Locked {Pieces(loose.Count)} more ({total} locked). Press X again to unlock them");
+                : $"Locked {Pieces(loose.Count)} more ({total} locked). Press X again to unlock them";
+            int drift = LockedBody.Drift.Count;
+            if (drift > 0)
+            {
+                // Something isn't quite in: say so now, and show where, rather than 100 steps later.
+                ShowDriftMarkers(LockedBody.Drift);
+                locked += drift == 1
+                    ? "\nHeads up: 1 spot isn't fully plugged in (red marker)"
+                    : $"\nHeads up: {drift} spots aren't fully plugged in (red markers)";
+            }
+            ShowMessage(locked);
         }
         else
         {
@@ -837,28 +850,92 @@ public class Sandbox : MonoBehaviour
 
     static string Pieces(int count) => count == 1 ? "1 piece" : $"{count} pieces";
 
-    // Swaps every locked brick and locked body of a model for freshly built locked bodies.
+    // Small red markers where the drift check found a stud or pin not fully in, shown for a few seconds.
+    const float DriftMarkerSeconds = 10f;
+
+    void ShowDriftMarkers(List<Vector3> spots)
+    {
+        foreach (Vector3 spot in spots)
+        {
+            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            marker.name = "Drift Marker";
+            Destroy(marker.GetComponent<Collider>());
+            marker.transform.position = spot;
+            marker.transform.localScale = Vector3.one * 0.006f;
+            MeshRenderer renderer = marker.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = MenuStyle.Material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            MenuStyle.Tint(renderer, new Color(1f, 0.15f, 0.1f));
+            Destroy(marker, DriftMarkerSeconds);
+        }
+    }
+
+    // Puts newly locked bricks into locked groups. Pieces attached to a locked group join it (the biggest one,
+    // if they touch several); pieces attached to none start a new group. Locked groups never merge with each
+    // other, so two of them snapped together can still be taken apart until they're unlocked. Only the
+    // groups that changed are rebuilt.
     void Collapse(List<Brick> model)
     {
+        List<Brick> fresh = model.Where(b => !b.IsLockedBody && b.IsSectionLocked && b.part != null).ToList();
+        List<Brick> bodies = model.Where(b => b.IsLockedBody).ToList();
+
         var pieces = new List<LockedBody.Piece>();
-        foreach (Brick brick in model)
+        var rebuilt = new HashSet<Brick>();
+        var placed = new HashSet<Brick>();
+        foreach (Brick start in fresh)
         {
-            if (brick.IsLockedBody)
-                pieces.AddRange(PiecesOf(brick));
-            else if (brick.IsSectionLocked && brick.part != null)
-                pieces.Add(PieceOf(brick));
-            else
+            if (placed.Contains(start))
                 continue;
-            Remove(brick);
+
+            // This brick and the other newly locked bricks joined to it.
+            var cluster = new List<Brick> { start };
+            placed.Add(start);
+            for (int i = 0; i < cluster.Count; i++)
+            {
+                foreach (Brick other in fresh)
+                {
+                    if (!placed.Contains(other) && cluster[i].IsConnectedTo(other))
+                    {
+                        placed.Add(other);
+                        cluster.Add(other);
+                    }
+                }
+            }
+
+            // The locked group it joins: the biggest one it's attached to, or a new one.
+            Brick joins = null;
+            foreach (Brick body in bodies)
+            {
+                if ((joins == null || body.PieceCount > joins.PieceCount) && cluster.Any(b => b.IsConnectedTo(body)))
+                    joins = body;
+            }
+            int unit = joins != null ? joins.Locked.unit : LockedBody.NewUnit();
+            if (joins != null && rebuilt.Add(joins))
+                pieces.AddRange(PiecesOf(joins));
+
+            foreach (Brick brick in cluster)
+            {
+                LockedBody.Piece piece = PieceOf(brick);
+                piece.unit = unit;
+                pieces.Add(piece);
+            }
         }
+
+        foreach (Brick brick in fresh)
+            Remove(brick);
+        foreach (Brick body in rebuilt)
+            Remove(body);
         SpawnLockedBodies(pieces);
     }
 
-    // Turns the pieces locked in the given section back into loose bricks. Returns how many.
+    // Turns the pieces locked in the given section back into loose bricks, which flash so you can see what
+    // came loose: green for a piece on its own, yellow for pieces that came off still joined together.
+    // Returns how many.
     int Unlock(List<Brick> model, int section)
     {
         int unlocked = 0;
         var stay = new List<LockedBody.Piece>();
+        var loose = new List<Brick>();
         foreach (Brick brick in model)
         {
             if (!brick.IsLockedBody)
@@ -866,6 +943,7 @@ public class Sandbox : MonoBehaviour
                 if (brick.LockedSection == section)
                 {
                     brick.SetLockedSection(0);
+                    loose.Add(brick);
                     unlocked++;
                 }
                 continue;
@@ -877,7 +955,7 @@ public class Sandbox : MonoBehaviour
             {
                 if (piece.section == section)
                 {
-                    SpawnPiece(piece);
+                    loose.Add(SpawnPiece(piece));
                     unlocked++;
                 }
                 else
@@ -888,9 +966,37 @@ public class Sandbox : MonoBehaviour
             Remove(brick);
         }
         SpawnLockedBodies(stay);
+        FlashUnlocked(loose);
         return unlocked;
     }
 
+    static readonly Color FlashSingle = new Color(0.2f, 1f, 0.3f, 0.75f);
+    static readonly Color FlashGroup = new Color(1f, 0.85f, 0.1f, 0.75f);
+
+    void FlashUnlocked(List<Brick> loose)
+    {
+        Physics.SyncTransforms();
+        var seen = new HashSet<Brick>();
+        foreach (Brick start in loose)
+        {
+            if (!seen.Add(start))
+                continue;
+            var cluster = new List<Brick> { start };
+            for (int i = 0; i < cluster.Count; i++)
+            {
+                foreach (Brick other in loose)
+                {
+                    if (!seen.Contains(other) && cluster[i].IsConnectedTo(other))
+                    {
+                        seen.Add(other);
+                        cluster.Add(other);
+                    }
+                }
+            }
+            foreach (Brick brick in cluster)
+                brick.Flash(cluster.Count == 1 ? FlashSingle : FlashGroup);
+        }
+    }
     LockedBody.Piece PieceOf(Brick brick) => new LockedBody.Piece
     {
         part = brick.part,
@@ -1083,6 +1189,14 @@ public class Sandbox : MonoBehaviour
         var bonds = new Dictionary<int, List<Brick>>();
         // Locked pieces go straight into locked bodies, without ever existing as separate bricks.
         var lockedPieces = new List<LockedBody.Piece>();
+        // Locked groups in the file get fresh numbers here, so they don't clash with groups already in the room.
+        var groups = new Dictionary<int, int>();
+        int GroupFor(int saved)
+        {
+            if (!groups.TryGetValue(saved, out int unit))
+                groups[saved] = unit = LockedBody.NewUnit();
+            return unit;
+        }
         foreach (ModelFile.Placement placement in placements)
         {
             if (placement.lockSection > 0 && GameSettings.CollapseLocked)
@@ -1099,10 +1213,11 @@ public class Sandbox : MonoBehaviour
                     colorCode = placement.colorCode,
                     color = ColorOf(placement.colorCode),
                     position = origin + facing * placement.position,
-                    rotation = facing * placement.rotation,
+                    rotation = LockedBody.Unit(facing * placement.rotation),
                     section = sectionBase + placement.lockSection, // after the sections already in the room
                     fromSet = placement.fromSet,
                     bond = placement.bond != 0 ? (object)placement.bond : null,
+                    unit = placement.group != 0 ? GroupFor(placement.group) : 0,
                 });
                 continue;
             }

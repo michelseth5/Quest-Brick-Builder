@@ -27,7 +27,7 @@ MonoBehaviour:
     axis: {x: 1, y: -0, z: 0}
     reference: {x: 0, y: -1, z: 0}
     length: 0.0016
-    center: 0
+    center: 1
     slide: 0
     openEnded: 1
     profile: F4|M|4
@@ -46,6 +46,7 @@ MonoBehaviour:
     group: 
     sections: 
   components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: 0.0067999996, z: 0}
     m_Extent: {x: 0.0016, y: 0.0084, z: 0.0016}

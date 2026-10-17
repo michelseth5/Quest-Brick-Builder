@@ -98,6 +98,7 @@ MonoBehaviour:
     group: craneArmW20
     sections: S10:80
   components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.0036, y: 0.0039999997, z: 0.0196}

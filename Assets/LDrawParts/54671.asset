@@ -91,13 +91,29 @@ MonoBehaviour:
     axis: {x: 0, y: -0, z: 1}
     reference: {x: 1, y: -0, z: 0}
     length: 0.0072
-    center: 0
+    center: 1
     slide: 0
     openEnded: 1
     profile: F6|M|5 8 5
     group: lckHng
     sections: 
   components: []
+  details:
+  - position: {x: 0, y: -0.0016, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 1956
+    count: 72
+  - position: {x: 0.0039999997, y: -0, z: 0}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2160
+    count: 72
+  - position: {x: -0.0039999997, y: -0, z: 0}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2232
+    count: 72
   bodyBounds:
     m_Center: {x: 0.0032000002, y: -0.0047999998, z: 0}
     m_Extent: {x: 0.0112, y: 0.0047999998, z: 0.0039999997}

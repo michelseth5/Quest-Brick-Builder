@@ -50,6 +50,12 @@ MonoBehaviour:
     group: horseRearLeft
     sections: 
   components: []
+  details:
+  - position: {x: 0.0039999997, y: -0.028199999, z: 0.00524}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 0
+    count: 30
   bodyBounds:
     m_Center: {x: 0.0009825998, y: -0.009753, z: 0.0041938005}
     m_Extent: {x: 0.0070173997, y: 0.018446999, z: 0.012823001}

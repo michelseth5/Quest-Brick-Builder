@@ -100,9 +100,10 @@ MonoBehaviour:
   - partId: 62520
     position: {x: 0, y: -0, z: 0}
     rotation: {x: 0.7071068, y: 0.7071068, z: 0, w: 0}
-  - partId: 62519
+  - partId: 3326b
     position: {x: 0, y: -0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 1}
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.0036, y: 0.0036, z: 0.012}

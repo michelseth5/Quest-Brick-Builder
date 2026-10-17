@@ -44,13 +44,8 @@ MonoBehaviour:
     profile: A6
     group: 
     sections: A6:20
-  components:
-  - partId: 65141c01
-    position: {x: 0, y: -0.038, z: 0}
-    rotation: {x: 0, y: 0, z: 0, w: 1}
-  - partId: 65143c01
-    position: {x: 0, y: -0, z: 0}
-    rotation: {x: 0, y: 0, z: 0, w: 1}
+  components: []
+  details: []
   bodyBounds:
     m_Center: {x: -0.0040000007, y: -0.0438, z: 0}
     m_Extent: {x: 0.007999999, y: 0.0438, z: 0.0039999997}

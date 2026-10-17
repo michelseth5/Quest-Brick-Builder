@@ -107,6 +107,22 @@ MonoBehaviour:
     group: 
     sections: R6:20
   components: []
+  details:
+  - position: {x: 0.027999999, y: -0, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 585
+    count: 72
+  - position: {x: 0.02, y: -0, z: -0.02}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 657
+    count: 72
+  - position: {x: 0.0039999997, y: -0, z: -0.027999999}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 729
+    count: 72
   bodyBounds:
     m_Center: {x: 0.015999999, y: -0.0047999998, z: -0.015999906}
     m_Extent: {x: 0.015999999, y: 0.0047999998, z: 0.016000092}

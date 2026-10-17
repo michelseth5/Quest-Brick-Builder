@@ -357,6 +357,182 @@ MonoBehaviour:
     group: 
     sections: R6:8 R8:4
   components: []
+  details:
+  - position: {x: 0, y: -0.007999999, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 0
+    count: 186
+  - position: {x: -0.007999999, y: -0.007999999, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 222
+    count: 186
+  - position: {x: 0.007999999, y: -0.007999999, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 540
+    count: 186
+  - position: {x: -0.012, y: -0.0016, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1446
+    count: 132
+  - position: {x: -0.012, y: -0, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1578
+    count: 144
+  - position: {x: -0.012, y: -0, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1722
+    count: 144
+  - position: {x: -0.0039999997, y: -0.0016, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1866
+    count: 132
+  - position: {x: -0.0039999997, y: -0, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1998
+    count: 144
+  - position: {x: -0.0039999997, y: -0, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2142
+    count: 144
+  - position: {x: 0.0039999997, y: -0.0016, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2286
+    count: 132
+  - position: {x: 0.0039999997, y: -0, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2418
+    count: 144
+  - position: {x: 0.0039999997, y: -0, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2562
+    count: 144
+  - position: {x: 0.012, y: -0.0016, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2706
+    count: 132
+  - position: {x: 0.012, y: -0, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2838
+    count: 144
+  - position: {x: 0.012, y: -0, z: 0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2982
+    count: 144
+  - position: {x: -0.012, y: -0.0064, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3126
+    count: 72
+  - position: {x: -0.0039999997, y: -0.0064, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3198
+    count: 72
+  - position: {x: -0.012, y: -0.0064, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3270
+    count: 72
+  - position: {x: -0.0039999997, y: -0.0064, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3342
+    count: 72
+  - position: {x: 0.0039999997, y: -0.0064, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3414
+    count: 72
+  - position: {x: 0.012, y: -0.0064, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3486
+    count: 72
+  - position: {x: 0.0039999997, y: -0.0064, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3558
+    count: 72
+  - position: {x: 0.012, y: -0.0064, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3630
+    count: 72
+  - position: {x: -0.012, y: -0.0016, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3702
+    count: 132
+  - position: {x: -0.012, y: -0, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3834
+    count: 144
+  - position: {x: -0.012, y: -0, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 3978
+    count: 144
+  - position: {x: -0.0039999997, y: -0.0016, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 4122
+    count: 132
+  - position: {x: -0.0039999997, y: -0, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 4254
+    count: 144
+  - position: {x: -0.0039999997, y: -0, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 4398
+    count: 144
+  - position: {x: 0.0039999997, y: -0.0016, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 4542
+    count: 132
+  - position: {x: 0.0039999997, y: -0, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 4674
+    count: 144
+  - position: {x: 0.0039999997, y: -0, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 4818
+    count: 144
+  - position: {x: 0.012, y: -0.0016, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 4962
+    count: 132
+  - position: {x: 0.012, y: -0, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 5094
+    count: 144
+  - position: {x: 0.012, y: -0, z: -0.012}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 5238
+    count: 144
   bodyBounds:
     m_Center: {x: 0, y: -0.0047999998, z: 0}
     m_Extent: {x: 0.015999999, y: 0.0047999998, z: 0.015999999}

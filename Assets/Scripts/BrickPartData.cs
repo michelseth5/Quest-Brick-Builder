@@ -42,6 +42,23 @@ public class BrickPartData : ScriptableObject
 
     public bool IsAssembly => components != null && components.Length > 1;
 
+    /// <summary>
+    /// A stretch of the mesh that draws one stud, hollow stud, or underside tube: `count` indices of
+    /// submesh `submesh` starting at `start`. A locked model leaves these out where they can't be seen.
+    /// </summary>
+    [System.Serializable]
+    public struct Detail
+    {
+        public Vector3 position; // the stud's base (or the tube's), in the part's space
+        public Vector3 up;       // the way it points
+        public int submesh;
+        public int start;
+        public int count;
+    }
+
+    [Tooltip("The mesh stretches that draw each stud and underside tube, written by the importer.")]
+    public Detail[] details;
+
     [Tooltip("Bounds of the part without its studs. Used for the collider and overlap checks.")]
     public Bounds bodyBounds;
 

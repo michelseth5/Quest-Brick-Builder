@@ -31,6 +31,10 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   (positions relative to the model's bottom center, facing the first brick's yaw).
   `ModelMenu.cs`: saved-model grid with spinning thumbnails, Load / Rename (system keyboard) / Delete.
   "Save Everything" in the parts menu (X no longer saves; it toggles locks, below).
+- Drift check: each lock runs `LockedBody.FindDrift` while building bodies: studs more than 0.5 LDU short of fully
+  in, and studs/Technic pins not in anything but within 2 mm of a hole they fit (`NearlyIn`). Results in
+  `LockedBody.Drift` (room positions); `Sandbox` adds "Heads up: N spots aren't fully plugged in" to the lock message
+  and shows red markers there for 10 s. Offline on the Oct 14 Cobra save: car 56 short + 14 near misses, door 1 + 2.
 - Locked sections: `Brick.LockedSection` (0 = loose; numbers count up in the order locked, `Brick.NewestSection`).
   X (`Sandbox.ToggleLock`) on the held model, else the one within 12 cm of the left controller (`Brick.Nearest`,
   `Brick.WholeModel`): locks its loose bricks as a new section, or if none are loose unlocks the newest section.
@@ -42,12 +46,30 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   its pieces if they hold together by connectors, so their joints pose; the undo step is discarded. The bin counts
   one assembly per full set of pieces (`PartsBin.TakeFromBin`). Hoses/chains are segment assemblies too but not split.
   Posing picks the joint nearest the grabbed side, so a universal joint bends one axis per grab.
+- Ball joints: shadow `SNAP_GEN` with `bounding=sph R` and `match=size` or `placement=free` -> `Connector.Kind.Ball`,
+  profile "B<R>" (ball M, socket F). Same size + opposite gender fits; snaps centre to centre keeping the held angle
+  (`Align` skips the turn); counts as a point (`Connector.IsPoint`) for mating/used checks but is a joint, not rigid:
+  `Articulation` swings the moving side around the ball following the hand (`_ball`); a second connection alongside a
+  ball makes the link rigid. 64872 (reinforced suspension arm) gets its socket and pivot holes from 57515 by hand.
 - Bars: a male, open-ended "R4" cylinder 8+ LDU long is made sliding at import (cutlery handles), so it rests on
   whatever already occupies a hollow stud instead of being refused.
+- Locked groups: every body has a `unit` (pieces carry it too; saved as `0 !QUESTBRICK GROUP <n>`, renumbered on
+  load). `LockedBody.Build` groups by unit, never by touching, so locked groups snapped together stay separate;
+  pieces without a unit (old saves) group by connection. `Sandbox.Collapse` puts newly locked bricks into the
+  biggest locked group they touch (or a new one) and rebuilds only those groups. Trigger on a locked body takes
+  that body alone (also off the model in the other hand); grip takes the whole connected model. Every rotation
+  through a body (Build, Explode, load, save) goes through `LockedBody.Unit` (normalize): Unity's Quaternion.Inverse
+  assumes unit length, and without it each lock/unlock cycle doubled the error (simulated: 0.5% at 15 cycles, 17% at
+  20; Oct 14 save had pieces 2-16% stretched and pushed apart). Unlocking flashes
+  what came loose (`Brick.Flash`): green for a lone piece, yellow for pieces still joined to each other. The flash copy
+  is a child of the brick, destroyed in `StopFlash` (also from OnDisable): as a separate follower it was left behind
+  when the brick was locked/trashed mid-flash and looked like resized, misaligned pieces.
 - Locked bodies (`LockedBody.cs`, Settings > "Locked pieces as one object", `GameSettings.CollapseLocked`): locking
-  swaps a model's locked bricks for one `Brick` per rigid group (`Brick.BecomeLockedBody`, `IsLockedBody`, `PieceCount`,
-  no `part`). `LockedBody.Build` clusters pieces with the posing rules (rigid links union; groups joined by joints on
-  two different lines merge), so hinges stay posable between bodies. A body holds its pieces (local poses, section,
+  swaps a model's locked bricks for ONE solid `Brick` (`Brick.BecomeLockedBody`, `IsLockedBody`, `PieceCount`, no
+  `part`): `LockedBody.Build` groups pieces by any connection (rigid or joint) plus bonds, so a file with several
+  locked models still gives one body each. Joints inside a body don't pose (splitting bodies at joints was tried:
+  Technic pins are joints, so a locked car was dozens of bodies and two-handed grabs shifted or tore it; don't go back
+  without an explicit per-joint opt-in). A body holds its pieces (local poses, section,
   fromSet), combined meshes per 128 mm cell (children "Locked Pieces"), grab boxes per 32 mm cell (BoxColliders on
   the root, added before ISDK's Start collects colliders), and only its exposed connectors; partly used ones keep
   the connectors covering them (`fullyUsedInside`/`partlyUsedInside` seed `UpdateConnectorUse`). Bricks with 48+
@@ -56,7 +78,14 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   to ~1,000s of pieces, make incremental later). X on a held model is deferred until it's put down
   (`_pendingLock`). Bodies can't be trashed, duplicated, or stored on a wrist; undo history is cleared on lock/unlock.
   Saves write each piece (`Locked.Explode`) with `LOCK <n>`; loading builds bodies straight from placements.
-  Bodies over 150k triangles show no ghost. Not done yet: dropping hidden studs/undersides from body meshes, LOD.
+  Bodies over 150k triangles show no ghost.
+- Hidden studs: the parser tags every stud-family primitive instance (stud*/stu2*: top studs, tubes, posts) as a
+  detail and records its index ranges (`BrickPartData.details`); all of them use LDraw's simplified (p/8) shapes.
+  `LockedBody.Stripped` builds per-part mesh variants (cached per build by which details are dropped) without
+  studs plugged end to end into an opaque, not-open-through piece, and without underside tubes when every socket on
+  that side is plugged that way (`GameSettings.HideCoveredStuds`, read when a body is built). Measured Oct 2026
+  (all parts, after simplified tubes): Cobra 561k triangles, 21% studs/tubes; Eiffel 10307 3.78M, 35%, floor 2.45M;
+  Barad-dur 1.66M, 52%. So the biggest sets also need distance LOD / culling. Not done yet: LOD.
 - `WristInventory.cs`: Wrench-style forearm slots on OVRCameraRig hand anchors. Real bricks are stored
   shrunk (root scaled, group members kept as children, colliders off); identical items stack by a
   signature string with an "xN" label. Grabbing restores full size (ISDK's GrabFreeTransformer locks
@@ -110,7 +139,7 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
 - `Connector.cs`: runtime `Connector` + `Connections.Fit/QuarterTurns/AreMated/Align`. Pegs fit holes of
   equal radius (R in R/S, A in R); clips take male R of their radius; hinge fingers (same group + radius) fit when
   their finger/gap patterns interlock centre to centre (`FingerPattern.Interlock`; profile "F<r>|<M/F>|<seq>", aligned
-  middle to middle); generic connectors match same profile,
+  middle to middle; FGR connectors are `Center` unless the meta says center=false, as LDCad does); generic connectors match same profile,
   opposite gender. Stud-like (R6/S6) pairs and axle-in-cross-hole (both have an A token) pairs snap to
   quarter turns; others spin freely. Non-sliding pegs enter a hole through the end they point toward
   (same direction: peg base at the hole's start; opposite: at the hole's far end). Sliding cylinder pairs
@@ -123,12 +152,26 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   `Connections.Fouls` rejects slide positions where a wider peg section would sit in a narrower hole section (a
   pin's collar in the bore rather than a recess); `SlideShift` then takes the nearest good spot: a step, resting
   against a neighbor, or seated edge to edge. Parts imported before this have no sections and no stops.
-  A denser plate+half-stud grid from every anchor was tried and made placement inconsistent; avoid it.
+  With parts already on the shaft, the step grid is counted from the nearest neighbour face (flush or whole half
+  studs away); a neighbour may be overlapped by at most 0.2 mm (`Blocked`). A single spinning connection (one pin)
+  is squared up with the part it plugs into when within 20° (`SquareTurn`, applied to the final pose only, so
+  two-pin fits still win). The roll search also turns about a pin so crosswise connectors (studs on a part hanging
+  on a sideways pin) stand exactly in line (`PerpendicularReach`), and scoring charges for plugged-in connections
+  that are out of line (`CountConnections` misfit, `MisfitCost` 1 mm per degree or mm): studs are accepted up to
+  ~5° off, and without this a 73109 on a frame pin settled 2.3° tilted (Oct 14 rebuild save) and passed the tilt on.
+  A denser plate+half-stud grid from every anchor was tried and made placement
+  inconsistent; avoid it.
   Clips slide freely. Single-connection snaps prefer centering the part over the connector. A connector counts as taken only where an existing
   partner occupies the same span along it (`Connections.SpanAlong`), so axles/bars/pins hold several parts.
   `Brick.FindSnap`: aligns each candidate pair, keeps the 6 closest, then also tries rolls about the
   connection that line up a second connector, scoring by distance/turn minus 2 mm per extra connection
-  plugged in (fixes studs on free-spinning pins, e.g. a 3x3 round tile on 4 half-pins in a gear). Snaps are rejected
+  plugged in (fixes studs on free-spinning pins, e.g. a 3x3 round tile on 4 half-pins in a gear). The roll search
+  scans every free parallel connector nearby (sorted by distance from the axis), not just those close to the first
+  connection (a 5 cm limit left assemblies on widely spaced pins snapped by one pin only). Snap distance (`move`) is
+  measured at our connection point (`SnapCandidate.anchor`), not the brick origin, so a small corrective turn of a
+  big group isn't rejected as a long move. A tolerance for slightly-off pins (2.5 mm) was tried and removed at the
+  owner's request: snaps stay exact; a model built off-grid by older bugs should be rebuilt (Cobra save, Oct 2026:
+  door pins 390 LDU apart, nearest car hole pair 1.6 mm closer; 59 studs 0.5-2.8 LDU short of home). Snaps are rejected
   only if a connector they'd use is already mated with a third part (`UsesTakenConnection`); box overlap
   checks were dropped for snapping because part bounding boxes are wrong for clips/brackets/car bases.
   Parts with upward R6 studs but no upward R6/S6 sockets anywhere get the estimated footprint grid added at import
@@ -161,6 +204,13 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   studs/hidden detail + LOD, 4) (done) spatial hash for connectors, 5) foveated rendering / dynamic resolution.
 
 ## Undo (`UndoHistory.cs`)
+- Carried groups keep partly used connectors (`BuildGroupConnections`: used only if covered end to end or a point),
+  so a pin half inside the group can still plug in. `_groupIndex` (all group connectors, root-local) feeds
+  `OwnSpans`, passed to `Connections.Align` as `ownSpans`; `OverOwn` stops the fixed shape sliding over the stretch
+  the moving model already occupies, and its ends are extra seating candidates.
+- Two hands: a grab never takes anything out of the other hand. `CollectGroup(otherHand)` only gathers loose pieces
+  the other hand was carrying (`GiveUp` hands them over); a locked piece of the model in the other hand is pinned in
+  place (`_pinnedTo`, re-applied in LateUpdate) and the grab does nothing; locked pieces never pose.
 - Each grab records a step at Select: trigger = the brick's pose + bond; grip = the brick plus carried bricks
   relative to their original parents; posing = the bricks the joint turns; menu/bin previews and A-duplicates
   = spawn steps (undo deletes them, firing `Trashed` so the bin takes them back). Trashed bricks are
@@ -188,5 +238,8 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
 - Parts audit (Oct 2026, 861 parts): still without connectors = minifig hair/beards/capes/swords/tools and the
   train traction band 85544 (a rubber ring; what it wraps in set 10274 is unknown). Hand files added for glass 60602
   (frame 60593's slot), bar 7307 (two long bars + four uprights), finger 3171 (clip at origin).
+- The headset app is installed as com.UnityTechnologies.com.unity.template.urpblank (the build profile overrides
+  ProjectSettings' com.michelseth5.brickbuilder). Saves: /sdcard/Android/data/<that>/files/Models (adb pull works;
+  run-as doesn't, the build isn't debuggable). Changing the package name would install a separate app without the saves.
 - Scripts can be test-compiled outside Unity with a netstandard2.1 csproj referencing
   `<Unity>/Editor/Data/Managed/UnityEngine/*.dll` and `Library/ScriptAssemblies/*.dll`.

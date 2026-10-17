@@ -366,16 +366,8 @@ MonoBehaviour:
     profile: R6
     group: 
     sections: 
-  components:
-  - partId: 27965k01
-    position: {x: 0.084, y: -0, z: 0}
-    rotation: {x: 0.5, y: 0.5, z: -0.5, w: 0.5}
-  - partId: 27965k01
-    position: {x: -0.084, y: -0, z: 0}
-    rotation: {x: 0.50000024, y: -0.49999982, z: -0.49999982, w: -0.50000024}
-  - partId: 27965k02
-    position: {x: 0.072, y: -0, z: 0}
-    rotation: {x: 0.5, y: 0.5, z: -0.5, w: 0.5}
+  components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.086399995, y: 0.0016, z: 0.0023999999}

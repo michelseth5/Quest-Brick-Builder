@@ -399,7 +399,7 @@ public class BrickMerger : MonoBehaviour
             for (int s = 0; s < mesh.subMeshCount; s++)
             {
                 Material material = materials[Mathf.Min(s, materials.Length - 1)];
-                if (material == null)
+                if (material == null || mesh.GetIndexCount(s) == 0)
                     continue;
                 if (!byMaterial.TryGetValue(material, out List<CombineInstance> pieces))
                     byMaterial[material] = pieces = new List<CombineInstance>();

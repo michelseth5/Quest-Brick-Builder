@@ -61,6 +61,7 @@ MonoBehaviour:
     group: z28Turntable
     sections: R27:15
   components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: -0.005, z: 0}
     m_Extent: {x: 0.0116, y: 0.0066, z: 0.010799999}

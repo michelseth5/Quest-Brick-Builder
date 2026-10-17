@@ -149,6 +149,10 @@ public class LDrawImportWindow : EditorWindow
                 part.antiStuds = data.AntiStuds.Select(ToUnity).ToArray();
                 part.connectors = data.Connectors.Select(ToConnector).ToArray();
                 part.components = data.Components.Select(ToComponent).ToArray();
+                part.details = data.Details.SelectMany(d => d.Ranges.Select(r => new BrickPartData.Detail
+                {
+                    position = ToUnity(d.Position), up = ToUnity(d.Up), submesh = r.Submesh, start = r.Start, count = r.Count,
+                })).ToArray();
                 foreach ((string componentId, float[] _) in data.Components)
                 {
                     if (!partIds.Contains(componentId))
@@ -340,6 +344,7 @@ public class LDrawImportWindow : EditorWindow
             "clip" => Connector.Kind.Clip,
             "finger" => Connector.Kind.Finger,
             "generic" => Connector.Kind.Generic,
+            "ball" => Connector.Kind.Ball,
             _ => Connector.Kind.Cylinder,
         },
         male = c.Male,

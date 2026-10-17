@@ -49,6 +49,12 @@ namespace LDrawImport
         public readonly List<string> MissingFiles = new List<string>();
 
         /// <summary>
+        /// Each stud, hollow stud, or underside tube: where it is, which way it points, and which stretches of
+        /// the mesh's index lists draw it, so it can be left out when it's hidden inside a model.
+        /// </summary>
+        public readonly List<DetailData> Details = new List<DetailData>();
+
+        /// <summary>
         /// For a part that is really an assembly of other whole parts (e.g. a "complete" universal joint):
         /// each of them and where it sits, as the 12 numbers of its LDraw line (x y z, then the 3 x 3 matrix).
         /// Empty for ordinary parts.
@@ -57,6 +63,20 @@ namespace LDrawImport
     }
 
     /// <summary>One connection point on a part, in Unity space (meters, +Y up).</summary>
+    /// <summary>A stretch of one submesh's index list (Count indices from Start).</summary>
+    public sealed class DetailRange
+    {
+        public int Submesh, Start, Count;
+    }
+
+    /// <summary>One stud, hollow stud, or underside tube of a part.</summary>
+    public sealed class DetailData
+    {
+        public Vector3 Position;   // its base, in Unity space
+        public Vector3 Up;         // the way it points
+        public readonly List<DetailRange> Ranges = new List<DetailRange>();
+    }
+
     public sealed class ConnectorData
     {
         public string Kind;        // "cylinder", "clip", "finger", or "generic"
@@ -95,6 +115,10 @@ namespace LDrawImport
         // Per-part working state, in LDraw coordinates (-Y up, LDU).
         readonly List<Vector3> _corners = new List<Vector3>();
         readonly List<int> _triangleColors = new List<int>();
+        // Which stud or underside tube each triangle belongs to (-1 for the body), and where each of those is.
+        readonly List<int> _triangleDetails = new List<int>();
+        readonly List<(Vector3 origin, Vector3 up)> _details = new List<(Vector3, Vector3)>();
+        int _currentDetail = -1;
         readonly List<Vector3> _studs = new List<Vector3>();
         readonly HashSet<string> _missing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         bool _hasBody;
@@ -149,6 +173,9 @@ namespace LDrawImport
 
             _corners.Clear();
             _triangleColors.Clear();
+            _triangleDetails.Clear();
+            _details.Clear();
+            _currentDetail = -1;
             _studs.Clear();
             _missing.Clear();
             _hasBody = false;
@@ -184,30 +211,79 @@ namespace LDrawImport
                 && description.IndexOf("Poseable", StringComparison.OrdinalIgnoreCase) < 0)
                 return;
 
-            var found = new List<(string, float[])>();
+            List<(string partId, Matrix4x4 world)> found = PlacedParts(lines, Matrix4x4.Identity, 0);
+            if (found == null || found.Count < 2)
+                return;
+            foreach ((string partId, Matrix4x4 m) in found)
+            {
+                // Back to the numbers of an LDraw part line: x y z, then the 3 x 3 matrix row by row.
+                data.Components.Add((partId, new[]
+                {
+                    m.M41, m.M42, m.M43,
+                    m.M11, m.M21, m.M31,
+                    m.M12, m.M22, m.M32,
+                    m.M13, m.M23, m.M33,
+                }));
+            }
+        }
+
+        // The whole parts a file places, if placing parts is all it does (null if it has shapes of its own or
+        // uses sub-parts or primitives, i.e. it's an ordinary part). A file that places exactly one part is an
+        // alias ("=Hinge Plate 1 x 4 (Complete)" just places the real one) or a renumbered part, and is followed
+        // to what it points at. Real assemblies are not opened up further (a poseable horse is head, body and
+        // legs, not the half-shells those are drawn from).
+        List<(string partId, Matrix4x4 world)> PlacedParts(string[] lines, Matrix4x4 parent, int depth)
+        {
+            var found = new List<(string, Matrix4x4)>();
             foreach (string line in lines)
             {
                 string[] t = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
                 if (t.Length == 0)
                     continue;
                 if (t[0] == "2" || t[0] == "3" || t[0] == "4" || t[0] == "5")
-                    return; // has geometry of its own
+                    return null; // has geometry of its own
                 if (t[0] != "1" || t.Length < 15)
                     continue;
 
                 string file = string.Join(" ", t, 14, t.Length - 14);
                 if (file.Contains("\\") || file.Contains("/"))
-                    return; // a sub-part or primitive: an ordinary part
+                    return null; // a sub-part or primitive: an ordinary part
                 string id = Path.GetFileNameWithoutExtension(file);
                 if (FindPartFile(_root, id) == null)
-                    return; // a primitive
-                var placement = new float[12];
-                for (int i = 0; i < 12; i++)
-                    placement[i] = F(t[2 + i]);
-                found.Add((id, placement));
+                    return null; // a primitive
+
+                float x = F(t[2]), y = F(t[3]), z = F(t[4]);
+                float a = F(t[5]), b = F(t[6]), c = F(t[7]);
+                float d = F(t[8]), e = F(t[9]), f = F(t[10]);
+                float g = F(t[11]), h = F(t[12]), i = F(t[13]);
+                var local = new Matrix4x4(
+                    a, d, g, 0f,
+                    b, e, h, 0f,
+                    c, f, i, 0f,
+                    x, y, z, 1f);
+                Matrix4x4 world = local * parent;
+
+                found.Add((id, world));
             }
-            if (found.Count >= 2)
-                data.Components.AddRange(found);
+
+            if (depth >= 4)
+                return found;
+            if (found.Count == 1)
+            {
+                // An alias: whatever its one part places, if that is itself only placing parts.
+                string[] target = Load(ToFileName(found[0].Item1), lowRes: false);
+                List<(string, Matrix4x4)> placed = target != null ? PlacedParts(target, found[0].Item2, depth + 1) : null;
+                return placed != null && placed.Count > 0 ? placed : found;
+            }
+            for (int index = 0; index < found.Count; index++)
+            {
+                // A piece that has been renumbered: use the part it was renamed to.
+                string[] target = Load(ToFileName(found[index].Item1), lowRes: false);
+                List<(string, Matrix4x4)> placed = target != null ? PlacedParts(target, found[index].Item2, depth + 1) : null;
+                if (placed != null && placed.Count == 1)
+                    found[index] = placed[0];
+            }
+            return found;
         }
 
         static string ToFileName(string partId)
@@ -232,6 +308,13 @@ namespace LDrawImport
         }
 
         // Top-of-part studs. Underside tubes and posts (stud3, stud4, ...) are not included.
+        // Any of LDraw's stud primitives: top studs, hollow studs, and the tubes and posts underneath parts.
+        static bool IsStudPrimitive(string fileName)
+        {
+            string name = fileName.ToLowerInvariant();
+            return name.StartsWith("stud") || name.StartsWith("stu2");
+        }
+
         static bool IsTopStud(string fileName)
         {
             string name = fileName.ToLowerInvariant();
@@ -396,7 +479,19 @@ namespace LDrawImport
                     _studs.Add(Vector3.Transform(Vector3.Zero, world));
             }
 
-            return ProcessFile(file, world, color, childInverted, certified, lowRes || isStud, inStud || isStud, depth + 1);
+            // Each stud, tube or other stud-family primitive is one "detail": its triangles are tagged so a
+            // locked model can leave it out when it's hidden (see LockedBody).
+            int outerDetail = _currentDetail;
+            if (_currentDetail < 0 && IsStudPrimitive(baseName))
+            {
+                _details.Add((Vector3.Transform(Vector3.Zero, world), Vector3.Normalize(Vector3.TransformNormal(new Vector3(0f, -1f, 0f), world))));
+                _currentDetail = _details.Count - 1;
+            }
+            // (Stud-family shapes, tubes included, use LDraw's simplified versions: a fraction of the triangles.)
+            bool simplified = lowRes || isStud || IsStudPrimitive(baseName);
+            List<Snap> result = ProcessFile(file, world, color, childInverted, certified, simplified, inStud || isStud, depth + 1);
+            _currentDetail = outerDetail;
+            return result;
         }
 
         // ---------- Connection points (LDCad shadow library) ----------
@@ -777,6 +872,8 @@ namespace LDrawImport
                         connector.Kind = "finger";
                         connector.Male = !(snap.Params.TryGetValue("genderOfs", out string gender) && gender.StartsWith("F", StringComparison.OrdinalIgnoreCase));
                         connector.OpenEnded = true;
+                        // LDCad centres a finger pattern on its position unless told otherwise (not like cylinders).
+                        connector.Center = !(snap.Params.TryGetValue("center", out string fingerCenter) && fingerCenter.Equals("false", StringComparison.OrdinalIgnoreCase));
                         float total = 0f;
                         var widths = new List<string>();
                         if (snap.Params.TryGetValue("seq", out string seq))
@@ -798,6 +895,15 @@ namespace LDrawImport
                         connector.Kind = "generic";
                         connector.Male = !(snap.Params.TryGetValue("gender", out string genGender) && genGender.StartsWith("F", StringComparison.OrdinalIgnoreCase));
                         connector.Profile = "G:" + (connector.Group ?? "");
+                        // A ball or its socket: a sphere that fits any sphere of its size, at any angle.
+                        if (snap.Params.TryGetValue("bounding", out string bounding) && bounding.TrimStart().StartsWith("sph", StringComparison.OrdinalIgnoreCase)
+                            && ((snap.Params.TryGetValue("match", out string match) && match.Equals("size", StringComparison.OrdinalIgnoreCase))
+                                || (snap.Params.TryGetValue("placement", out string placement) && placement.Equals("free", StringComparison.OrdinalIgnoreCase))))
+                        {
+                            string[] size = bounding.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                            connector.Kind = "ball";
+                            connector.Profile = "B" + (size.Length > 1 ? F(size[1]) : 8f).ToString("0.#", CultureInfo.InvariantCulture);
+                        }
                         break;
                 }
 
@@ -845,7 +951,10 @@ namespace LDrawImport
             }
 
             for (int added = (_corners.Count - before) / 3; added > 0; added--)
+            {
                 _triangleColors.Add(color);
+                _triangleDetails.Add(_currentDetail);
+            }
 
             if (!inStud)
             {
@@ -915,6 +1024,8 @@ namespace LDrawImport
 
             // One submesh per color, with the brick's own color first.
             var submeshForColor = new Dictionary<int, List<int>>();
+            foreach ((Vector3 origin, Vector3 up) in _details)
+                data.Details.Add(new DetailData { Position = ToUnity(origin), Up = new Vector3(up.X, -up.Y, up.Z) });
             if (_triangleColors.Contains(MainColor))
                 AddSubmesh(data, submeshForColor, MainColor);
 
@@ -947,6 +1058,21 @@ namespace LDrawImport
                 int color = _triangleColors[corner / 3];
                 if (!submeshForColor.TryGetValue(color, out List<int> submesh))
                     submesh = AddSubmesh(data, submeshForColor, color);
+                if (corner % 3 == 0)
+                {
+                    int detail = _triangleDetails[corner / 3];
+                    if (detail >= 0)
+                    {
+                        // Extend this detail's last stretch if this triangle follows straight on, else start one.
+                        List<DetailRange> ranges = data.Details[detail].Ranges;
+                        int submeshIndex = data.Submeshes.IndexOf(submesh);
+                        if (ranges.Count > 0 && ranges[ranges.Count - 1].Submesh == submeshIndex
+                            && ranges[ranges.Count - 1].Start + ranges[ranges.Count - 1].Count == submesh.Count)
+                            ranges[ranges.Count - 1].Count += 3;
+                        else
+                            ranges.Add(new DetailRange { Submesh = submeshIndex, Start = submesh.Count, Count = 3 });
+                    }
+                }
                 submesh.Add(index);
             }
         }

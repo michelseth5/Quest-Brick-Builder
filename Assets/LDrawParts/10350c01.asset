@@ -50,9 +50,10 @@ MonoBehaviour:
   - partId: 10350
     position: {x: 0, y: -0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 1}
-  - partId: 10351
+  - partId: 10350
     position: {x: 0, y: -0, z: 0}
-    rotation: {x: 0, y: 0, z: 0, w: 1}
+    rotation: {x: -0.00000041723226, y: 1, z: 0, w: 0}
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: 0.009209001, z: -0.008674201}
     m_Extent: {x: 0.0044268, y: 0.017195001, z: 0.016660199}

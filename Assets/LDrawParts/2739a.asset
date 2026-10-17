@@ -22,7 +22,7 @@ MonoBehaviour:
   - {x: 0, y: -0.0023999999, z: 0}
   - {x: 0, y: -0.0023999999, z: 0.04}
   connectors:
-  - kind: 3
+  - kind: 4
     male: 0
     position: {x: 0, y: -0, z: 0}
     axis: {x: 0, y: 1, z: 0}
@@ -31,10 +31,10 @@ MonoBehaviour:
     center: 0
     slide: 0
     openEnded: 0
-    profile: 'G:'
+    profile: B8
     group: 
     sections: 
-  - kind: 3
+  - kind: 4
     male: 0
     position: {x: 0, y: -0, z: 0.04}
     axis: {x: 0, y: 1, z: 0}
@@ -43,7 +43,7 @@ MonoBehaviour:
     center: 0
     slide: 0
     openEnded: 0
-    profile: 'G:'
+    profile: B8
     group: 
     sections: 
   - kind: 0
@@ -59,6 +59,7 @@ MonoBehaviour:
     group: 
     sections: A6:80
   components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: 0, z: 0.02}
     m_Extent: {x: 0.0039999997, y: 0.0023999999, z: 0.024}

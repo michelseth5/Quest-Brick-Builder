@@ -67,6 +67,22 @@ public static class GameSettings
         }
     }
 
+    const string HideStudsKey = "HideCoveredStuds";
+
+    /// <summary>
+    /// Whether locked models leave out the studs and underside tubes that are covered by other pieces
+    /// (most of a brick's triangles). Takes effect the next time a model is locked or loaded.
+    /// </summary>
+    public static bool HideCoveredStuds
+    {
+        get => PlayerPrefs.GetInt(HideStudsKey, 1) == 1;
+        set
+        {
+            PlayerPrefs.SetInt(HideStudsKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
+
     const string CollapseKey = "CollapseLocked";
 
     /// <summary>

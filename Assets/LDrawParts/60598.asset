@@ -275,6 +275,52 @@ MonoBehaviour:
     group: 
     sections: R6:4
   components: []
+  details:
+  - position: {x: -0.007999999, y: -0.027199998, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 108
+    count: 144
+  - position: {x: 0, y: -0.027199998, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 252
+    count: 144
+  - position: {x: 0.007999999, y: -0.027199998, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 396
+    count: 144
+  - position: {x: -0.0039999997, y: -0, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1452
+    count: 144
+  - position: {x: 0.0039999997, y: -0, z: -0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1596
+    count: 144
+  - position: {x: -0.0039999997, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1740
+    count: 144
+  - position: {x: 0.0039999997, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1884
+    count: 144
+  - position: {x: -0.012, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2028
+    count: 144
+  - position: {x: 0.012, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2172
+    count: 144
   bodyBounds:
     m_Center: {x: 0, y: -0.0136, z: 0}
     m_Extent: {x: 0.015999999, y: 0.015199999, z: 0.007999999}

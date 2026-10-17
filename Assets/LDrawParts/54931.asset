@@ -33,6 +33,7 @@ MonoBehaviour:
     group: 
     sections: A6:20
   components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: 0.0011999509, z: 0.0046}
     m_Extent: {x: 0.006, y: 0.0048000496, z: 0.0046}

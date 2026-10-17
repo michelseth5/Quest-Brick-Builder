@@ -93,16 +93,8 @@ MonoBehaviour:
     profile: R2
     group: 
     sections: R2:1
-  components:
-  - partId: u9053
-    position: {x: 0, y: -0, z: 0}
-    rotation: {x: 0, y: 0, z: 0, w: 1}
-  - partId: 77
-    position: {x: 0, y: -0.0004, z: 0}
-    rotation: {x: 0, y: 0, z: 0, w: 1}
-  - partId: u9053
-    position: {x: 0, y: -0.184, z: 0}
-    rotation: {x: 0, y: 0, z: 1, w: 0}
+  components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: -0.092, z: 0}
     m_Extent: {x: 0.0016, y: 0.092, z: 0.0016}

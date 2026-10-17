@@ -188,7 +188,7 @@ MonoBehaviour:
     axis: {x: 1, y: -0, z: 0}
     reference: {x: 0, y: -1, z: 0}
     length: 0.0288
-    center: 0
+    center: 1
     slide: 0
     openEnded: 1
     profile: F2|F|72
@@ -200,7 +200,7 @@ MonoBehaviour:
     axis: {x: 1, y: -0, z: 0}
     reference: {x: 0, y: -1, z: 0}
     length: 0.0288
-    center: 0
+    center: 1
     slide: 0
     openEnded: 1
     profile: F2|F|72
@@ -212,7 +212,7 @@ MonoBehaviour:
     axis: {x: 0, y: 1, z: 0}
     reference: {x: 1, y: -0, z: 0}
     length: 0.024
-    center: 0
+    center: 1
     slide: 0
     openEnded: 1
     profile: F2|F|60
@@ -224,13 +224,39 @@ MonoBehaviour:
     axis: {x: 0, y: 1, z: 0}
     reference: {x: 1, y: -0, z: 0}
     length: 0.024
-    center: 0
+    center: 1
     slide: 0
     openEnded: 1
     profile: F2|F|60
     group: 
     sections: 
   components: []
+  details:
+  - position: {x: 0.007999999, y: -0.027199998, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 144
+    count: 72
+  - position: {x: 0, y: -0.027199998, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 216
+    count: 72
+  - position: {x: -0.007999999, y: -0.027199998, z: 0}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 288
+    count: 72
+  - position: {x: 0.0039999997, y: -0, z: 0}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 918
+    count: 144
+  - position: {x: -0.0039999997, y: -0, z: 0}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 1062
+    count: 144
   bodyBounds:
     m_Center: {x: 0, y: -0.0136, z: 0}
     m_Extent: {x: 0.015999999, y: 0.015199999, z: 0.0039999997}

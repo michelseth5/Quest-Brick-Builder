@@ -45,6 +45,7 @@ MonoBehaviour:
     group: uniJnt
     sections: R6:20
   components: []
+  details: []
   bodyBounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.003516, y: 0.003516, z: 0.0016}

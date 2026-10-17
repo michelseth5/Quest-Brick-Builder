@@ -23,6 +23,7 @@ public static class ModelFile
         public int bond;            // parts with the same non-zero bond are bonded together
         public bool fromSet;        // taken out of the Build It Yourself bin (see SetProgress)
         public int lockSection;     // 0 = loose; otherwise the numbered section it was locked into
+        public int group;           // which locked group it was in (0 = none), so groups stay separate after loading
     }
 
     /// <summary>A saved wrist inventory stack: which wrist, how many copies, and one copy's parts.</summary>
@@ -183,6 +184,7 @@ public static class ModelFile
                         if (bondId != 0)
                             text.Append(InventoryPrefix).Append(" BOND ").Append(bondId).AppendLine();
                         text.Append(InventoryPrefix).Append(" LOCK ").Append(piece.section).AppendLine();
+                        text.Append(InventoryPrefix).Append(" GROUP ").Append(piece.unit).AppendLine();
                         if (progress != null && piece.fromSet)
                             text.Append(InventoryPrefix).AppendLine(" FROMSET");
                         AppendPartLine(text, piece.part.partId, piece.colorCode, toModel * (piece.position - origin), toModel * piece.rotation);
@@ -239,7 +241,7 @@ public static class ModelFile
     static void AppendPartLine(StringBuilder text, string partId, int colorCode, Vector3 position, Quaternion rotation)
     {
         Vector3 ld = new Vector3(position.x, -position.y, position.z) / MetersPerLdu;
-        Matrix4x4 m = FlipY * Matrix4x4.Rotate(rotation) * FlipY;
+        Matrix4x4 m = FlipY * Matrix4x4.Rotate(LockedBody.Unit(rotation)) * FlipY; // (always a clean rotation)
 
         text.Append("1 ").Append(colorCode).Append(' ');
         text.Append(F(ld.x)).Append(' ').Append(F(ld.y)).Append(' ').Append(F(ld.z)).Append(' ');
@@ -259,6 +261,7 @@ public static class ModelFile
         int pendingBond = 0;
         bool pendingFromSet = false;
         int pendingLock = 0;
+        int pendingGroup = 0;
 
         foreach (string line in lines)
         {
@@ -275,6 +278,10 @@ public static class ModelFile
                         int.TryParse(t[5], out progress.booklet);
                         int.TryParse(t[6], out progress.page);
                     }
+                }
+                else if (t.Length >= 4 && t[2] == "GROUP")
+                {
+                    int.TryParse(t[3], out pendingGroup); // applies to the next part line
                 }
                 else if (t.Length >= 4 && t[2] == "LOCK")
                 {
@@ -310,10 +317,12 @@ public static class ModelFile
                 placement.bond = pendingBond;
                 placement.fromSet = pendingFromSet;
                 placement.lockSection = pendingLock;
+                placement.group = pendingGroup;
                 result.Add(placement);
                 pendingBond = 0;
                 pendingFromSet = false;
                 pendingLock = 0;
+                pendingGroup = 0;
             }
         }
 

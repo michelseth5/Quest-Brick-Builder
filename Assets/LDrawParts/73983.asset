@@ -179,6 +179,37 @@ MonoBehaviour:
   - partId: 2430
     position: {x: 0, y: -0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 1}
+  details:
+  - position: {x: -0.007999999, y: -0.0016, z: 0.0039999997}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 0
+    count: 72
+  - position: {x: -0.012, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 72
+    count: 72
+  - position: {x: -0.0039999997, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 144
+    count: 72
+  - position: {x: 0.007999999, y: -0.0016, z: 0.0039999997}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 762
+    count: 72
+  - position: {x: 0.0039999997, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2118
+    count: 72
+  - position: {x: 0.012, y: -0, z: 0.0039999997}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 2190
+    count: 72
   bodyBounds:
     m_Center: {x: 0, y: -0.0016, z: 0.0023999999}
     m_Extent: {x: 0.015999999, y: 0.0016, z: 0.0056}

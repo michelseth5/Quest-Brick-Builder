@@ -398,6 +398,77 @@ MonoBehaviour:
     group: 
     sections: S6:4
   components: []
+  details:
+  - position: {x: -0.0039999997, y: -0.0072, z: 0.015999999}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 2226
+    count: 72
+  - position: {x: 0.0039999997, y: -0.0072, z: 0.015999999}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 2394
+    count: 72
+  - position: {x: 0.012, y: -0.0072, z: 0.015999999}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 2562
+    count: 72
+  - position: {x: -0.015999999, y: -0.0072, z: -0.012}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 4992
+    count: 72
+  - position: {x: -0.015999999, y: -0.0072, z: -0.0039999997}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 5160
+    count: 72
+  - position: {x: -0.015999999, y: -0.0072, z: 0.0039999997}
+    up: {x: 0, y: -1, z: 0}
+    submesh: 0
+    start: 5328
+    count: 72
+  - position: {x: -0.007999999, y: -0, z: 0.015999999}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 5700
+    count: 144
+  - position: {x: 0, y: -0, z: 0.015999999}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 5844
+    count: 144
+  - position: {x: 0.007999999, y: -0, z: 0.015999999}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 5988
+    count: 144
+  - position: {x: 0.015999999, y: -0, z: 0.015999999}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 6132
+    count: 144
+  - position: {x: -0.015999999, y: -0, z: 0.007999999}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 6276
+    count: 144
+  - position: {x: -0.015999999, y: -0, z: 0}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 6420
+    count: 144
+  - position: {x: -0.015999999, y: -0, z: -0.007999999}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 6564
+    count: 144
+  - position: {x: -0.015999999, y: -0, z: -0.015999999}
+    up: {x: 0, y: 1, z: 0}
+    submesh: 0
+    start: 6708
+    count: 144
   bodyBounds:
     m_Center: {x: 0, y: -0.0047999998, z: 0}
     m_Extent: {x: 0.02, y: 0.0047999998, z: 0.02}

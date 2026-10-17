@@ -11,7 +11,7 @@ using UnityEngine;
 [Serializable]
 public struct Connector
 {
-    public enum Kind { Cylinder, Clip, Finger, Generic }
+    public enum Kind { Cylinder, Clip, Finger, Generic, Ball }
 
     public Kind kind;
     public bool male;
@@ -27,6 +27,9 @@ public struct Connector
     public string sections;    // cylinders: each section from the start as <shape><radius>:<width> in LDU (see Connections.Fouls)
 
     public Vector3 Start => center ? position - axis * (length * 0.5f) : position;
+
+    /// <summary>A connection at a point rather than along a line: a special shape (fixed angle) or a ball joint (any angle).</summary>
+    public bool IsPoint => kind == Kind.Generic || kind == Kind.Ball;
 
     /// <summary>This connector moved by a pose (e.g. from a part's local space into the world).</summary>
     public Connector Moved(Vector3 offset, Quaternion rotation)
@@ -76,7 +79,8 @@ public static class Connections
 
     static bool ComputeFit(in Connector a, in Connector b)
     {
-        if (a.kind == Connector.Kind.Generic || b.kind == Connector.Kind.Generic)
+        // Special shapes fit their own kind; a ball fits a socket of its size ("B8"). Both by matching profile.
+        if (a.IsPoint || b.IsPoint)
             return a.kind == b.kind && a.profile == b.profile && a.male != b.male;
         if (a.kind == Connector.Kind.Finger || b.kind == Connector.Kind.Finger)
             return a.kind == b.kind && string.Equals(a.group ?? "", b.group ?? "", StringComparison.Ordinal)
@@ -196,7 +200,7 @@ public static class Connections
             return false;
         if (!Fit(a, b))
             return false;
-        if (a.kind == Connector.Kind.Generic)
+        if (a.IsPoint)
             return (a.position - b.position).sqrMagnitude < Tolerance * Tolerance;
         if (Mathf.Abs(Vector3.Dot(a.axis, b.axis)) < 0.996f)
             return false;
@@ -223,7 +227,7 @@ public static class Connections
     public static void Align(in Connector movingLocal, Vector3 partPosition, Quaternion partRotation,
                              in Connector fixedWorld, bool quarterTurns,
                              out Vector3 newPosition, out Quaternion newRotation,
-                             IReadOnlyList<float> slideAnchors = null)
+                             IReadOnlyList<float> slideAnchors = null, IReadOnlyList<float> ownSpans = null)
     {
         Connector moving = movingLocal.Moved(partPosition, partRotation);
 
@@ -232,7 +236,8 @@ public static class Connections
         // a part turned upside down is ruled out by the caller's tilt limit.
         Vector3 target = Vector3.Dot(moving.axis, fixedWorld.axis) >= 0f ? fixedWorld.axis : -fixedWorld.axis;
 
-        Quaternion turn = Quaternion.FromToRotation(moving.axis, target);
+        // (A ball joint takes any angle: the part keeps the way it's being held.)
+        Quaternion turn = moving.kind == Connector.Kind.Ball ? Quaternion.identity : Quaternion.FromToRotation(moving.axis, target);
         Quaternion rotation = turn * partRotation;
 
         if (quarterTurns)
@@ -249,7 +254,7 @@ public static class Connections
 
         Connector turned = movingLocal.Moved(partPosition, rotation);
         Vector3 delta;
-        if (turned.kind == Connector.Kind.Generic)
+        if (turned.IsPoint)
         {
             delta = fixedWorld.position - turned.position;
         }
@@ -283,6 +288,7 @@ public static class Connections
                     movingStart = a0,
                     direction = direction,
                     movingMale = turned.male,
+                    ownSpans = ownSpans,
                 };
                 shift = SlideShift(lowEnd, Mathf.Max(a0, a1), fixedWorld.length, slideAnchors, phase, shapes);
             }
@@ -388,6 +394,9 @@ public static class Connections
         public float movingStart;  // the moving shape's start, along the fixed shape from its start
         public float direction;    // +1 if the moving shape points the same way as the fixed one, else -1
         public bool movingMale;
+        // Stretches of the moving shape its own model already occupies (from/to pairs along it from its
+        // start): the half of a pin that's inside the door it came with. The fixed shape can't go there.
+        public IReadOnlyList<float> ownSpans;
     }
 
     // Whether, with the moving shape shifted by `shift`, a wide section of the peg would sit inside a narrower
@@ -417,6 +426,23 @@ public static class Connections
         return false;
     }
 
+    // Whether, with the moving shape shifted by `shift`, the fixed shape would sit on a stretch of the moving
+    // shape that its own model already occupies (the body's hole sliding over the half of a pin that's inside
+    // the door, i.e. the door going into the body).
+    static bool OverOwn(in SlideShapes shapes, float shift, float fixedLength)
+    {
+        if (shapes.ownSpans == null)
+            return false;
+        for (int i = 0; i + 1 < shapes.ownSpans.Count; i += 2)
+        {
+            float p0 = shapes.movingStart + shift + shapes.direction * shapes.ownSpans[i];
+            float p1 = shapes.movingStart + shift + shapes.direction * shapes.ownSpans[i + 1];
+            if (Mathf.Min(Mathf.Max(p0, p1), fixedLength) - Mathf.Max(Mathf.Min(p0, p1), 0f) > 0.0005f)
+                return true;
+        }
+        return false;
+    }
+
     // Along a sliding connection, the moving shape (lo..hi, measured from the fixed shape's start) clicks to
     // half-stud steps: its low end may sit at phase + whole steps (phase is 0 when both shapes are measured
     // from their starts). If it's within a few mm of resting flush against a part already on the same shaft
@@ -429,7 +455,8 @@ public static class Connections
         float length = hi - lo;
         SlideShapes s = shapes; // (local functions can't capture an `in` parameter)
         bool Overlaps(float newLo) => newLo < fixedLength - 0.0001f && newLo + length > 0.0001f;
-        bool Good(float newLo) => Overlaps(newLo) && (anchors == null || !Blocked(newLo, length, anchors)) && !Fouls(s, newLo - lo);
+        bool Good(float newLo) => Overlaps(newLo) && (anchors == null || !Blocked(newLo, length, anchors))
+                                  && !Fouls(s, newLo - lo) && !OverOwn(s, newLo - lo, fixedLength);
 
         float restShift = 0f, restDistance = float.MaxValue;
         if (anchors != null)
@@ -457,6 +484,23 @@ public static class Connections
         }
         else
         {
+            // With something already on the shaft, steps count from its nearest face, so the part sits flush
+            // against it or whole half studs away, not at odd distances from wherever the shaft happens to end.
+            if (anchors != null && anchors.Count > 0)
+            {
+                float nearest = float.MaxValue;
+                foreach (float end in anchors)
+                {
+                    foreach (float candidate in new[] { end, end - length })
+                    {
+                        if (Mathf.Abs(candidate - lo) < nearest)
+                        {
+                            nearest = Mathf.Abs(candidate - lo);
+                            phase = candidate;
+                        }
+                    }
+                }
+            }
             float stepped = Mathf.Round((lo - phase) / HalfStudStep) * HalfStudStep + phase;
             float home = phase - Mathf.Round(phase / HalfStudStep) * HalfStudStep; // the step nearest the fixed shape's start
             shift = (Overlaps(stepped) ? stepped : home) - lo;
@@ -487,6 +531,18 @@ public static class Connections
         for (int k = -6; k <= 6; k++)
             Try((near + k) * HalfStudStep + phase);
 
+        // Up against our own model: the end of a stretch it occupies meeting either end of the fixed shape
+        // (the door's face against the body's as its pin goes in).
+        if (s.ownSpans != null)
+        {
+            for (int i = 0; i < s.ownSpans.Count; i++)
+            {
+                float edge = s.movingStart + s.direction * s.ownSpans[i];
+                Try(lo - edge);
+                Try(lo + fixedLength - edge);
+            }
+        }
+
         // Seated: an edge of one of our sections meeting an edge of one of the fixed shape's.
         if (s.fixedSections != null && s.movingSections != null)
         {
@@ -511,7 +567,7 @@ public static class Connections
     {
         for (int i = 0; i + 1 < anchors.Count; i += 2)
         {
-            if (Mathf.Min(anchors[i + 1], lo + length) - Mathf.Max(anchors[i], lo) > 0.0005f)
+            if (Mathf.Min(anchors[i + 1], lo + length) - Mathf.Max(anchors[i], lo) > 0.0002f) // (a fifth of a millimetre: no visible overlap)
                 return true;
         }
         return false;
