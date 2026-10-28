@@ -4,6 +4,9 @@ A mixed-reality brick builder for Meta Quest 3: build with real-scale virtual br
 passthrough. Parts snap the way the real ones do (studs, Technic pins and axles, bars and clips, hinges, ball
 joints), and you can build real sets step by step, build them your own way from a parts bin, or free-build.
 
+**New here? See the [User Guide](USER_GUIDE.md)** for controls, adding sets with your Rebrickable key, instruction
+PDFs, fixing parts that don't snap, and more.
+
 ## Features
 
 - **Snapping** using the LDCad shadow library's connection data: studs and sockets, Technic pins and axles,
