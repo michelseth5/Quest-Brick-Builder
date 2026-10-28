@@ -118,3 +118,7 @@ InitTestScene*.unity*
 
 # Local API keys (Rebrickable, etc.) - never commit
 /Secrets/
+
+# Release signing keys (keep them safe and private)
+*.keystore
+*.jks

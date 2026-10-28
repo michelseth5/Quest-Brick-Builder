@@ -309,8 +309,10 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   (frame 60593's slot), bar 7307 (two long bars + four uprights), finger 3171 (clip at origin). Plate 79387 (4x4x2/3
   rounded, 2x2 cutout): the shadow gives only the 4 corner sockets (corner feet, 16 LDU down); the 8 edge ones are in
   Connections, 8 LDU up in the plate-deep recess between the feet.
-- The headset app is installed as com.UnityTechnologies.com.unity.template.urpblank (the build profile overrides
-  ProjectSettings' com.michelseth5.brickbuilder). Saves: /sdcard/Android/data/<that>/files/Models (adb pull works;
-  run-as doesn't, the build isn't debuggable). Changing the package name would install a separate app without the saves.
+- Package ID `com.questbrickbuilder`, app name "Quest Brick Builder" (build profile + ProjectSettings; Oct 28, for the
+  first public release). Earlier builds were `com.UnityTechnologies.com.unity.template.urpblank` (the template's ID).
+  Saves: /sdcard/Android/data/com.questbrickbuilder/files/Models (adb pull works; run-as doesn't, the build isn't
+  debuggable). Releases are signed with the owner's keystore (kept in Secrets/, never committed; *.keystore and
+  *.jks are ignored) so updates install over earlier versions; changing the ID or key makes a separate app.
 - Scripts can be test-compiled outside Unity with a netstandard2.1 csproj referencing
   `<Unity>/Editor/Data/Managed/UnityEngine/*.dll` and `Library/ScriptAssemblies/*.dll`.

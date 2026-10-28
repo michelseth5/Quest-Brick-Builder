@@ -20,14 +20,29 @@ PDFs, fixing parts that don't snap, and more.
 - **Locking** models into solid pieces (X button, or automatically), so 1,000s of pieces stay fast and firm.
 - Saving and loading models, wrist storage, undo, duplicating, and more.
 
-## Requirements
+## Install on your Quest (no Unity needed)
+
+1. Put your headset in **developer mode**: in the Meta Horizon phone app, go to **Devices** > your headset >
+   **Headset settings** > **Developer mode** and switch it on (it may ask you to create a free developer
+   organization first). Restart the headset.
+2. Download the latest `QuestBrickBuilder-<version>.apk` from the [Releases](https://github.com/michelseth5/Quest-Brick-Builder/releases) page.
+3. Install it with [SideQuest](https://sidequestvr.com) (connect the headset with a USB cable, then drag the APK onto
+   SideQuest), or with `adb install QuestBrickBuilder-<version>.apk`.
+4. On the headset, open your app **Library**, choose **Unknown Sources** (in the filter at the top), and start
+   **Quest Brick Builder**.
+
+Then see the [User Guide](USER_GUIDE.md). Newer releases install over older ones and keep your saves.
+
+## Building from source
+
+You need:
 
 - Meta Quest 3 (or 3S), with developer mode on.
 - Unity **6000.6.4f1** (Unity 6) with Android Build Support, via Unity Hub.
-- To add sets in the game: a free [Rebrickable](https://rebrickable.com) account and API key (Settings >
+- To add sets in the game (either way): a free [Rebrickable](https://rebrickable.com) account and API key (Settings >
   Rebrickable key in the game).
 
-## Getting started
+Then:
 
 1. Clone this repository and open the folder in Unity Hub (**Add > Add project from disk**).
 2. Open `Assets/Scenes/SampleScene`.
