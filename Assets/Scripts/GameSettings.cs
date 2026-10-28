@@ -54,6 +54,48 @@ public static class GameSettings
         }
     }
 
+    const string DriftMarkersKey = "ShowDriftMarkers";
+
+    /// <summary>Whether locking points out (red markers + a heads-up line) studs and pins that aren't fully in.</summary>
+    public static bool ShowDriftMarkers
+    {
+        get => PlayerPrefs.GetInt(DriftMarkersKey, 1) == 1;
+        set
+        {
+            PlayerPrefs.SetInt(DriftMarkersKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
+
+    const string AutoLockKey = "AutoLockSeconds";
+
+    /// <summary>Choices for Auto-lock: seconds after you let go before a model's loose pieces lock (0 = off).</summary>
+    public static readonly float[] AutoLockChoices = { 5f, 15f, 0f };
+
+    /// <summary>How long after letting go a model's loose pieces lock by themselves (0: never).</summary>
+    public static float AutoLockSeconds
+    {
+        get => PlayerPrefs.GetFloat(AutoLockKey, 5f);
+        set
+        {
+            PlayerPrefs.SetFloat(AutoLockKey, value);
+            PlayerPrefs.Save();
+        }
+    }
+
+    const string ShadowsKey = "Shadows";
+
+    /// <summary>Whether bricks cast shadows.</summary>
+    public static bool Shadows
+    {
+        get => PlayerPrefs.GetInt(ShadowsKey, 1) == 1;
+        set
+        {
+            PlayerPrefs.SetInt(ShadowsKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
+
     const string MergeKey = "MergeModels";
 
     /// <summary>Whether bricks sitting still are drawn as combined meshes (far fewer draw calls for big models).</summary>

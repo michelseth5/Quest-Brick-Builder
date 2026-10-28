@@ -1,0 +1,14 @@
+0 Extra connection info for "Plate 4 x 4 x 0.667 with Rounded Corners and 2 x 2 Centre Cutout" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // The shadow library gives only the four corner sockets underneath (s\79387s02.dat), at the bottom of the
+0 // rounded corner feet (16 LDU down). Between the feet each edge is only plate-thick: its underside is 8 LDU
+0 // up, a recess a plate fits into, so the eight edge sockets sit there (4 LDU deep, like a plate's).
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 8 -30]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 8 -30]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 8 30]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 8 30]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 8 -10]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 8 10]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 8 -10]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 8 10]

@@ -28,6 +28,13 @@ public static class MenuStyle
     }
 
     /// <summary>A text label that shrinks to fit the given size (meters). Readable from the panel's front.</summary>
+    // How far one-line text may shrink to fit its width before it's cut off instead.
+    const float ReadableShare = 0.8f;
+
+    // All menu text, smaller than filling its box: the owner found full-height text too big for the buttons
+    // ("2 points smaller", Oct 26).
+    const float TextScale = 0.83f;
+
     public static TextMeshPro CreateText(Transform parent, string text, Vector3 localPosition, Vector2 size,
                                          TextAlignmentOptions alignment = TextAlignmentOptions.Center)
     {
@@ -42,7 +49,25 @@ public static class MenuStyle
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.enableAutoSizing = true;
         label.fontSizeMin = 0.01f;
-        label.fontSizeMax = 0.4f;
+        label.fontSizeMax = 0.4f * TextScale;
+
+        // One line of text: the size that fills the box's height, shrinking a little at most for long text.
+        // Past that it's cut off with "…" (pointing at a button scrolls the rest into view: MarqueeText)
+        // instead of shrinking to unreadable. Text set up with several lines, or none yet, still fits itself.
+        if (!string.IsNullOrEmpty(text) && text.IndexOf('\n') < 0)
+        {
+            label.enableAutoSizing = false;
+            label.fontSize = 1f;
+            float lineHeight = label.GetPreferredValues("Ag").y; // at font size 1
+            label.enableAutoSizing = true;
+            if (lineHeight > 0f)
+            {
+                float fill = size.y / lineHeight * TextScale;
+                label.fontSizeMax = Mathf.Min(0.4f, fill);
+                label.fontSizeMin = Mathf.Min(label.fontSizeMax, fill * ReadableShare);
+                label.overflowMode = TextOverflowModes.Ellipsis;
+            }
+        }
 
         go.transform.SetParent(parent, false);
         go.transform.localPosition = localPosition;
@@ -130,7 +155,12 @@ public class MenuButton : MonoBehaviour
         button._ray = ray;
         button._color = color;
         if (!string.IsNullOrEmpty(label))
+        {
             button.Label = MenuStyle.CreateText(go.transform, label, new Vector3(0f, 0f, -Depth * 0.5f - 0.0005f), size * 0.85f);
+            // Text too long for the button scrolls while it's pointed at.
+            var marquee = button.Label.gameObject.AddComponent<MarqueeText>();
+            button.HoverChanged += marquee.SetPointedAt;
+        }
 
         go.SetActive(true);
         button.Refresh();
@@ -190,7 +220,7 @@ public class MenuButton : MonoBehaviour
             return;
         Color color = _active ? MenuStyle.ButtonActive : _color;
         if (_hovered)
-            color = Color.Lerp(color, Color.white, 0.25f);
+            color = Color.Lerp(color, Color.white, 0.45f);
         MenuStyle.Tint(_renderer, color);
     }
 }
@@ -306,4 +336,221 @@ public class MenuPanel : MonoBehaviour
         if (_handle != null)
             _handle.SetPositionAndRotation(transform.TransformPoint(_handleOffset), transform.rotation);
     }
+}
+
+/// <summary>
+/// Scrolls a line of text that's too long for its space while it's pointed at, so the cut-off part can be
+/// read: it waits a moment, steps along a character at a time, holds at the end, then starts over. The text
+/// goes back as it was when the pointer leaves. (Shown without its colors while scrolling.)
+/// </summary>
+public class MarqueeText : MonoBehaviour
+{
+    const float StartPause = 0.6f, Step = 0.11f, EndPause = 1.2f;
+
+    TextMeshPro _label;
+    string _original;
+    string _plain;
+    string _shown; // the text as the scroller last left it
+    int _offset;
+    float _next;
+    bool _scrolling;
+
+    RayInteractable _ray;
+
+    void Awake() => _label = GetComponent<TextMeshPro>();
+
+    /// <summary>
+    /// Makes a plain text (not a button) scroll while the laser points at it: gives it an invisible
+    /// pointing target the size of its box. Clicking it does nothing.
+    /// </summary>
+    public static MarqueeText AddTo(TextMeshPro label)
+    {
+        GameObject go = label.gameObject;
+        bool wasActive = go.activeSelf;
+        go.SetActive(false); // Interaction SDK pieces must be wired up before the object is switched on
+        var collider = go.AddComponent<BoxCollider>();
+        collider.size = new Vector3(label.rectTransform.sizeDelta.x, label.rectTransform.sizeDelta.y, 0.002f);
+        collider.isTrigger = true;
+        var surface = go.AddComponent<ColliderSurface>();
+        surface.InjectAllColliderSurface(collider);
+        var ray = go.AddComponent<RayInteractable>();
+        ray.InjectAllRayInteractable(surface);
+        var marquee = go.AddComponent<MarqueeText>();
+        marquee._ray = ray;
+        go.SetActive(wasActive);
+        return marquee;
+    }
+
+    void OnEnable()
+    {
+        if (_ray != null)
+            _ray.WhenPointerEventRaised += OnPointerEvent;
+    }
+
+    void OnPointerEvent(PointerEvent evt)
+    {
+        if (evt.Type == PointerEventType.Hover)
+            SetPointedAt(true);
+        else if (evt.Type == PointerEventType.Unhover)
+            SetPointedAt(false);
+    }
+
+    public void SetPointedAt(bool pointed)
+    {
+        if (_label == null)
+            return;
+        if (pointed && !_scrolling)
+        {
+            _label.ForceMeshUpdate();
+            if (!IsCutOff())
+                return; // all of it shows already
+            _original = _shown = _label.text;
+            _plain = System.Text.RegularExpressions.Regex.Replace(_original, "<[^>]*>", "");
+            _offset = 0;
+            _scrolling = true;
+            _next = Time.unscaledTime + StartPause;
+        }
+        else if (!pointed)
+        {
+            Restore();
+        }
+    }
+
+    void Update()
+    {
+        if (_scrolling && _label.text != _shown)
+        {
+            // Something else changed the text: start over with the new one (scrolling it if it's cut off).
+            _scrolling = false;
+            SetPointedAt(true);
+        }
+        if (!_scrolling || Time.unscaledTime < _next)
+            return;
+
+        _label.ForceMeshUpdate();
+        if (!IsCutOff() && _offset > 0)
+        {
+            // The end is showing: hold there, then go back to the start.
+            _offset = 0;
+            _label.text = _shown = _plain;
+            _next = Time.unscaledTime + EndPause + StartPause;
+            return;
+        }
+        _offset = Mathf.Min(_offset + 1, Mathf.Max(0, _plain.Length - 1));
+        _label.text = _shown = "…" + _plain.Substring(_offset);
+        _next = Time.unscaledTime + Step;
+    }
+
+    // True if the line didn't fit and TextMesh Pro put in a "…" (its isTextOverflowing only reports running out of
+    // height, never a single line cut off at the side). Expects ForceMeshUpdate first.
+    bool IsCutOff()
+    {
+        TMP_TextInfo info = _label.textInfo;
+        int shown = 0;
+        for (int i = 0; i < info.characterCount; i++)
+        {
+            if (info.characterInfo[i].character == '\u2026')
+                shown++;
+        }
+        int written = 0;
+        foreach (char c in _label.text)
+        {
+            if (c == '\u2026')
+                written++;
+        }
+        return shown > written;
+    }
+
+    void Restore()
+    {
+        // Unless something else has changed the text meanwhile (e.g. "Click again to ..."): that stays.
+        if (_scrolling && _label != null && _label.text == _shown)
+            _label.text = _original;
+        _scrolling = false;
+    }
+
+    void OnDisable()
+    {
+        if (_ray != null)
+            _ray.WhenPointerEventRaised -= OnPointerEvent;
+        Restore();
+    }
+}
+
+/// <summary>
+/// A small floating panel with a line of text and a bar that fills from left to right, for things that take
+/// a while (loading a big model). Destroy its GameObject when done.
+/// </summary>
+public class ProgressDisplay : MonoBehaviour
+{
+    const float Width = 0.26f, BarHeight = 0.008f;
+
+    TextMeshPro _label;
+    Transform _fill;
+
+    public static ProgressDisplay Create(Vector3 position, Quaternion rotation, string text)
+    {
+        var go = new GameObject("Progress");
+        go.transform.SetPositionAndRotation(position, rotation);
+        var display = go.AddComponent<ProgressDisplay>();
+        MenuStyle.CreateBox(go.transform, "Background", new Vector3(0f, 0f, 0.002f), new Vector3(Width + 0.02f, 0.045f, 0.004f), MenuStyle.Panel);
+        display._label = MenuStyle.CreateText(go.transform, text, new Vector3(0f, 0.008f, -0.001f), new Vector2(Width, 0.016f));
+        MenuStyle.CreateBox(go.transform, "Track", new Vector3(0f, -0.011f, -0.0005f), new Vector3(Width, BarHeight, 0.001f), MenuStyle.Button);
+        display._fill = MenuStyle.CreateBox(go.transform, "Fill", new Vector3(0f, -0.011f, -0.0012f), new Vector3(1f, BarHeight, 0.001f),
+                                            MenuStyle.ButtonActive).transform;
+        display.Set(text, 0f);
+        return display;
+    }
+
+    /// <summary>Shows the text and how far along it is (0 to 1).</summary>
+    public void Set(string text, float fraction)
+    {
+        if (_label.text != text)
+            _label.text = text;
+        float width = Width * Mathf.Clamp01(fraction);
+        _fill.gameObject.SetActive(width > 0.0005f);
+        _fill.localScale = new Vector3(Mathf.Max(width, 0.0001f), 1f, 1f);
+        _fill.localPosition = new Vector3(-Width * 0.5f + width * 0.5f, _fill.localPosition.y, _fill.localPosition.z);
+    }
+}
+
+/// <summary>
+/// Makes any object something the laser can point at and click, like a menu button but with its own look
+/// (e.g. the markers and the enlarged piece in Fix Snapping). Pointer events include where the laser hits.
+/// </summary>
+public class Pointable : MonoBehaviour
+{
+    /// <summary>Hover, Unhover, Move (while pointed at) and Select (clicked), with where the laser hits.</summary>
+    public event Action<PointerEvent> Pointed;
+
+    RayInteractable _ray;
+
+    /// <summary>Adds pointing to an object, using the given collider as what the laser hits.</summary>
+    public static Pointable Add(GameObject go, Collider collider)
+    {
+        bool wasActive = go.activeSelf;
+        go.SetActive(false); // Interaction SDK pieces must be wired up before the object is switched on
+        var surface = go.AddComponent<ColliderSurface>();
+        surface.InjectAllColliderSurface(collider);
+        var ray = go.AddComponent<RayInteractable>();
+        ray.InjectAllRayInteractable(surface);
+        var pointable = go.AddComponent<Pointable>();
+        pointable._ray = ray;
+        go.SetActive(wasActive);
+        return pointable;
+    }
+
+    void OnEnable()
+    {
+        if (_ray != null)
+            _ray.WhenPointerEventRaised += OnPointerEvent;
+    }
+
+    void OnDisable()
+    {
+        if (_ray != null)
+            _ray.WhenPointerEventRaised -= OnPointerEvent;
+    }
+
+    void OnPointerEvent(PointerEvent evt) => Pointed?.Invoke(evt);
 }

@@ -121,6 +121,35 @@ public class InstructionBook : MonoBehaviour
         PlayerPrefs.Save();
     }
 
+    /// <summary>The set whose instructions the book is showing (null if none).</summary>
+    public SetData Set => _set;
+
+    /// <summary>
+    /// Deletes a set's imported instruction PDFs, their page pictures, and its remembered page.
+    /// Returns how many booklets were deleted.
+    /// </summary>
+    public static int DeleteInstructions(string setNumber)
+    {
+        List<string> booklets = FindBooklets(setNumber);
+        foreach (string pdf in booklets)
+        {
+            try
+            {
+                File.Delete(pdf);
+                string cache = CacheFolder(pdf);
+                if (Directory.Exists(cache))
+                    Directory.Delete(cache, true);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Couldn't delete {pdf}: {e.Message}");
+            }
+        }
+        PlayerPrefs.DeleteKey(PlaceKey + setNumber);
+        PlayerPrefs.Save();
+        return booklets.Count;
+    }
+
     public void Close()
     {
         if (_root == null)

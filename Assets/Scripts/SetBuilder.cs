@@ -56,6 +56,8 @@ public class SetBuilder : MonoBehaviour
 
     public bool IsBuilding => _set != null;
 
+    public SetData CurrentSet => _set;
+
     public void Init(Sandbox sandbox, Material ghostMaterial)
     {
         _instance = this;

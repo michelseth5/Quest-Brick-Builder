@@ -57,6 +57,7 @@ public class ModelMenu : MonoBehaviour
 
         _panel.ClearContent();
         _spinners.Clear();
+        _thumbnailQueue.Clear();
         _deleteButton = null;
         _deletePath = null;
 
@@ -123,7 +124,18 @@ public class ModelMenu : MonoBehaviour
         delete.Clicked += () => OnDeleteClicked(delete, path);
     }
 
-    // A scaled-down copy of the model (plain meshes, not real bricks), tilted toward you and spinning.
+    // A scaled-down copy of the model, tilted toward you and spinning: one mesh (ModelThumbnail), saved with the
+    // model and read from its .thumb file. (One object per piece meant thousands of objects and millions of
+    // triangles per page: 5-15 s of stutter opening the menu with big saves.) Shown one per frame after opening.
+    class Thumbnail
+    {
+        public System.DateTime written;
+        public Mesh mesh;          // null: nothing to show
+        public Material[] materials;
+    }
+
+    static readonly Dictionary<string, Thumbnail> Thumbnails = new Dictionary<string, Thumbnail>();
+
     void BuildThumbnail(ModelFile.Info info, Vector3 cellCenter)
     {
         var root = new GameObject("Thumbnail").transform;
@@ -135,59 +147,63 @@ public class ModelMenu : MonoBehaviour
         spinner.SetParent(root, false);
         _spinners.Add(spinner);
 
-        var model = new GameObject("Model").transform;
-        model.SetParent(spinner, false);
+        if (TryCachedThumbnail(info.path, out Thumbnail cached))
+            ShowThumbnail(spinner, cached);
+        else
+            _thumbnailQueue.Add((info.path, spinner));
+    }
 
-        List<ModelFile.Placement> placements = ModelFile.Load(info.path, out _);
-        var bounds = new Bounds();
-        bool any = false;
+    readonly List<(string path, Transform spinner)> _thumbnailQueue = new List<(string, Transform)>();
 
-        foreach (ModelFile.Placement placement in placements)
+    static bool TryCachedThumbnail(string path, out Thumbnail thumbnail) =>
+        Thumbnails.TryGetValue(path, out thumbnail) && thumbnail.written == System.IO.File.GetLastWriteTimeUtc(path);
+
+    // Makes the next waiting thumbnail (called once a frame).
+    void MakeNextThumbnail()
+    {
+        while (_thumbnailQueue.Count > 0)
         {
-            BrickPartData part = _sandbox.FindPart(placement.partId);
-            if (part == null || part.mesh == null)
-                continue;
-
-            var piece = new GameObject(part.partId);
-            piece.transform.SetParent(model, false);
-            piece.transform.localPosition = placement.position;
-            piece.transform.localRotation = placement.rotation;
-            piece.AddComponent<MeshFilter>().sharedMesh = part.mesh;
-
-            Color color = _sandbox.ColorForCode(placement.colorCode);
-            var renderer = piece.AddComponent<MeshRenderer>();
-            BrickPartData.ApplyColors(renderer, part.mesh, part.submeshColors, color, MenuStyle.Material, _sandbox.transparentMaterial);
-
-            Bounds meshBounds = part.mesh.bounds;
-            for (int corner = 0; corner < 8; corner++)
-            {
-                Vector3 local = new Vector3(
-                    (corner & 1) == 0 ? meshBounds.min.x : meshBounds.max.x,
-                    (corner & 2) == 0 ? meshBounds.min.y : meshBounds.max.y,
-                    (corner & 4) == 0 ? meshBounds.min.z : meshBounds.max.z);
-                Vector3 p = placement.position + placement.rotation * local;
-                if (!any)
-                {
-                    bounds = new Bounds(p, Vector3.zero);
-                    any = true;
-                }
-                else
-                {
-                    bounds.Encapsulate(p);
-                }
-            }
-        }
-
-        if (!any)
-        {
-            MenuStyle.CreateText(root, "?", Vector3.zero, new Vector2(Cell * 0.5f, Cell * 0.5f));
+            (string path, Transform spinner) = _thumbnailQueue[0];
+            _thumbnailQueue.RemoveAt(0);
+            if (spinner == null)
+                continue; // that page has gone
+            if (!TryCachedThumbnail(path, out Thumbnail thumbnail))
+                thumbnail = MakeThumbnail(path);
+            ShowThumbnail(spinner, thumbnail);
             return;
         }
+    }
+
+    Thumbnail MakeThumbnail(string path)
+    {
+        if (Thumbnails.TryGetValue(path, out Thumbnail old) && old.mesh != null)
+            Destroy(old.mesh);
+        var thumbnail = new Thumbnail { written = System.IO.File.GetLastWriteTimeUtc(path) };
+        Thumbnails[path] = thumbnail;
+
+        // Saved with the model; saves from before that get theirs made (and saved) the first time they're shown.
+        ModelThumbnail.Data data = ModelThumbnail.Load(path) ?? ModelThumbnail.Make(path, _sandbox.FindPart, _sandbox.ColorForCode);
+        (thumbnail.mesh, thumbnail.materials) = ModelThumbnail.ToMesh(data, MenuStyle.Material, _sandbox.transparentMaterial);
+        return thumbnail;
+    }
+
+    void ShowThumbnail(Transform spinner, Thumbnail thumbnail)
+    {
+        if (thumbnail.mesh == null)
+        {
+            MenuStyle.CreateText(spinner.parent, "?", Vector3.zero, new Vector2(Cell * 0.5f, Cell * 0.5f));
+            return;
+        }
+        var model = new GameObject("Model");
+        model.transform.SetParent(spinner, false);
+        model.AddComponent<MeshFilter>().sharedMesh = thumbnail.mesh;
+        model.AddComponent<MeshRenderer>().sharedMaterials = thumbnail.materials;
 
         // Fit the model in the cell, centered on the spin axis.
+        Bounds bounds = thumbnail.mesh.bounds;
         float largest = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z, 0.001f);
         spinner.localScale = Vector3.one * (Cell * 0.8f / largest);
-        model.localPosition = -bounds.center;
+        model.transform.localPosition = -bounds.center;
     }
 
     void OnDeleteClicked(MenuButton button, string path)
@@ -224,6 +240,9 @@ public class ModelMenu : MonoBehaviour
 
     void Update()
     {
+        if (IsOpen)
+            MakeNextThumbnail();
+
         foreach (Transform spinner in _spinners)
         {
             if (spinner != null)

@@ -578,6 +578,21 @@ public class Brick : MonoBehaviour
 
     static readonly Dictionary<BrickPartData, List<Connector>> PartConnectors = new Dictionary<BrickPartData, List<Connector>>();
 
+    /// <summary>
+    /// A part's connection points were changed (Fix Snapping): every brick of that part, including menu and bin
+    /// previews, picks up the new ones. (Locked bodies keep theirs until they're rebuilt.)
+    /// </summary>
+    public static void ConnectionsChanged(BrickPartData part)
+    {
+        PartConnectors.Remove(part);
+        foreach (Brick brick in AllBricks.ToList())
+        {
+            if (brick != null && brick.part == part && !brick.IsLockedBody)
+                brick.Rebuild();
+        }
+        s_layoutVersion++;
+    }
+
     /// <summary>A part's connection points, in its own space (plain studs and sockets for parts without connection data).</summary>
     public static IReadOnlyList<Connector> ConnectorsOf(BrickPartData part)
     {
@@ -820,6 +835,25 @@ public class Brick : MonoBehaviour
                 return held;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Turns a held brick (with everything it's carrying) about its middle, and keeps the new angle for the
+    /// rest of the grab. False if it's not being held normally (pinned to the other hand, or posing a joint).
+    /// </summary>
+    public bool TurnInHand(Quaternion turn)
+    {
+        if (_grabbable == null || _grabbable.SelectingPointsCount == 0 || _pinnedTo != null || _articulation != null)
+            return false;
+        var follower = GetComponent<GrabFreeTransformer>(); // the grab's default, added by the Grabbable at Start
+        if (follower == null)
+            return false;
+        Vector3 pivot = transform.TransformPoint(_body.center);
+        transform.SetPositionAndRotation(pivot + turn * (transform.position - pivot), turn * transform.rotation);
+        // The follower keeps the brick's pose relative to the hand from when the grab began: take it again.
+        follower.EndTransform();
+        follower.BeginTransform();
+        return true;
     }
 
     // A locked piece gripped while its model is in the other hand: it stays exactly where it is on the
@@ -1669,6 +1703,8 @@ public class Brick : MonoBehaviour
     Vector3 _searchedPosition;
     Quaternion _searchedRotation;
     int _searchedVersion = -1;
+    float _nextSearchAt;                       // a slow search waits a little before the next (see UpdateGhost)
+    const float SlowSearchMilliseconds = 4f;
     bool _searchFound;
     Vector3 _foundPosition;
     Quaternion _foundRotation;
@@ -1694,12 +1730,19 @@ public class Brick : MonoBehaviour
         bool still = _searchedVersion == s_layoutVersion
                      && (transform.position - _searchedPosition).sqrMagnitude < 0.0003f * 0.0003f
                      && Quaternion.Angle(transform.rotation, _searchedRotation) < 0.3f;
-        if (!still)
+        // A slow search (a big loose group: hundreds of connection points) is spaced out so searching takes at
+        // most about a quarter of the time: the ghost follows a few times a second instead of every frame, rather
+        // than the frame rate dropping (screen shudder). Letting go always searches afresh (TrySnap).
+        if (!still && Time.realtimeSinceStartup >= _nextSearchAt)
         {
             SnapTimer.Restart();
             _searchFound = FindSnap(out _foundPosition, out _foundRotation);
             SnapTimer.Stop();
-            SnapSearchMilliseconds = Mathf.Max(SnapSearchMilliseconds, (float)SnapTimer.Elapsed.TotalMilliseconds);
+            float milliseconds = (float)SnapTimer.Elapsed.TotalMilliseconds;
+            SnapSearchMilliseconds = Mathf.Max(SnapSearchMilliseconds, milliseconds);
+            _nextSearchAt = milliseconds > SlowSearchMilliseconds
+                ? Time.realtimeSinceStartup + Mathf.Min(0.15f, milliseconds * 0.003f)
+                : 0f;
             _searchedPosition = transform.position;
             _searchedRotation = transform.rotation;
             _searchedVersion = s_layoutVersion;

@@ -101,6 +101,12 @@ namespace LDrawImport
     {
         public const float MetersPerLdu = 0.0004f;
 
+        /// <summary>
+        /// Where library files (parts, primitives, connection info) are read from: folders on disk by default, or
+        /// the downloaded library zips on the headset (see ZipLibraryFiles). Model files are always read from disk.
+        /// </summary>
+        public static ILibraryFiles Files { get; set; } = DiskFiles.Instance;
+
         /// <summary>LDraw's "use the current color" code; at the top level, the brick's own color.</summary>
         public const int MainColor = 16;
         const int EdgeColor = 24;
@@ -137,18 +143,18 @@ namespace LDrawImport
         public static string FindUnofficialRoot(string libraryRoot)
         {
             string sibling = Path.Combine(Path.GetDirectoryName(libraryRoot.TrimEnd('/', '\\')) ?? libraryRoot, "unofficial");
-            return Directory.Exists(Path.Combine(sibling, "parts")) ? sibling : null;
+            return Files.DirectoryExists(Path.Combine(sibling, "parts")) ? sibling : null;
         }
 
         /// <summary>The file for a part id in the official library or, failing that, the unofficial one (null if neither).</summary>
         public static string FindPartFile(string libraryRoot, string partId)
         {
             string official = Path.Combine(libraryRoot, "parts", partId + ".dat");
-            if (File.Exists(official))
+            if (Files.FileExists(official))
                 return official;
             string unofficialRoot = FindUnofficialRoot(libraryRoot);
             string unofficial = unofficialRoot != null ? Path.Combine(unofficialRoot, "parts", partId + ".dat") : null;
-            return unofficial != null && File.Exists(unofficial) ? unofficial : null;
+            return unofficial != null && Files.FileExists(unofficial) ? unofficial : null;
         }
 
         /// <summary>Finds the LDraw library under the project folder, or returns null.</summary>
@@ -156,7 +162,7 @@ namespace LDrawImport
         {
             foreach (string candidate in new[] { Path.Combine(projectRoot, "LDraw", "ldraw"), Path.Combine(projectRoot, "LDraw") })
             {
-                if (Directory.Exists(Path.Combine(candidate, "parts")) && Directory.Exists(Path.Combine(candidate, "p")))
+                if (Files.DirectoryExists(Path.Combine(candidate, "parts")) && Files.DirectoryExists(Path.Combine(candidate, "p")))
                     return candidate;
             }
             return null;
@@ -359,9 +365,9 @@ namespace LDrawImport
             string[] lines = null;
             foreach (string path in candidates)
             {
-                if (File.Exists(path))
+                if (Files.FileExists(path))
                 {
-                    lines = File.ReadAllLines(path);
+                    lines = Files.ReadAllLines(path);
                     break;
                 }
             }
@@ -519,7 +525,7 @@ namespace LDrawImport
                     _shadowChecked = true;
                     string sibling = Path.Combine(Path.GetDirectoryName(_root.TrimEnd('/', '\\')) ?? _root, "shadow");
                     string inside = Path.Combine(_root, "shadow");
-                    _shadowRoot = Directory.Exists(sibling) ? sibling : Directory.Exists(inside) ? inside : null;
+                    _shadowRoot = Files.DirectoryExists(sibling) ? sibling : Files.DirectoryExists(inside) ? inside : null;
                 }
                 return _shadowRoot;
             }
@@ -547,9 +553,9 @@ namespace LDrawImport
                 foreach (string folder in new[] { "parts", "p" })
                 {
                     string path = Path.Combine(root, folder, name);
-                    if (File.Exists(path))
+                    if (Files.FileExists(path))
                     {
-                        lines.AddRange(File.ReadAllLines(path));
+                        lines.AddRange(Files.ReadAllLines(path));
                         break;
                     }
                 }
@@ -1271,10 +1277,10 @@ namespace LDrawImport
         {
             var colors = new List<ColorEntry>();
             string path = Path.Combine(_root, "LDConfig.ldr");
-            if (!File.Exists(path))
+            if (!Files.FileExists(path))
                 return colors;
 
-            foreach (string line in File.ReadAllLines(path))
+            foreach (string line in Files.ReadAllLines(path))
             {
                 string[] t = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
                 if (t.Length < 4 || t[0] != "0" || t[1] != "!COLOUR")

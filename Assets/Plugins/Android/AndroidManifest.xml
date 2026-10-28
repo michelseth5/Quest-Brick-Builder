@@ -18,5 +18,7 @@
   <!-- Instruction book: read PDFs straight from the Downloads folder (the player switches this on once). -->
   <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+  <!-- Get New Sets: Rebrickable, the LDraw parts library and its model repository. -->
+  <uses-permission android:name="android.permission.INTERNET" />
   <horizonos:uses-horizonos-sdk horizonos:minSdkVersion="60" horizonos:targetSdkVersion="207" />
 </manifest>

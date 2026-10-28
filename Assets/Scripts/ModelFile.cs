@@ -92,15 +92,16 @@ public static class ModelFile
     }
 
     /// <summary>
-    /// Saves the bricks as a new model. The first brick decides which way the model faces.
+    /// Saves the bricks as a new model (or over replacePath). The first brick decides which way the model faces.
     /// With includeInventory, everything on both wrists is saved too. With a set in progress, the set, its
     /// instruction page, and which parts came out of its bin (fromSet) are saved so the build can be resumed.
     /// </summary>
     public static Info Save(string title, IList<Brick> bricks, bool includeInventory = false,
-                            SetProgress progress = null, Func<Brick, bool> fromSet = null)
+                            SetProgress progress = null, Func<Brick, bool> fromSet = null, string replacePath = null)
     {
         Directory.CreateDirectory(Folder);
-        string path = Path.Combine(Folder, $"model-{DateTime.Now:yyyyMMdd-HHmmss-fff}.ldr");
+        // A new file, unless replacing an earlier save (the one that was loaded).
+        string path = replacePath ?? Path.Combine(Folder, $"model-{DateTime.Now:yyyyMMdd-HHmmss-fff}.ldr");
         File.WriteAllText(path, Write(title, bricks, includeInventory, progress, fromSet));
         return new Info { path = path, title = title, saved = DateTime.Now };
     }
@@ -127,12 +128,19 @@ public static class ModelFile
         if (lines.Length > 0 && lines[0].StartsWith("0 "))
             lines[0] = "0 " + newTitle;
         File.WriteAllLines(path, lines);
+        // The model itself hasn't changed: keep its thumbnail (it counts as out of date if older than the file).
+        string thumbnail = ModelThumbnail.PathFor(path);
+        if (File.Exists(thumbnail))
+            File.SetLastWriteTimeUtc(thumbnail, DateTime.UtcNow);
     }
 
     public static void Delete(string path)
     {
         if (File.Exists(path))
             File.Delete(path);
+        string thumbnail = ModelThumbnail.PathFor(path);
+        if (File.Exists(thumbnail))
+            File.Delete(thumbnail);
     }
 
     static string ReadTitle(string path)

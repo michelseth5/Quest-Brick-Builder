@@ -32,10 +32,41 @@ public class PartsBin : MonoBehaviour
 
     SetData _set;
     readonly List<Entry> _entries = new List<Entry>();
-    readonly List<string> _categories = new List<string>();
-    string _category = AllCategory;
+    // The filters down the left, each switched on or off and shown as its own column when on: part types
+    // ("Brick", ...) and colors ("c<code>"). Both on = parts of that type in that color; neither = everything.
+    class Filter
+    {
+        public string name;          // on its toggle button
+        public string allLabel;      // its "everything" row
+        public string prefsKey;
+        public System.Func<Entry, string> groupOf;
+        public readonly List<string> groups = new List<string>(); // fixed order, without "All"
+        public bool on;
+        public string selected = AllCategory;
+        public int page;
+
+        public bool Passes(Entry entry) => !on || selected == AllCategory || groupOf(entry) == selected;
+
+        public void Reset()
+        {
+            selected = AllCategory;
+            page = 0;
+        }
+    }
+
+    readonly Filter _type = new Filter
+    {
+        name = "Type", allLabel = "All Types", prefsKey = "BinFilterType", groupOf = e => e.part.Category,
+        on = PlayerPrefs.GetInt("BinFilterType", 1) == 1,
+    };
+    readonly Filter _color = new Filter
+    {
+        name = "Color", allLabel = "All Colors", prefsKey = "BinFilterColor", groupOf = e => ColorGroup(e.colorCode),
+        on = PlayerPrefs.GetInt("BinFilterColor", 0) == 1,
+    };
+    Filter[] Filters => new[] { _type, _color };
+
     int _page;
-    int _categoryPage;
     float _cellSize;
 
     readonly Dictionary<Brick, (Entry entry, Vector3 cellCenter)> _previews = new Dictionary<Brick, (Entry, Vector3)>();
@@ -120,11 +151,13 @@ public class PartsBin : MonoBehaviour
             return byName != 0 ? byName : a.colorCode.CompareTo(b.colorCode);
         });
 
-        _categories.Add(AllCategory);
-        _categories.AddRange(_entries.Select(e => e.part.Category).Distinct());
-        _category = AllCategory;
+        _type.groups.AddRange(_entries.Select(e => e.part.Category).Distinct());
+        // Colors with the most parts first.
+        _color.groups.AddRange(_entries.GroupBy(e => e.colorCode).OrderByDescending(g => g.Sum(e => e.total))
+                                       .Select(g => ColorGroup(g.Key)));
+        foreach (Filter filter in Filters)
+            filter.Reset();
         _page = 0;
-        _categoryPage = 0;
 
         Show();
         if (missing > 0)
@@ -183,10 +216,16 @@ public class PartsBin : MonoBehaviour
             _built.Add(brick);
     }
 
-    /// <summary>Counts a piece of a loaded locked body as already taken out of the bin.</summary>
-    public void TakePiece(BrickPartData part, int colorCode)
+    /// <summary>
+    /// Counts pieces of loaded locked bodies as already taken out of the bin. All at once, with one redraw:
+    /// redrawing after each piece made loading a finished 1,210-piece car take 88 s plus a 17 s freeze.
+    /// </summary>
+    public void TakePieces(IEnumerable<(BrickPartData part, int colorCode)> pieces)
     {
-        if (TakeFromBin(part, colorCode) && _panel.IsOpen)
+        bool any = false;
+        foreach ((BrickPartData part, int colorCode) in pieces)
+            any |= TakeFromBin(part, colorCode);
+        if (any && _panel.IsOpen)
             Rebuild();
     }
 
@@ -210,7 +249,8 @@ public class PartsBin : MonoBehaviour
         ClearPreviews();
         _panel.Close();
         _entries.Clear();
-        _categories.Clear();
+        foreach (Filter filter in Filters)
+            filter.groups.Clear();
         _built.Clear();
         _assemblyPieces.Clear();
         _set = null;
@@ -237,14 +277,31 @@ public class PartsBin : MonoBehaviour
         _panel.ClearContent();
         _panel.SetTitle(_set.title);
 
-        // Used-up parts (and categories with nothing left) drop out, so what's left is easy to find.
-        List<string> categories = VisibleCategories();
-        if (!categories.Contains(_category))
+        // Used-up parts (and groups with nothing left) drop out, so what's left is easy to find.
+        List<Filter> columns = Filters.Where(f => f.on).ToList();
+        var columnGroups = new List<List<string>>();
+        foreach (Filter filter in columns)
         {
-            _category = AllCategory;
-            _page = 0;
+            List<string> groups = VisibleGroups(filter);
+            if (!groups.Contains(filter.selected))
+            {
+                filter.Reset();
+                _page = 0;
+                groups = VisibleGroups(filter);
+            }
+            columnGroups.Add(groups);
         }
-        List<Entry> shown = _entries.Where(e => e.remaining > 0 && (_category == AllCategory || e.part.Category == _category)).ToList();
+        // A column's choice can leave the other one's (picked earlier) with nothing: check again.
+        for (int c = 0; c < columns.Count; c++)
+        {
+            columnGroups[c] = VisibleGroups(columns[c]);
+            if (!columnGroups[c].Contains(columns[c].selected))
+            {
+                columns[c].Reset();
+                _page = 0;
+            }
+        }
+        List<Entry> shown = _entries.Where(e => e.remaining > 0 && Filters.All(f => f.Passes(e))).ToList();
         int pageCount = Mathf.Max(1, Mathf.CeilToInt(shown.Count / (float)PartsPerPage));
         _page = Mathf.Clamp(_page, 0, pageCount - 1);
         List<Entry> pageEntries = shown.Skip(_page * PartsPerPage).Take(PartsPerPage).ToList();
@@ -258,17 +315,25 @@ public class PartsBin : MonoBehaviour
         int rows = Mathf.Max(1, Mathf.CeilToInt(Mathf.Min(shown.Count, PartsPerPage) / (float)Columns));
         float gridWidth = Columns * _cellSize;
         float gridHeight = HeaderHeight + rows * (_cellSize + LabelHeight) + PagingHeight;
-        int categoryRows = Mathf.Min(categories.Count, CategoriesPerPage) + (categories.Count > CategoriesPerPage ? 1 : 0);
-        float categoryHeight = categoryRows * (ButtonHeight + Gap);
-        var size = new Vector2(Margin * 3f + CategoryWidth + gridWidth, 0.04f + Mathf.Max(gridHeight, categoryHeight) + Margin);
+        // Left side: the filter toggles on top, then a column for each filter that's on.
+        float filtersWidth = columns.Count == 0 ? CategoryWidth : columns.Count * CategoryWidth + (columns.Count - 1) * Gap;
+        int columnRows = columnGroups.Count == 0 ? 0
+            : columnGroups.Max(g => Mathf.Min(g.Count, CategoriesPerPage) + (g.Count > CategoriesPerPage ? 1 : 0));
+        float categoryHeight = (1 + columnRows) * (ButtonHeight + Gap);
+        var size = new Vector2(Margin * 3f + filtersWidth + gridWidth, 0.04f + Mathf.Max(gridHeight, categoryHeight) + Margin);
         _panel.SetSize(size);
 
         float left = -size.x * 0.5f + Margin;
         float top = _panel.ContentTop;
-        BuildCategoryColumn(categories, left + CategoryWidth * 0.5f, top);
+        BuildFilterToggles(left, filtersWidth, top - ButtonHeight * 0.5f);
+        for (int c = 0; c < columns.Count; c++)
+        {
+            BuildFilterColumn(columns[c], columnGroups[c], left + c * (CategoryWidth + Gap) + CategoryWidth * 0.5f,
+                              top - ButtonHeight - Gap);
+        }
 
         // Header: how many parts are left, and Finish Model.
-        float gridLeft = left + CategoryWidth + Margin;
+        float gridLeft = left + filtersWidth + Margin;
         float headerY = top - HeaderHeight * 0.5f;
         int remaining = _entries.Sum(e => e.remaining), total = _entries.Sum(e => e.total);
         float textWidth = gridWidth - 0.165f; // the space left of the two header buttons
@@ -301,10 +366,12 @@ public class PartsBin : MonoBehaviour
             if (entry.remaining > 0)
                 SpawnPreview(entry, cellCenter);
 
-            string count = entry.remaining > 0 ? $"<color=#9CF>x{entry.remaining}</color>" : "<color=#777>none left</color>";
-            MenuStyle.CreateText(_panel.Content, $"{entry.part.ShortName}  {count}",
+            // Quantity first, so it still shows when a long name is cut off.
+            string count = entry.remaining > 0 ? $"<color=#9CF>{entry.remaining}x</color>" : "<color=#777>0x</color>";
+            TextMeshPro label = MenuStyle.CreateText(_panel.Content, $"{count} {entry.part.ShortName}",
                 cellCenter + new Vector3(0f, -_cellSize * 0.5f - LabelHeight * 0.4f, -0.001f),
                 new Vector2(_cellSize - 0.004f, LabelHeight * 0.8f));
+            MarqueeText.AddTo(label); // long names scroll while pointed at
         }
 
         if (pageCount > 1)
@@ -318,33 +385,89 @@ public class PartsBin : MonoBehaviour
         }
     }
 
-    // "All" plus every category that still has parts left.
-    List<string> VisibleCategories() =>
-        _categories.Where(c => c == AllCategory || _entries.Any(e => e.remaining > 0 && e.part.Category == c)).ToList();
-
-    void BuildCategoryColumn(List<string> categories, float x, float top)
+    // "All" plus every group of this filter that still has parts left among those the other filters let through.
+    List<string> VisibleGroups(Filter filter)
     {
-        int pageCount = Mathf.Max(1, Mathf.CeilToInt(categories.Count / (float)CategoriesPerPage));
-        _categoryPage = Mathf.Clamp(_categoryPage, 0, pageCount - 1);
+        var groups = new List<string> { AllCategory };
+        var left = new HashSet<string>(_entries
+            .Where(e => e.remaining > 0 && Filters.All(f => f == filter || f.Passes(e)))
+            .Select(filter.groupOf));
+        groups.AddRange(filter.groups.Where(left.Contains));
+        return groups;
+    }
+
+    static string ColorGroup(int colorCode) => "c" + colorCode;
+
+    // The Type and Color switches across the top of the filter columns.
+    void BuildFilterToggles(float left, float width, float y)
+    {
+        Filter[] filters = Filters;
+        float buttonWidth = (width - Gap * (filters.Length - 1)) / filters.Length;
+        for (int i = 0; i < filters.Length; i++)
+        {
+            Filter filter = filters[i];
+            MenuButton toggle = MenuButton.Create(_panel.Content, filter.name,
+                new Vector3(left + i * (buttonWidth + Gap) + buttonWidth * 0.5f, y, 0f),
+                new Vector2(buttonWidth, ButtonHeight), MenuStyle.Button, filter.name);
+            toggle.SetSelected(filter.on);
+            toggle.Clicked += () =>
+            {
+                filter.on = !filter.on;
+                filter.Reset();
+                PlayerPrefs.SetInt(filter.prefsKey, filter.on ? 1 : 0);
+                PlayerPrefs.Save();
+                _page = 0;
+                Rebuild();
+            };
+        }
+    }
+
+    void BuildFilterColumn(Filter filter, List<string> groups, float x, float top)
+    {
+        int pageCount = Mathf.Max(1, Mathf.CeilToInt(groups.Count / (float)CategoriesPerPage));
+        filter.page = Mathf.Clamp(filter.page, 0, pageCount - 1);
 
         float y = top - ButtonHeight * 0.5f;
-        foreach (string category in categories.Skip(_categoryPage * CategoriesPerPage).Take(CategoriesPerPage))
+        foreach (string group in groups.Skip(filter.page * CategoriesPerPage).Take(CategoriesPerPage))
         {
-            string label = category == AllCategory ? "All Parts" : Sandbox.Plural(category);
-            MenuButton button = MenuButton.Create(_panel.Content, category, new Vector3(x, y, 0f),
+            string label;
+            Color? swatch = null;
+            if (group == AllCategory)
+                label = filter.allLabel;
+            else if (filter == _color)
+            {
+                int code = int.Parse(group.Substring(1));
+                label = LDrawColors.TryGet(code, out Color color, out string name) ? name : $"Color {code}";
+                swatch = LDrawColors.Get(code);
+            }
+            else
+                label = Sandbox.Plural(group);
+
+            MenuButton button = MenuButton.Create(_panel.Content, group, new Vector3(x, y, 0f),
                                                   new Vector2(CategoryWidth, ButtonHeight), MenuStyle.Button, label);
-            button.SetSelected(category == _category);
-            button.Clicked += () => { _category = category; _page = 0; Rebuild(); };
+            if (swatch.HasValue)
+            {
+                // A chip of the color on the button's left, with the name moved over to make room.
+                float chip = ButtonHeight * 0.6f;
+                MenuStyle.CreateBox(button.transform, "Swatch",
+                    new Vector3(-CategoryWidth * 0.5f + chip * 0.5f + 0.003f, 0f, -MenuButton.Depth * 0.5f - 0.0004f),
+                    new Vector3(chip, chip, 0.0005f), swatch.Value);
+                RectTransform rect = button.Label.rectTransform;
+                rect.sizeDelta = new Vector2(rect.sizeDelta.x - chip - 0.004f, rect.sizeDelta.y);
+                rect.localPosition += new Vector3((chip + 0.004f) * 0.5f, 0f, 0f);
+            }
+            button.SetSelected(group == filter.selected);
+            button.Clicked += () => { filter.selected = group; _page = 0; Rebuild(); };
             y -= ButtonHeight + Gap;
         }
 
         if (pageCount > 1)
         {
-            var holder = new GameObject("Category Pages").transform;
+            var holder = new GameObject(filter.name + " Pages").transform;
             holder.SetParent(_panel.Content, false);
             holder.localPosition = new Vector3(x, 0f, 0f);
             MenuStyle.AddPagingRow(holder, top - CategoriesPerPage * (ButtonHeight + Gap) - ButtonHeight * 0.5f,
-                                   CategoryWidth, _categoryPage, pageCount, p => { _categoryPage = p; Rebuild(); });
+                                   CategoryWidth, filter.page, pageCount, p => { filter.page = p; Rebuild(); });
         }
     }
 

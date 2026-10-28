@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -92,10 +93,40 @@ public class LockedBody
         List<Piece> worldPieces, Material opaque, Material transparent)
     {
         var result = new List<(LockedBody, Vector3, Quaternion)>();
+        foreach (float _ in BuildSteps(worldPieces, opaque, transparent, result)) { }
+        return result;
+    }
+
+    /// <summary>How long each stage of the last build took, for the load-time log.</summary>
+    public static string LastTimes = "";
+
+    /// <summary>
+    /// Build, a bit at a time: yields how far along it is (0 to 1) after each stage and each body, so a
+    /// caller can spread a big model over several frames and show progress. Bodies are added to `result`.
+    /// </summary>
+    public static IEnumerable<float> BuildSteps(List<Piece> worldPieces, Material opaque, Material transparent,
+                                                List<(LockedBody body, Vector3 position, Quaternion rotation)> result)
+    {
         var variants = new Dictionary<string, Mesh>();
         int count = worldPieces.Count;
         if (count == 0)
-            return result;
+            yield break;
+
+        // How long each stage takes (paused while the caller waits for the next frame): see LastTimes.
+        var times = new Dictionary<string, double>();
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var partClock = new System.Diagnostics.Stopwatch();
+        void Lap(string stage)
+        {
+            times[stage] = (times.TryGetValue(stage, out double soFar) ? soFar : 0) + clock.Elapsed.TotalMilliseconds;
+            clock.Restart();
+        }
+        void AddPart(string stage)
+        {
+            partClock.Stop();
+            times[stage] = (times.TryGetValue(stage, out double soFar) ? soFar : 0) + partClock.Elapsed.TotalMilliseconds;
+            partClock.Reset();
+        }
 
         // 1. Every piece's connection points, in the room, in a grid so neighbors are found quickly.
         var firstEntry = new int[count]; // where each piece's connectors start in the grid
@@ -107,6 +138,10 @@ public class LockedBody
             foreach (Connector local in Brick.ConnectorsOf(piece.part))
                 grid.Add(local.Moved(piece.position, piece.rotation), null, false, i);
         }
+
+        Lap("connection grid");
+        yield return 0.05f;
+        clock.Restart();
 
         // 2. Which pieces are plugged into which, and whether each pairing is rigid or a joint (the same
         //    rules as posing: studs and axles-in-cross-holes are rigid; so are two connections on
@@ -230,6 +265,10 @@ public class LockedBody
                 keep[e] = true;
         }
 
+        Lap("plugged-in pairs + groups");
+        yield return 0.25f;
+        clock.Restart();
+
         // 4b. Drift check: places where pieces aren't quite where they should be (see Drift).
         Drift.Clear();
         FindDrift(grid, mates, full, partly);
@@ -254,6 +293,10 @@ public class LockedBody
             list.Add(e);
         }
 
+        Lap("drift check");
+        yield return 0.3f;
+        clock.Restart();
+        int piecesDone = 0, piecesCombined = 0;
         foreach (List<int> list in members.Values)
         {
             // The body takes the pose of one of its pieces: one that stands the way most of them do, so the
@@ -322,14 +365,20 @@ public class LockedBody
                 // Its mesh, without the studs and underside tubes that are covered up (see Stripped).
                 Mesh mesh = piece.part.mesh;
                 if (mesh != null && GameSettings.HideCoveredStuds && piece.color.a >= 1f)
+                {
+                    partClock.Start();
                     mesh = Stripped(piece.part, firstEntry[index], hidden, variants);
+                    AddPart("hidden studs");
+                }
                 if (mesh != null)
                 {
                     Vector3Int cell = Cell(local.position, MeshCell);
                     if (!meshParts.TryGetValue(cell, out List<(Mesh, Material[], Matrix4x4)> parts))
                         meshParts[cell] = parts = new List<(Mesh, Material[], Matrix4x4)>();
+                    partClock.Start();
                     parts.Add((mesh, BrickPartData.MaterialsFor(mesh, piece.part.submeshColors, piece.color, opaque, transparent),
                                Matrix4x4.TRS(local.position, local.rotation, Vector3.one)));
+                    AddPart("materials");
                     for (int s = 0; s < mesh.subMeshCount; s++)
                         body.triangles += (int)(mesh.GetIndexCount(s) / 3);
                 }
@@ -355,30 +404,45 @@ public class LockedBody
                 {
                     boxes[grabCell] = box;
                 }
+
+                // Every few pieces, a chance to show progress.
+                if (++piecesDone % 32 == 0)
+                {
+                    Lap("pieces");
+                    yield return 0.3f + 0.35f * piecesDone / count;
+                    clock.Restart();
+                }
             }
 
             body.fullyUsedInside = usedFully.ToArray();
             body.partlyUsedInside = usedPartly.ToArray();
             body.grabBoxes.AddRange(boxes.Values);
+            Lap("pieces");
 
             var materials = new List<Material>();
             foreach (List<(Mesh, Material[], Matrix4x4)> parts in meshParts.Values)
             {
                 Mesh combined = BrickMerger.Combine(parts, materials);
-                if (combined == null)
-                    continue;
-                body.meshes.Add(combined);
-                body.chunks.Add((combined, materials.ToArray()));
+                piecesCombined += parts.Count;
+                if (combined != null)
+                {
+                    body.meshes.Add(combined);
+                    body.chunks.Add((combined, materials.ToArray()));
+                }
+                Lap("combining meshes");
+                yield return 0.65f + 0.35f * piecesCombined / count;
+                clock.Restart();
             }
 
             result.Add((body, origin, facing));
         }
+        Lap("pieces");
+        LastTimes = string.Join(", ", times.Select(t => $"{t.Key} {t.Value / 1000.0:0.0} s"));
         foreach (Mesh variant in variants.Values)
         {
             if (variant != null)
                 Object.Destroy(variant); // only needed while the combined meshes were being made
         }
-        return result;
     }
 
     // ---------- Leaving out what can't be seen ----------

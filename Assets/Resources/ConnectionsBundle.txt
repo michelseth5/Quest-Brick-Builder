@@ -1,0 +1,140 @@
+#questbrick-file parts/3171.dat
+0 Extra connection info for "Constraction Finger Angled with Clip" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Its only connection is the clip at its base: at the part's origin, gripping a bar that runs along X.
+0 !LDCAD SNAP_CLP [radius=4] [length=8] [center=true] [ori=0 -1 0 1 0 0 0 0 1]
+#questbrick-file parts/3385.dat
+0 Extra connection info for "Car Base 6 x 12 with 5 x 6 Recessed Centre and Studs on Sides" (adds to the LDCad shadow library's own)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Underside stud sockets, measured from the part's geometry. The ends are a plate thick (sockets 8 LDU down);
+0 // each end has a notch in the middle of its last row. The deep centre is solid except for stud-sized holes
+0 // between the top studs (x = +/-10, +/-30; z = 0, +/-40), 20 LDU down.
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 8 -110]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 8 -110]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 8 110]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 8 110]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 8 -90]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 8 -90]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 8 -90]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 8 -90]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 8 90]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 8 90]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 8 90]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 8 90]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 20 -40]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 20 -40]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 20 -40]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 20 -40]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 20 0]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 20 0]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 20 0]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 20 0]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 20 40]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 20 40]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 20 40]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 20 40]
+#questbrick-file parts/3387.dat
+0 Extra connection info for "Car Mudguard 4 x 2.5 x 2" (adds to the LDCad shadow library's own)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Underside stud sockets: the 1 x 4 strip behind the wheel arch, 24 LDU down. The arch's side walls
+0 // are too thin to sit on studs, so they get none.
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 24 10]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 24 10]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 24 10]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 24 10]
+#questbrick-file parts/5810.dat
+0 Extra connection info for "Tyre 11/ 15 x 21 with Racing Tread" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // The tyre's centre, matching the "rim11x21" point added to wheel 7834 (see 7834.dat here).
+0 // The tyre is symmetric about its origin, so it fits either way round.
+0 !LDCAD SNAP_GEN [group=rim11x21] [gender=F] [bounding=cyl 12 7] [ori=1 0 0 0 0 -1 0 1 0]
+#questbrick-file parts/5847.dat
+0 Extra connection info for "Brick 1 x 2 x 1 with Curved Bottom" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Its flat underside is 16 LDU down (two plates above the bottom of the curve), like 1750's.
+0 // Two stud sockets there, one under each stud position, so a 1 x 2 plate fits underneath.
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=0 16 0] [grid=1 2 0 -20]
+#questbrick-file parts/6014a.dat
+0 Extra connection info for "Wheel Rim 12 x 11 with Round Hole" (added to the LDCad shadow library's own)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Where a 12 x 11 tyre (e.g. 6015) centres on this rim: 6 LDU along the wheel's axis from its origin
+0 // (taken from set 4914-1, where the tyres sit 6 LDU outboard of these rims).
+0 !LDCAD SNAP_GEN [group=rim12x11] [gender=M] [bounding=cyl 10 5.5] [pos=0 0 -6] [ori=1 0 0 0 0 -1 0 1 0]
+#questbrick-file parts/6015.dat
+0 Extra connection info for "Tyre 12/ 40 x 11 Wide" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // The tyre's centre, matching the "rim12x11" point added to wheel 6014a (see 6014a.dat here).
+0 // The tyre is symmetric about its origin, so it fits either way round.
+0 !LDCAD SNAP_GEN [group=rim12x11] [gender=F] [bounding=cyl 8 3] [ori=1 0 0 0 0 -1 0 1 0]
+#questbrick-file parts/60602.dat
+0 Extra connection info for "Glass for Window 1 x 2 x 3" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // This glass is drawn in the coordinates of its frame (60593 Window 1 x 2 x 3), so it takes the frame's
+0 // own slot: the same pattern and place as the frame's, opposite gender (like the newer glass 35287).
+0 !LDCAD SNAP_FGR [genderOfs=M] [seq=1 60 1] [radius=2] [pos=0 33.5 -5]
+#questbrick-file parts/64872.dat
+0 Extra connection info for "Technic Suspension Arm 2 x 6 Reinforced" (adds to what its sub-parts give)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // The same shape as the older arm 57515, so the same ball socket at the narrow end and the same four
+0 // pivot holes at the wide end (taken from the LDCad shadow library's 57515).
+0 !LDCAD SNAP_GEN [gender=F] [bounding=sph 8] [match=size] [placement=free] [pos=0 0 -100]
+0 !LDCAD SNAP_CYL [gender=F] [caps=none] [secs=R 6 8   R 8 2] [center=true] [slide=true] [pos=15 0 -10] [ori=0 -1 0 1 0 0 0 0 1] [grid=1 C 2 0 20]
+0 !LDCAD SNAP_CYL [gender=F] [caps=none] [secs=R 8 2   R 6 8] [center=true] [slide=true] [pos=-15 0 -10] [ori=0 -1 0 1 0 0 0 0 1] [grid=1 C 2 0 20]
+#questbrick-file parts/7207.dat
+0 Extra connection info for "Windscreen 4 x 8 x 1 Curved" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // The curved bottom edge has stud cut-outs 4.8 LDU deep. Only the two at the front centre grip a stud
+0 // firmly (the edge wraps most of the way round them), so those are the ones it snaps by. The cut-outs
+0 // further round the curve hold too little, and offering them made it snap in the wrong places.
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 0 0]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 0 0]
+#questbrick-file parts/7307.dat
+0 Extra connection info for "Bar 1 x 4 x 1.5" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Two bars 4 studs long, one stud apart (LDraw y = -10 and 10), joined by four short uprights.
+0 // Clips and bar holes can take either long bar; clips can also grip an upright between the bars.
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 80] [center=true] [slide=true] [pos=0 -10 0] [ori=0 -1 0 1 0 0 0 0 1]
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 80] [center=true] [slide=true] [pos=0 10 0] [ori=0 -1 0 1 0 0 0 0 1]
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 12] [center=true] [slide=true] [pos=-30 0 0]
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 12] [center=true] [slide=true] [pos=-10 0 0]
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 12] [center=true] [slide=true] [pos=10 0 0]
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 12] [center=true] [slide=true] [pos=30 0 0]
+#questbrick-file parts/7834.dat
+0 Extra connection info for "Wheel Rim 11 x 21 with Five Spokes" (adds to the LDCad shadow library's own)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Where an 11 x 21 tyre (e.g. 5810) centres on this rim: the middle of its 30 LDU width along the axle.
+0 !LDCAD SNAP_GEN [group=rim11x21] [gender=M] [bounding=cyl 12 7.5] [pos=0 0 -15] [ori=1 0 0 0 0 -1 0 1 0]
+#questbrick-file parts/79387.dat
+0 Extra connection info for "Plate 4 x 4 x 0.667 with Rounded Corners and 2 x 2 Centre Cutout" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // The shadow library gives only the four corner sockets underneath (s\79387s02.dat), at the bottom of the
+0 // rounded corner feet (16 LDU down). Between the feet each edge is only plate-thick: its underside is 8 LDU
+0 // up, a recess a plate fits into, so the eight edge sockets sit there (4 LDU deep, like a plate's).
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 8 -30]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 8 -30]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-10 8 30]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=10 8 30]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 8 -10]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=-30 8 10]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 8 -10]
+0 !LDCAD SNAP_CYL [gender=F] [caps=one] [secs=R 6 4] [pos=30 8 10]
+#questbrick-file parts/80179.dat
+0 Extra connection info for "Minifig Cutlery Spoon" (not covered by the LDCad shadow library)
+0 Author: Quest Brick Builder, in LDCad shadow library format
+0 !LICENSE Licensed under CC BY-SA 4.0 : see https://creativecommons.org/licenses/by-sa/4.0/
+0 // Its handle is a bar: from the end of the handle (the part's origin) 14 LDU toward the bowl,
+0 // the same as the fork's (79741).
+0 !LDCAD SNAP_CYL [gender=M] [caps=none] [secs=R 4 14]

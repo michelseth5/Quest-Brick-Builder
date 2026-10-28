@@ -15,6 +15,8 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
 - `Brick.cs`: shape (imported `BrickPartData` or simple procedural size), stud-to-socket snapping,
   group carrying, overlap checks, table placement, ghost preview. Pivot = part origin; scale must be 1.
 - `BrickGrabInput.cs`: controller trigger / hand pinch = one brick; grip / palm = whole connected group.
+  Each thumbstick push quarter-turns what that hand holds (`Sandbox.TurnHeldWithThumbsticks` -> `Brick.TurnInHand`:
+  left/right about up, up/down about the level line across the view; re-takes the GrabFreeTransformer's offset).
   Also lets the trigger select GrabInteractors at startup.
 - `BrickTray.cs` + `PlaceInFrontOfUser.cs`: older test helper that lays out one of each catalog part.
 - `RoomSurfaces.cs`: upward-facing MRUK plane lookup (tables, floor, ...); falls back to the floor-level tracking
@@ -24,17 +26,64 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
 - `Sandbox.cs`: sandbox mode. Y = parts menu (categories -> grid of real, grabbable preview bricks),
   B = color menu (`BrickColors.cs`, 30 LDraw colors), A = duplicate held brick/group.
   Spawns baseplate (part 3811) and `TrashCan`. Menus are built in code (`MenuUI.cs`: `MenuPanel`,
-  `MenuButton` = RayInteractable + ColliderSurface created at runtime). Grabbable non-brick objects
+  `MenuButton` = RayInteractable + ColliderSurface created at runtime). One-line texts keep a readable size (shrink to
+  80% of the box height at most) and end in "…"; a button's `MarqueeText` scrolls the rest while it's pointed at.
+  Plain texts can scroll too (`MarqueeText.AddTo`: invisible RayInteractable). Bin labels are quantity first
+  ("3x Brick 1 x 2") and scroll; the bin has Type and Color filter toggles (PlayerPrefs `BinFilterType`/`BinFilterColor`),
+  each a column when on, combined (a column lists only groups with parts passing the other filter; neither = all;
+  colors ordered by part count, with a swatch chip). Grabbable non-brick objects
   (menu handles, trash can) are made by cloning the brick prefab and removing its `Brick` component.
+- Fix Snapping (Y menu, hold the piece; `SnapEditor.cs`): the part enlarged (longest side 20 cm) and see-through on a
+  grabbable stand (`Sandbox.CreateGrabbableProp` with an invisible box; the prefab has no laser grab, so markers inside
+  stay clickable),
+  stand, each connector a cylinder marker (`MeshBuilder.UnitCylinder`; male green, female blue, clip orange, finger
+  yellow, generic/ball purple), clickable via `Pointable` (MenuUI.cs: RayInteractable + ColliderSurface on any
+  collider). Panel: kinds down the left (`Families`: Studs, Bars & Clips, Axles, Pins, Hinges, Special, with counts);
+  picking one lights it, pulses its markers (others dimmed) and shows its "+" buttons + extras on the right (hinge
+  kinds; Longer/Shorter). X/Y/Z axis lines + facing labels through the part origin (`BuildAxes`).
+  Select -> nudge X/Y/Z by the grid (1/2/5/10 LDU), Point Another Way (6 axes), Longer/Shorter (2 LDU,
+  sections redone), Delete. "+ Type" then click the piece (its MeshCollider is on only while adding, so markers inside
+  stay clickable): hit point to the grid across the surface, 0.5 LDU along the normal; male points out, female in,
+  clips across; shapes copied from shadow-library parts (stud R6 4, socket R6 4, bar R4 16 slide, bar hole R4 8,
+  clip R4 8 centered, axle/axle hole A6 20, pin R6 20, pin hole "R8 R6" 20 with R8:2 collars). Save ->
+  `ConnectionOverrides` (`persistentDataPath/Connections/<part>.json`, the whole Connector[]; applied when parts are
+  looked up: Sandbox catalog + `PartStore.Find`; `Brick.ConnectionsChanged` rebuilds every brick of the part).
+  Restore Original deletes the file. In the editor's Play mode, Apply/Save change the part assets themselves.
+  "+ Hinge" adds a Finger connector across the surface, 6 LDU out, of the kind picked from `HingeKinds` (copied from
+  44301/44302 (locking, lckHng F6), 4275/4276 (classic F4), 3938/3937 (hinge brick, hgBrC)); picking a kind also
+  changes the selected hinge. Marker cylinders have both caps. All menu text is 0.83x (`MenuStyle.TextScale`).
+  Next rounds: suggestions from the part's primitives (round/axle holes), test-fit partner ghosts.
 - `MeshBuilder.cs`: procedural box/cylinder meshes.
 - `ModelFile.cs`: saves/loads models as LDraw .ldr in `Application.persistentDataPath/Models`
   (positions relative to the model's bottom center, facing the first brick's yaw).
-  `ModelMenu.cs`: saved-model grid with spinning thumbnails, Load / Rename (system keyboard) / Delete.
-  "Save Everything" in the parts menu (X no longer saves; it toggles locks, below).
+  `ModelMenu.cs`: saved-model grid with spinning thumbnails, Load / Rename (system keyboard) / Delete. Each thumbnail is
+  ONE mesh (`ModelThumbnail`: biggest pieces first, studs/tubes left out, 100k-triangle budget) saved beside the model
+  as `<model>.thumb` at save time (Rename touches it, Delete deletes it; older saves get one on first view); shown one
+  per frame after opening and cached in memory by
+  file write time (one object per piece made opening the menu stutter 5-15 s with big saves).
+  "Save Everything" in the parts menu (X no longer saves; it toggles locks, below). After a model is loaded (or saved),
+  Save Everything asks: Replace "<title>" (`ModelFile.Save(..., replacePath)`, same title) / Keep It and Save a New
+  Model / Cancel (`Sandbox._workingSave`, `SaveOrAskToReplace`; bricks gathered when the button is clicked).
+  Loading runs as a coroutine (`Sandbox.LoadingModel`, ~12 ms of work per frame) behind a `ProgressDisplay` bar: parts
+  first, then locked groups via `LockedBody.BuildSteps` (an iterator yielding 0-1 per stage/body; `Build` drains it).
+  `MarqueeText` leaves text alone if something else changes it mid-scroll (e.g. "Click again to ...").
+  Each load appends stage times (wall time) + `LockedBody.LastTimes` (work per build stage) + the next 5 s of frames
+  to `persistentDataPath/load-times.txt` (`Sandbox.LogLoad`); pull it with adb to see where slow loads go.
+  BuildSteps yields every 32 pieces and every combined chunk, so the bar keeps moving within one big body.
+  First log (Oct 22, finished Cobra, 1,210 locked pieces, 88.6 s): building bodies 0.23 s; 88 s was the bin being
+  redrawn once per resumed piece (+ a 17 s frame destroying the previews). `PartsBin.TakePieces` now redraws once.
 - Drift check: each lock runs `LockedBody.FindDrift` while building bodies: studs more than 0.5 LDU short of fully
   in, and studs/Technic pins not in anything but within 2 mm of a hole they fit (`NearlyIn`). Results in
   `LockedBody.Drift` (room positions); `Sandbox` adds "Heads up: N spots aren't fully plugged in" to the lock message
-  and shows red markers there for 10 s. Offline on the Oct 14 Cobra save: car 56 short + 14 near misses, door 1 + 2.
+  and shows red markers there for 10 s (Settings > "Mark pieces not fully plugged in", `GameSettings.ShowDriftMarkers`). Offline on the Oct 14 Cobra save: car 56 short + 14 near misses, door 1 + 2.
+  X with nothing loose but several locked groups (units) in the model first joins them into one (`JoinGroups`;
+  Oct 26 castle save: 3,341 locked pieces in 6 groups, so one-finger grabs left groups behind); the next X unlocks.
+  Auto-lock (`Sandbox.AutoLock`, Settings: after 5 s / 15 s / Off, `GameSettings.AutoLockSeconds`): once nothing has
+  been held that long, each model (2+ pieces) locks its loose pieces (`LockLoose(..., automatic)`, quiet unless the
+  drift check finds something); off during Build a Set; clears undo. Ghost snap searches over 4 ms are spaced out
+  (`Brick._nextSearchAt`, ~25% of the time; release still searches fresh). Shadows: the Quest uses the URP package's
+  default asset (2,048 px over 50 m, flickering); `Sandbox.ApplyShadows` sets 3 m at startup and Settings > Shadows
+  turns lights' shadows off/on.
 - Locked sections: `Brick.LockedSection` (0 = loose; numbers count up in the order locked, `Brick.NewestSection`).
   X (`Sandbox.ToggleLock`) on the held model, else the one within 12 cm of the left controller (`Brick.Nearest`,
   `Brick.WholeModel`): locks its loose bricks as a new section, or if none are loose unlocks the newest section.
@@ -115,6 +164,24 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   Save Everything during a bin build writes `0 !QUESTBRICK SET <set> BOOK <booklet> <page>` and `0 !QUESTBRICK FROMSET`
   before bin parts (`WRIST ... FROMSET` for wrist stacks); loading it calls `PartsBin.Resume` (bin minus those parts)
   and `InstructionBook.ResumeAt`. The book also remembers each set's booklet/page in PlayerPrefs (`BookPlace:<set>`).
+- Removing sets: "Remove a Set" under both set lists (click twice). Built-in sets can't leave the APK, so
+  `SetData.Remove` hides them (PlayerPrefs `RemovedSets`; `LoadAll` skips them; Settings brings them back);
+  `InstructionBook.DeleteInstructions` deletes the PDFs, page cache and saved page. Saved models stay.
+- Get New Sets (start menu; `SetDownloadMenu.cs` + `Assets/Scripts/LDraw/SetDownloader.cs`): the headset adds sets itself.
+  Player's own Rebrickable key in `persistentDataPath/rebrickable.key` (Settings > Rebrickable key; the owner's can be
+  adb-pushed from Secrets/, never into the APK). One-time library download (~236 MB) to `persistentDataPath/Library`:
+  complete.zip (entries under ldraw/), ldrawunf.zip (top level), shadow.zip (GitHub codeload, LDCadShadowLibrary-main/),
+  read unzipped through `ZipLibraryFiles` (`LDrawParser.Files`, an `ILibraryFiles`; disk by default; names case-insensitive)
+  plus our Connections/ packed into `Resources/ConnectionsBundle.txt` (`ConnectionsBundler`, before every build).
+  Search = Rebrickable sets (7 per page) + OMR HEAD check; adding = parts list (page_size 100: 500 gives 502 for big
+  sets; requests retry 5xx), OMR model to `persistentDataPath/Sets/<set>.mpd`, parts parsed on a background thread,
+  meshes + `PartStore` files (`persistentDataPath/Parts/<id>.part`, versioned binary) on the main thread, then
+  `SetData.SaveDownloaded` (`Sets/<set>.json`; `LoadAll` merges, a download replaces a built-in set of the same number;
+  `Remove` deletes downloads, hides built-ins). `Sandbox.FindPart` falls back to `PartStore.Find`; `HasPart` doesn't load.
+  Typing uses `VirtualKeyboard.cs` (the game's own laser-clicked key panel): TouchScreenKeyboard opened nothing from
+  these screens on the Quest (Oct 23), even unsecured. (ModelMenu Rename still uses the system keyboard.)
+  `Sandbox.StartMenuVersion` lets the menu redraw only while one of its screens is showing. Offline check (Oct 2026):
+  zip vs disk parsing identical for 147 parts; 21330 Home Alone: 344 of 361 parts made in 1.2 s on the PC.
 - `InstructionBook.cs` + `Assets/Plugins/Android/PdfBridge.java`: PDFs picked via ACTION_OPEN_DOCUMENT
   (headless android.app.Fragment) are copied to `persistentDataPath/Instructions/<set> booklet <n>.pdf`;
   pages rendered by PdfRenderer on a thread to `Instructions/cache/<booklet>/<page>.jpg`, results via
@@ -128,7 +195,9 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   needs a small Java plugin in Assets/Plugins/Android) into app storage, rendered with Android's
   PdfRenderer, shown as a two-page floating book. Do NOT scrape lego.com/Rebrickable for PDFs
   (bot protection + terms); never commit PDFs.
-- `Assets/Editor/LDraw/`: `LDrawParser.cs` (pure C#, System.Numerics, testable with `dotnet`) and
+- `Assets/Scripts/LDraw/`: `LDrawParser.cs` (pure C#, System.Numerics, testable with `dotnet`), `LibraryFiles.cs`,
+  `PartBuilder.cs` (parsed data -> mesh + BrickPartData + set steps; shared by editor and headset), `PartStore.cs`.
+  `Assets/Editor/LDraw/`:
   Tools > LDraw Part Importer window, which writes meshes + `BrickPartData` to `Assets/LDrawParts/`.
 
 ## Connections (non-stud snapping)
@@ -237,7 +306,9 @@ The owner is new to Unity, so give click-by-click editor instructions when Unity
   generic `rim<W>x<D>` at the bounds centre on the axle line), unless the part already has a generic connector.
 - Parts audit (Oct 2026, 861 parts): still without connectors = minifig hair/beards/capes/swords/tools and the
   train traction band 85544 (a rubber ring; what it wraps in set 10274 is unknown). Hand files added for glass 60602
-  (frame 60593's slot), bar 7307 (two long bars + four uprights), finger 3171 (clip at origin).
+  (frame 60593's slot), bar 7307 (two long bars + four uprights), finger 3171 (clip at origin). Plate 79387 (4x4x2/3
+  rounded, 2x2 cutout): the shadow gives only the 4 corner sockets (corner feet, 16 LDU down); the 8 edge ones are in
+  Connections, 8 LDU up in the plate-deep recess between the feet.
 - The headset app is installed as com.UnityTechnologies.com.unity.template.urpblank (the build profile overrides
   ProjectSettings' com.michelseth5.brickbuilder). Saves: /sdcard/Android/data/<that>/files/Models (adb pull works;
   run-as doesn't, the build isn't debuggable). Changing the package name would install a separate app without the saves.

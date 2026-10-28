@@ -53,6 +53,8 @@ public class Sandbox : MonoBehaviour
     readonly Dictionary<string, BrickPartData> _partsById =
         new Dictionary<string, BrickPartData>(System.StringComparer.OrdinalIgnoreCase);
     ModelMenu _modelMenu;
+    SetDownloadMenu _downloadMenu;
+    SnapEditor _snapEditor;
     SetBuilder _setBuilder;
     PartsBin _partsBin;
     InstructionBook _book;
@@ -103,7 +105,10 @@ public class Sandbox : MonoBehaviour
         foreach (BrickPartData part in catalog.parts)
         {
             if (part != null && !string.IsNullOrEmpty(part.partId))
+            {
                 _partsById[part.partId] = part;
+                ConnectionOverrides.Apply(part); // points fixed in the game (Fix Snapping)
+            }
         }
 
         MenuStyle.Material = brickPrefab.GetComponent<MeshRenderer>().sharedMaterial;
@@ -116,6 +121,14 @@ public class Sandbox : MonoBehaviour
 
         _modelMenu = gameObject.AddComponent<ModelMenu>();
         _modelMenu.Init(this);
+
+        _downloadMenu = gameObject.AddComponent<SetDownloadMenu>();
+        _downloadMenu.Init(this);
+
+        _snapEditor = gameObject.AddComponent<SnapEditor>();
+        _snapEditor.Init(this);
+
+        ApplyShadows();
 
         _setBuilder = gameObject.AddComponent<SetBuilder>();
         _setBuilder.Init(this, brickPrefab.ghostMaterial);
@@ -170,13 +183,14 @@ public class Sandbox : MonoBehaviour
         _startMenu.Open(position, rotation);
     }
 
-    void ShowStartHome()
+    internal void ShowStartHome()
     {
         var buttons = new List<(string, System.Action)>
         {
             ("Free Build", () => _startMenu.Close()),
             ("Build a Set", ShowSetList),
             ("Build It Yourself", ShowBuildYourselfList),
+            ("Get New Sets", _downloadMenu.Show),
         };
         if (_setBuilder.IsBuilding)
             buttons.Add(("Exit Current Set", () => { _setBuilder.ExitSet(); _startMenu.Close(); }));
@@ -236,8 +250,67 @@ public class Sandbox : MonoBehaviour
                              _partsBin.Begin(chosen);
                          }));
         }
+        if (buttons.Count > 0)
+            buttons.Add(("Remove a Set", () => ShowRemoveSetList(ShowBuildYourselfList)));
         buttons.Add(("Back", ShowStartHome));
         FillStartMenu("Build It Yourself", buttons.Count == 1 ? "No sets added yet" : "Get a set's parts and build it your way", buttons);
+    }
+
+    // Every set, to pick one to remove. The first click on a set asks to confirm; a second one within
+    // 3 seconds removes it.
+    void ShowRemoveSetList(System.Action back)
+    {
+        var sets = SetData.LoadAll().Where(s => s.HasInventory || s.HasSteps).OrderBy(s => s.title).ToList();
+        var buttons = new List<(string, System.Action)>();
+        List<MenuButton> created = null;
+        SetData armed = null;
+        float armedUntil = 0f;
+        for (int i = 0; i < sets.Count; i++)
+        {
+            SetData set = sets[i];
+            int index = i;
+            buttons.Add(($"{set.title}  <size=70%><color=#AAB>{set.setNumber}</color></size>", () =>
+            {
+                if (armed == set && Time.time < armedUntil)
+                {
+                    RemoveSet(set);
+                    ShowRemoveSetList(back);
+                    return;
+                }
+                if (armed != null && armed != set)
+                {
+                    // Only one at a time: the other row gets its own text back.
+                    int other = sets.IndexOf(armed);
+                    if (created[other] != null && created[other].Label != null)
+                        created[other].Label.text = buttons[other].Item1;
+                }
+                armed = set;
+                armedUntil = Time.time + 3f;
+                MenuButton button = created[index];
+                if (button != null && button.Label != null)
+                    button.Label.text = $"Click again to remove {set.title} and its instructions";
+            }));
+        }
+        buttons.Add(("Back", back));
+        created = FillStartMenu("Remove a Set", sets.Count == 0 ? "No sets to remove"
+                                                                : "Click a set twice to remove it (Settings can bring it back)", buttons);
+    }
+
+    // Takes a set out of the game: stops building it, deletes its instruction PDFs, and hides it from the lists.
+    // Models you've built and saved stay.
+    void RemoveSet(SetData set)
+    {
+        if (_setBuilder.CurrentSet == set)
+            _setBuilder.ExitSet();
+        if (_partsBin.Set == set)
+            _partsBin.End();
+        if (_book.Set == set)
+            _book.Close();
+        int booklets = InstructionBook.DeleteInstructions(set.setNumber);
+        SetData.Remove(set.setNumber);
+        ShowMessage(booklets > 0
+            ? $"Removed {set.title} and {booklets} instruction booklet{(booklets == 1 ? "" : "s")}"
+            : $"Removed {set.title}");
     }
 
     void ShowSettings()
@@ -257,8 +330,17 @@ public class Sandbox : MonoBehaviour
              () => { GameSettings.MergeModels = !GameSettings.MergeModels; ShowSettings(); }),
             ($"Locked pieces as one object: {(GameSettings.CollapseLocked ? "On" : "Off")}",
              () => { GameSettings.CollapseLocked = !GameSettings.CollapseLocked; ShowSettings(); }),
+            ($"Mark pieces not fully plugged in: {(GameSettings.ShowDriftMarkers ? "On" : "Off")}",
+             () => { GameSettings.ShowDriftMarkers = !GameSettings.ShowDriftMarkers; ShowSettings(); }),
             ($"Hide covered studs in locked models: {(GameSettings.HideCoveredStuds ? "On" : "Off")}",
              () => { GameSettings.HideCoveredStuds = !GameSettings.HideCoveredStuds; ShowSettings(); }),
+            (SetData.RemovedCount > 0 ? $"Bring back removed sets ({SetData.RemovedCount})" : "No removed sets",
+             () => { if (SetData.RemovedCount > 0) { SetData.RestoreRemoved(); ShowMessage("Removed sets are back"); } ShowSettings(); }),
+            ($"Rebrickable key: {(SetDownloader.HasKey ? "Change" : "Enter")}", () => _downloadMenu.AskKey(ShowSettings)),
+            ($"Auto-lock: {(GameSettings.AutoLockSeconds > 0f ? $"after {GameSettings.AutoLockSeconds:0} s" : "Off")}",
+             () => { GameSettings.AutoLockSeconds = NextAutoLock(); ShowSettings(); }),
+            ($"Shadows: {(GameSettings.Shadows ? "On" : "Off")}",
+             () => { GameSettings.Shadows = !GameSettings.Shadows; ApplyShadows(); ShowSettings(); }),
             ("Back", ShowStartHome),
         };
         FillStartMenu("Settings", "Click a setting to change it", buttons);
@@ -273,13 +355,19 @@ public class Sandbox : MonoBehaviour
             buttons.Add(($"{set.title}  <size=70%><color=#AAB>{set.setNumber} · {set.PartCount} parts</color></size>",
                          () => { _startMenu.Close(); CloseBuildMenus(); _partsBin.End(); _setBuilder.StartSet(chosen); }));
         }
+        if (buttons.Count > 0)
+            buttons.Add(("Remove a Set", () => ShowRemoveSetList(ShowSetList)));
         buttons.Add(("Back", ShowStartHome));
         FillStartMenu("Build a Set", buttons.Count == 1 ? "No sets imported yet" : "Choose a set", buttons);
     }
 
+    /// <summary>Counts start menu screens shown, so a screen can tell whether it's still the one showing.</summary>
+    internal int StartMenuVersion { get; private set; }
+
     // Rebuilds the start menu as a subtitle plus a column of buttons.
-    List<MenuButton> FillStartMenu(string title, string subtitle, List<(string label, System.Action onClick)> buttons)
+    internal List<MenuButton> FillStartMenu(string title, string subtitle, List<(string label, System.Action onClick)> buttons)
     {
+        StartMenuVersion++;
         var created = new List<MenuButton>();
         const float buttonHeight = 0.028f, gap = 0.006f;
         _startMenu.ClearContent();
@@ -328,10 +416,54 @@ public class Sandbox : MonoBehaviour
         if (OVRInput.GetDown(OVRInput.RawButton.X))
             ToggleLock();
         UpdatePendingLock();
+        AutoLock();
         if (OVRInput.GetDown(OVRInput.RawButton.Start))
             ToggleStartMenu();
+        TurnHeldWithThumbsticks();
         if (OVRInput.GetDown(OVRInput.RawButton.LThumbstick))
             Undo();
+    }
+
+    // ---------- Turning a held piece ----------
+
+    // Each push of a thumbstick turns what that hand is holding a quarter turn: left/right about straight up,
+    // up/down tipping it toward or away from you. The stick has to come back to the middle between pushes.
+    const float StickPush = 0.7f, StickRest = 0.3f;
+    readonly bool[] _stickPushed = new bool[2];
+
+    void TurnHeldWithThumbsticks()
+    {
+        for (int hand = 0; hand < 2; hand++)
+        {
+            Vector2 stick = OVRInput.Get(hand == 0 ? OVRInput.RawAxis2D.LThumbstick : OVRInput.RawAxis2D.RThumbstick);
+            if (_stickPushed[hand])
+            {
+                if (stick.magnitude < StickRest)
+                    _stickPushed[hand] = false;
+                continue;
+            }
+            if (stick.magnitude < StickPush)
+                continue;
+            _stickPushed[hand] = true;
+
+            Brick held = Brick.Held.FirstOrDefault(b => b != null && b.HeldHand == hand);
+            if (held == null)
+                continue;
+            Quaternion turn;
+            if (Mathf.Abs(stick.x) >= Mathf.Abs(stick.y))
+            {
+                turn = Quaternion.AngleAxis(stick.x > 0f ? 90f : -90f, Vector3.up);
+            }
+            else
+            {
+                // About the level line across your view, so up tips the top away from you.
+                Vector3 across = Vector3.Cross(Vector3.up, Camera.main != null ? Camera.main.transform.forward : Vector3.forward);
+                if (across.sqrMagnitude < 1e-6f)
+                    across = Vector3.right;
+                turn = Quaternion.AngleAxis(stick.y > 0f ? 90f : -90f, across.normalized);
+            }
+            held.TurnInHand(turn);
+        }
     }
 
     void Undo()
@@ -342,8 +474,13 @@ public class Sandbox : MonoBehaviour
             ShowMessage(UndoHistory.Undo() ? "Undone" : "Nothing to undo");
     }
 
+    /// <summary>Whether a part is in the game (with the app or made on the headset), without loading it.</summary>
+    public bool HasPart(string partId) => partId != null && (_partsById.ContainsKey(partId) || PartStore.Has(partId));
+
     public BrickPartData FindPart(string partId) =>
-        partId != null && _partsById.TryGetValue(partId, out BrickPartData part) ? part : null;
+        partId == null ? null
+        : _partsById.TryGetValue(partId, out BrickPartData part) ? part
+        : PartStore.Find(partId); // made on the headset for a set downloaded in the game
 
     /// <summary>The display color for any LDraw color code.</summary>
     public Color ColorForCode(int code) => LDrawColors.Get(code);
@@ -423,7 +560,7 @@ public class Sandbox : MonoBehaviour
         bool paged = categories.Count > CategoriesPerPage;
         int categoryRows = Mathf.Min(categories.Count, CategoriesPerPage) + (paged ? 1 : 0);
 
-        int buttonCount = categoryRows + (hasBaseplate ? 1 : 0) + 1 + 1 + 2 + 1;
+        int buttonCount = categoryRows + (hasBaseplate ? 1 : 0) + 1 + 1 + 3 + 1;
         float height = 0.045f + buttonCount * (buttonHeight + gap) + sectionGap * 3f;
 
         _mainMenu = MenuPanel.Create("Parts Menu", "Parts", new Vector2(width, height), CreateHandle());
@@ -463,6 +600,11 @@ public class Sandbox : MonoBehaviour
         MenuButton load = MenuButton.Create(_mainMenu.Content, "Load", new Vector3(0f, y, 0f), buttonSize,
                                             MenuStyle.Button, "Load Model");
         load.Clicked += OpenModelMenu;
+        y -= buttonHeight + gap;
+
+        MenuButton fix = MenuButton.Create(_mainMenu.Content, "Fix Snapping", new Vector3(0f, y, 0f), buttonSize,
+                                           MenuStyle.Button, "Fix Snapping  <size=70%><color=#AAB>(hold the piece)</color></size>");
+        fix.Clicked += OpenSnapEditor;
         y -= buttonHeight + gap + sectionGap;
 
         // Current color, with a swatch. Clicking it opens the color menu.
@@ -723,7 +865,7 @@ public class Sandbox : MonoBehaviour
     }
 
     // Copies the brick prefab's grab setup onto a different shape, giving a grabbable non-brick object.
-    GameObject CreateGrabbableProp(string name, Mesh mesh, Bounds bounds, Color color)
+    internal GameObject CreateGrabbableProp(string name, Mesh mesh, Bounds bounds, Color color)
     {
         Brick template = Instantiate(brickPrefab);
         GameObject prop = template.gameObject;
@@ -748,9 +890,12 @@ public class Sandbox : MonoBehaviour
 
     // ---------- Saving and loading ----------
 
+    // Everything in the room that a save holds: placed parts and locked models.
+    static List<Brick> SaveableBricks() => Brick.AllPlaced().Where(b => b.part != null || b.IsLockedBody).ToList();
+
     void SaveEverything()
     {
-        List<Brick> bricks = Brick.AllPlaced().Where(b => b.part != null || b.IsLockedBody).ToList();
+        List<Brick> bricks = SaveableBricks();
         if (bricks.Count == 0 && WristInventory.Export().Count == 0)
         {
             ShowMessage("Nothing to save yet");
@@ -763,7 +908,7 @@ public class Sandbox : MonoBehaviour
             (int booklet, int page) = InstructionBook.SavedPlace(_partsBin.Set.setNumber);
             progress = new ModelFile.SetProgress { setNumber = _partsBin.Set.setNumber, booklet = booklet, page = page };
         }
-        SaveModel(bricks, includeInventory: true, progress);
+        SaveOrAskToReplace(bricks, progress);
     }
 
     // X locks the loose pieces of a model into it (so they can't be knocked or pulled off), or, when the
@@ -814,26 +959,15 @@ public class Sandbox : MonoBehaviour
         List<Brick> loose = model.Where(b => !b.IsSectionLocked).ToList();
         if (loose.Count > 0)
         {
-            int section = Brick.NewestSection + 1;
-            foreach (Brick brick in loose)
-                brick.SetLockedSection(section);
-            int total = model.Sum(b => b.PieceCount);
-            LockedBody.Drift.Clear();
-            if (GameSettings.CollapseLocked)
-                Collapse(model);
-            string locked = loose.Count == total
-                ? $"Locked {Pieces(total)}. Press X again to unlock"
-                : $"Locked {Pieces(loose.Count)} more ({total} locked). Press X again to unlock them";
-            int drift = LockedBody.Drift.Count;
-            if (drift > 0)
-            {
-                // Something isn't quite in: say so now, and show where, rather than 100 steps later.
-                ShowDriftMarkers(LockedBody.Drift);
-                locked += drift == 1
-                    ? "\nHeads up: 1 spot isn't fully plugged in (red marker)"
-                    : $"\nHeads up: {drift} spots aren't fully plugged in (red markers)";
-            }
-            ShowMessage(locked);
+            LockLoose(model, loose, automatic: false);
+        }
+        else if (GameSettings.CollapseLocked && model.Where(b => b.IsLockedBody).Select(b => b.Locked.unit).Distinct().Count() > 1)
+        {
+            // Nothing loose, but the model is several locked groups snapped together: join them first, so the whole
+            // model comes along even with a one-finger grab. (Pressing X again unlocks, as usual.)
+            int groups = JoinGroups(model);
+            ShowMessage($"Joined {groups} locked groups into one ({Pieces(model.Sum(b => b.PieceCount))}). " +
+                        "Press X again to unlock the last pieces you locked");
         }
         else
         {
@@ -849,6 +983,130 @@ public class Sandbox : MonoBehaviour
     }
 
     static string Pieces(int count) => count == 1 ? "1 piece" : $"{count} pieces";
+
+    // Locks a model's loose pieces as a new section. Automatic locks (see AutoLock) only speak up when the drift
+    // check finds something not fully plugged in.
+    void LockLoose(List<Brick> model, List<Brick> loose, bool automatic)
+    {
+        int section = Brick.NewestSection + 1;
+        foreach (Brick brick in loose)
+            brick.SetLockedSection(section);
+        int total = model.Sum(b => b.PieceCount);
+        LockedBody.Drift.Clear();
+        if (GameSettings.CollapseLocked)
+            Collapse(model);
+        string locked = automatic
+            ? $"Locked {Pieces(loose.Count)} automatically. X unlocks them"
+            : loose.Count == total
+            ? $"Locked {Pieces(total)}. Press X again to unlock"
+            : $"Locked {Pieces(loose.Count)} more ({total} locked). Press X again to unlock them";
+        int drift = LockedBody.Drift.Count;
+        if (drift > 0 && GameSettings.ShowDriftMarkers)
+        {
+            // Something isn't quite in: say so now, and show where, rather than 100 steps later.
+            ShowDriftMarkers(LockedBody.Drift);
+            locked += drift == 1
+                ? "\nHeads up: 1 spot isn't fully plugged in (red marker)"
+                : $"\nHeads up: {drift} spots aren't fully plugged in (red markers)";
+        }
+        else if (automatic)
+        {
+            return;
+        }
+        ShowMessage(locked);
+    }
+
+    // Makes all of a model's locked groups one group (the biggest one's), rebuilt as one locked body.
+    // Returns how many groups there were.
+    int JoinGroups(List<Brick> model)
+    {
+        List<Brick> bodies = model.Where(b => b.IsLockedBody).ToList();
+        int groups = bodies.Select(b => b.Locked.unit).Distinct().Count();
+        int unit = bodies.OrderByDescending(b => b.PieceCount).First().Locked.unit;
+        var pieces = new List<LockedBody.Piece>();
+        foreach (Brick body in bodies)
+        {
+            foreach (LockedBody.Piece piece in PiecesOf(body))
+            {
+                LockedBody.Piece joined = piece;
+                joined.unit = unit;
+                pieces.Add(joined);
+            }
+        }
+        foreach (Brick body in bodies)
+            Remove(body);
+        SpawnLockedBodies(pieces);
+        return groups;
+    }
+
+    // The next Auto-lock choice in Settings.
+    static float NextAutoLock()
+    {
+        float[] choices = GameSettings.AutoLockChoices;
+        int current = System.Array.IndexOf(choices, GameSettings.AutoLockSeconds);
+        return choices[(current + 1) % choices.Length];
+    }
+
+    // ---------- Shadows ----------
+
+    // Lights that cast shadows, and how, so switching shadows back on restores them.
+    readonly Dictionary<Light, LightShadows> _shadowCasters = new Dictionary<Light, LightShadows>();
+
+    // Settings > Shadows. Shadows only reach 3 m, set here at startup: the Quest uses the URP package's default asset
+    // (2,048-pixel shadow map over 50 m, ~2.5 cm per shadow pixel, so brick shadows flickered as you moved your head;
+    // 3 m is the whole play space, ~1.5 mm per pixel). That asset is read-only in the package, so not edited.
+    void ApplyShadows()
+    {
+        if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline is UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urp)
+            urp.shadowDistance = Mathf.Min(urp.shadowDistance, 3f);
+        foreach (Light light in FindObjectsByType<Light>(FindObjectsSortMode.None))
+        {
+            if (light.shadows != LightShadows.None)
+                _shadowCasters[light] = light.shadows;
+        }
+        foreach (KeyValuePair<Light, LightShadows> pair in _shadowCasters)
+        {
+            if (pair.Key != null)
+                pair.Key.shadows = GameSettings.Shadows ? pair.Value : LightShadows.None;
+        }
+    }
+
+    // ---------- Locking automatically ----------
+
+    // With Settings > Auto-lock on, pieces put into a model lock by themselves once nothing has been held for a
+    // few seconds: a model's loose pieces are separate objects, and carrying hundreds of them made the frame
+    // rate drop (screen shudder, pieces seeming to slide) on the 8,000-piece castle. A piece on its own stays
+    // loose; X still unlocks the newest locked pieces to change them.
+    float _autoLockAt = float.MaxValue;
+    bool _wasHolding;
+
+    void AutoLock()
+    {
+        bool holding = Brick.Held.Count > 0;
+        if (holding || _wasHolding && !holding)
+            _autoLockAt = Time.time + GameSettings.AutoLockSeconds; // restart the wait after every release
+        _wasHolding = holding;
+        if (holding || GameSettings.AutoLockSeconds <= 0f || Time.time < _autoLockAt || _setBuilder.IsBuilding)
+            return;
+        _autoLockAt = float.MaxValue;
+
+        var loose = new HashSet<Brick>(Brick.AllPlaced().Where(b => !b.IsSectionLocked && !b.IsLockedBody && b.part != null));
+        bool any = false;
+        while (loose.Count > 0)
+        {
+            Brick start = loose.First();
+            List<Brick> model = start.WholeModel();
+            List<Brick> modelLoose = model.Where(b => loose.Contains(b)).ToList();
+            loose.ExceptWith(model);
+            loose.Remove(start);
+            if (model.Count < 2 || modelLoose.Count == 0)
+                continue; // a piece on its own isn't part of a model yet
+            LockLoose(model, modelLoose, automatic: true);
+            any = true;
+        }
+        if (any)
+            UndoHistory.Clear(); // its steps refer to bricks that were just swapped for locked bodies
+    }
 
     // Small red markers where the drift check found a stud or pin not fully in, shown for a few seconds.
     const float DriftMarkerSeconds = 10f;
@@ -1051,10 +1309,14 @@ public class Sandbox : MonoBehaviour
     /// Builds locked bodies out of pieces posed in the room: one brick per rigid group. Bodies whose pieces
     /// belonged to a bond join it (a bond that's still a saved number is left for the caller, in Locked.bonds).
     /// </summary>
-    List<Brick> SpawnLockedBodies(List<LockedBody.Piece> pieces)
+    List<Brick> SpawnLockedBodies(List<LockedBody.Piece> pieces) =>
+        SpawnBodies(LockedBody.Build(pieces, MenuStyle.Material, transparentMaterial));
+
+    // A carrier brick for each built body, at its pose.
+    List<Brick> SpawnBodies(List<(LockedBody body, Vector3 position, Quaternion rotation)> built)
     {
         var bricks = new List<Brick>();
-        foreach ((LockedBody body, Vector3 position, Quaternion rotation) in LockedBody.Build(pieces, MenuStyle.Material, transparentMaterial))
+        foreach ((LockedBody body, Vector3 position, Quaternion rotation) in built)
         {
             Brick brick = Instantiate(brickPrefab, position, rotation);
             brick.name = $"Locked Body ({body.pieces.Count})";
@@ -1148,10 +1410,50 @@ public class Sandbox : MonoBehaviour
         return index >= 0 ? BrickColors.All[index].color : LDrawColors.Get(colorCode);
     }
 
-    void SaveModel(List<Brick> bricks, bool includeInventory = false, ModelFile.SetProgress progress = null)
+    // The save last loaded (or saved): Save Everything offers to replace it rather than always adding a new one.
+    string _workingSave, _workingTitle;
+    MenuPanel _saveChoice;
+
+    // Asks whether to replace the save you loaded or make a new one (straight to a new one if there's none).
+    void SaveOrAskToReplace(List<Brick> bricks, ModelFile.SetProgress progress)
     {
-        string name = ModelFile.NextAutoName();
-        ModelFile.Save(name, bricks, includeInventory, progress, _partsBin.IsFromBin);
+        if (_workingSave == null || !System.IO.File.Exists(_workingSave))
+        {
+            SaveModel(bricks, includeInventory: true, progress);
+            return;
+        }
+
+        if (_saveChoice == null)
+            _saveChoice = MenuPanel.Create("Save Choice", "Save Everything", new Vector2(0.24f, 0.13f), CreateHandle());
+        _saveChoice.ClearContent();
+        float y = _saveChoice.ContentTop - 0.012f;
+        MenuStyle.CreateText(_saveChoice.Content, $"You loaded \"{_workingTitle}\". Replace it with what's here now?",
+            new Vector3(0f, y, -0.001f), new Vector2(0.22f, 0.012f));
+        y -= 0.026f;
+        var size = new Vector2(0.21f, 0.024f);
+        MenuButton replace = MenuButton.Create(_saveChoice.Content, "Replace", new Vector3(0f, y, 0f), size,
+                                               MenuStyle.ButtonActive, $"Replace \"{_workingTitle}\"");
+        replace.Clicked += () => { _saveChoice.Close(); SaveModel(SaveableBricks(), includeInventory: true, progress, _workingSave); };
+        y -= 0.028f;
+        MenuButton asNew = MenuButton.Create(_saveChoice.Content, "Save as New", new Vector3(0f, y, 0f), size,
+                                             MenuStyle.Button, "Keep It and Save a New Model");
+        asNew.Clicked += () => { _saveChoice.Close(); SaveModel(SaveableBricks(), includeInventory: true, progress); };
+        y -= 0.028f;
+        MenuButton cancel = MenuButton.Create(_saveChoice.Content, "Cancel", new Vector3(0f, y, 0f), size, MenuStyle.Button, "Cancel");
+        cancel.Clicked += _saveChoice.Close;
+
+        (Vector3 position, Quaternion rotation) = InFrontOfUser(0f, 0f, 0.45f);
+        _saveChoice.Open(position, rotation);
+    }
+
+    void SaveModel(List<Brick> bricks, bool includeInventory = false, ModelFile.SetProgress progress = null,
+                   string replacePath = null)
+    {
+        string name = replacePath != null ? _workingTitle : ModelFile.NextAutoName();
+        ModelFile.Info saved = ModelFile.Save(name, bricks, includeInventory, progress, _partsBin.IsFromBin, replacePath);
+        ModelThumbnail.Make(saved.path, FindPart, ColorForCode); // the load screen shows it without rebuilding the model
+        _workingSave = saved.path; // saving again offers to replace this one
+        _workingTitle = name;
 
         int partCount = bricks.Sum(b => b.PieceCount);
         string details = $"{partCount} {(partCount == 1 ? "part" : "parts")}";
@@ -1160,7 +1462,7 @@ public class Sandbox : MonoBehaviour
             details += $" + {stacks} on wrists";
         if (progress != null)
             details += $", {_partsBin.SetTitle} in progress";
-        ShowMessage($"Saved \"{name}\" ({details})");
+        ShowMessage(replacePath != null ? $"Replaced \"{name}\" ({details})" : $"Saved \"{name}\" ({details})");
         if (_modelMenu.IsOpen)
             _modelMenu.Refresh();
     }
@@ -1176,120 +1478,262 @@ public class Sandbox : MonoBehaviour
         _modelMenu.Open(main.TransformPoint(new Vector3(_mainMenu.Size.x * 0.5f + 0.17f, 0f, 0f)), main.rotation);
     }
 
+    // Fix Snapping: the editor for the connection points of the piece in your hand.
+    void OpenSnapEditor()
+    {
+        Brick held = Brick.Held.FirstOrDefault(b => b != null && !b.IsLockedBody && b.part != null && b.part.mesh != null);
+        if (held == null)
+        {
+            ShowMessage(Brick.Held.Any(b => b != null && b.IsLockedBody)
+                ? "Locked models can't be edited. Hold a single piece (unlock it with X first)"
+                : "Hold the piece to fix in one hand, then click Fix Snapping with the other");
+            return;
+        }
+        _snapEditor.Open(held.part, held.color);
+    }
+
     /// <summary>Builds a saved model from real bricks, sitting in front of you, ready to grab.</summary>
     public void LoadModel(string path)
     {
-        List<ModelFile.Placement> placements = ModelFile.Load(path, out string title, out List<ModelFile.InventoryStack> inventory,
-                                                              out ModelFile.SetProgress progress);
-        var fromSet = new List<Brick>(); // parts that came out of the saved set's bin
-        int sectionBase = Brick.NewestSection;
-        (Vector3 origin, Quaternion facing) = InFrontOfUser(0f, 0.3f, menuDistance + 0.1f);
-
-        int missing = 0;
-        var bonds = new Dictionary<int, List<Brick>>();
-        // Locked pieces go straight into locked bodies, without ever existing as separate bricks.
-        var lockedPieces = new List<LockedBody.Piece>();
-        // Locked groups in the file get fresh numbers here, so they don't clash with groups already in the room.
-        var groups = new Dictionary<int, int>();
-        int GroupFor(int saved)
+        if (_loading)
         {
-            if (!groups.TryGetValue(saved, out int unit))
-                groups[saved] = unit = LockedBody.NewUnit();
-            return unit;
+            ShowMessage("Still loading the last model");
+            return;
         }
-        foreach (ModelFile.Placement placement in placements)
+        StartCoroutine(LoadingModel(path));
+    }
+
+    bool _loading;
+
+    // How long loading may run each frame before showing progress and letting a frame be drawn.
+    const float LoadSliceSeconds = 0.012f;
+
+    System.Collections.IEnumerator LoadingModel(string path)
+    {
+        _loading = true;
+        (Vector3 barPosition, Quaternion barRotation) = InFrontOfUser(0f, -0.12f, 0.6f);
+        ProgressDisplay bar = ProgressDisplay.Create(barPosition, barRotation, "Loading…");
+        float sliceStart = Time.realtimeSinceStartup;
+        try
         {
-            if (placement.lockSection > 0 && GameSettings.CollapseLocked)
+            yield return null; // the bar shows before the file is read
+
+            // How long each stage takes (wall time, including the frames shown in between), for LogLoad.
+            var stages = new List<(string, float)>();
+            float stageStart = Time.realtimeSinceStartup;
+            void Mark(string stage)
             {
-                BrickPartData part = FindPart(placement.partId);
-                if (part == null)
+                stages.Add((stage, Time.realtimeSinceStartup - stageStart));
+                stageStart = Time.realtimeSinceStartup;
+            }
+
+            List<ModelFile.Placement> placements = ModelFile.Load(path, out string title, out List<ModelFile.InventoryStack> inventory,
+                                                                  out ModelFile.SetProgress progress);
+            Mark("reading the file");
+            int total = placements.Count + inventory.Sum(s => s.count * s.parts.Count);
+            int lockedTotal = GameSettings.CollapseLocked ? placements.Count(p => p.lockSection > 0) : 0;
+            // Placing parts is the first part of the bar; building locked groups (slower per piece) the rest.
+            float placeShare = lockedTotal == 0 ? 1f : Mathf.Clamp(1f - (float)lockedTotal / Mathf.Max(1, total), 0.15f, 0.5f);
+            int done = 0;
+            string loadingText = $"Loading \"{title}\"";
+            bar.Set(loadingText, 0f);
+            sliceStart = Time.realtimeSinceStartup;
+            var fromSet = new List<Brick>(); // parts that came out of the saved set's bin
+            int sectionBase = Brick.NewestSection;
+            (Vector3 origin, Quaternion facing) = InFrontOfUser(0f, 0.3f, menuDistance + 0.1f);
+
+            int missing = 0;
+            var bonds = new Dictionary<int, List<Brick>>();
+            // Locked pieces go straight into locked bodies, without ever existing as separate bricks.
+            var lockedPieces = new List<LockedBody.Piece>();
+            // Locked groups in the file get fresh numbers here, so they don't clash with groups already in the room.
+            var groups = new Dictionary<int, int>();
+            int GroupFor(int saved)
+            {
+                if (!groups.TryGetValue(saved, out int unit))
+                    groups[saved] = unit = LockedBody.NewUnit();
+                return unit;
+            }
+            foreach (ModelFile.Placement placement in placements)
+            {
+                done++;
+                if (Time.realtimeSinceStartup - sliceStart > LoadSliceSeconds)
+                {
+                    bar.Set(loadingText, placeShare * done / Mathf.Max(1, total));
+                    yield return null;
+                    sliceStart = Time.realtimeSinceStartup;
+                }
+
+                if (placement.lockSection > 0 && GameSettings.CollapseLocked)
+                {
+                    BrickPartData part = FindPart(placement.partId);
+                    if (part == null)
+                    {
+                        missing++;
+                        continue;
+                    }
+                    lockedPieces.Add(new LockedBody.Piece
+                    {
+                        part = part,
+                        colorCode = placement.colorCode,
+                        color = ColorOf(placement.colorCode),
+                        position = origin + facing * placement.position,
+                        rotation = LockedBody.Unit(facing * placement.rotation),
+                        section = sectionBase + placement.lockSection, // after the sections already in the room
+                        fromSet = placement.fromSet,
+                        bond = placement.bond != 0 ? (object)placement.bond : null,
+                        unit = placement.group != 0 ? GroupFor(placement.group) : 0,
+                    });
+                    continue;
+                }
+
+                Brick brick = SpawnPlacement(placement, origin, facing);
+                if (brick == null)
                 {
                     missing++;
                     continue;
                 }
-                lockedPieces.Add(new LockedBody.Piece
+                if (placement.lockSection > 0)
+                    brick.SetLockedSection(sectionBase + placement.lockSection); // after the sections already in the room
+                if (placement.fromSet)
+                    fromSet.Add(brick);
+                if (placement.bond != 0)
                 {
-                    part = part,
-                    colorCode = placement.colorCode,
-                    color = ColorOf(placement.colorCode),
-                    position = origin + facing * placement.position,
-                    rotation = LockedBody.Unit(facing * placement.rotation),
-                    section = sectionBase + placement.lockSection, // after the sections already in the room
-                    fromSet = placement.fromSet,
-                    bond = placement.bond != 0 ? (object)placement.bond : null,
-                    unit = placement.group != 0 ? GroupFor(placement.group) : 0,
-                });
-                continue;
-            }
-
-            Brick brick = SpawnPlacement(placement, origin, facing);
-            if (brick == null)
-            {
-                missing++;
-                continue;
-            }
-            if (placement.lockSection > 0)
-                brick.SetLockedSection(sectionBase + placement.lockSection); // after the sections already in the room
-            if (placement.fromSet)
-                fromSet.Add(brick);
-            if (placement.bond != 0)
-            {
-                if (!bonds.TryGetValue(placement.bond, out List<Brick> members))
-                    bonds[placement.bond] = members = new List<Brick>();
-                members.Add(brick);
-            }
-        }
-        foreach (Brick body in SpawnLockedBodies(lockedPieces))
-        {
-            foreach (object key in body.Locked.bonds)
-            {
-                if (!(key is int id))
-                    continue;
-                if (!bonds.TryGetValue(id, out List<Brick> members))
-                    bonds[id] = members = new List<Brick>();
-                members.Add(body);
-            }
-        }
-        foreach (List<Brick> members in bonds.Values)
-            Brick.BondTogether(members);
-
-        // Wrist inventory: build each copy out of sight, then hand it to the inventory.
-        var outOfSight = new Vector3(0f, -100f, 0f);
-        foreach (ModelFile.InventoryStack stack in inventory)
-        {
-            for (int copy = 0; copy < stack.count; copy++)
-            {
-                var members = new List<Brick>();
-                foreach (ModelFile.Placement placement in stack.parts)
-                {
-                    Brick brick = SpawnPlacement(placement, outOfSight, Quaternion.identity);
-                    if (brick != null)
-                        members.Add(brick);
-                    else if (copy == 0)
-                        missing++;
+                    if (!bonds.TryGetValue(placement.bond, out List<Brick> members))
+                        bonds[placement.bond] = members = new List<Brick>();
+                    members.Add(brick);
                 }
-                if (stack.fromSet)
-                    fromSet.AddRange(members);
-                WristInventory.AddLoaded(stack.hand, members);
             }
-        }
 
-        // Saved partway through building a set from its bin: pick that back up.
-        string resumed = progress != null ? ResumeSet(progress, fromSet) : null;
-        if (resumed != null)
-        {
-            foreach (LockedBody.Piece piece in lockedPieces)
+            Mark("placing parts");
+
+            // Wrist inventory: build each copy out of sight, then hand it to the inventory.
+            var outOfSight = new Vector3(0f, -100f, 0f);
+            foreach (ModelFile.InventoryStack stack in inventory)
             {
-                if (piece.fromSet)
-                    _partsBin.TakePiece(piece.part, piece.colorCode);
+                for (int copy = 0; copy < stack.count; copy++)
+                {
+                    done += stack.parts.Count;
+                    if (Time.realtimeSinceStartup - sliceStart > LoadSliceSeconds)
+                    {
+                        bar.Set(loadingText, placeShare * done / Mathf.Max(1, total));
+                        yield return null;
+                        sliceStart = Time.realtimeSinceStartup;
+                    }
+
+                    var members = new List<Brick>();
+                    foreach (ModelFile.Placement placement in stack.parts)
+                    {
+                        Brick brick = SpawnPlacement(placement, outOfSight, Quaternion.identity);
+                        if (brick != null)
+                            members.Add(brick);
+                        else if (copy == 0)
+                            missing++;
+                    }
+                    if (stack.fromSet)
+                        fromSet.AddRange(members);
+                    WristInventory.AddLoaded(stack.hand, members);
+                }
+            }
+
+            Mark("wrist items");
+
+            // Locked groups, a body at a time.
+            var built = new List<(LockedBody body, Vector3 position, Quaternion rotation)>();
+            string lockedText = $"Loading \"{title}\": locked groups";
+            foreach (float fraction in LockedBody.BuildSteps(lockedPieces, MenuStyle.Material, transparentMaterial, built))
+            {
+                if (Time.realtimeSinceStartup - sliceStart > LoadSliceSeconds)
+                {
+                    bar.Set(lockedText, placeShare + (1f - placeShare) * fraction);
+                    yield return null;
+                    sliceStart = Time.realtimeSinceStartup;
+                }
+            }
+            bar.Set(lockedText, 1f);
+            Mark("building locked groups");
+            foreach (Brick body in SpawnBodies(built))
+            {
+                foreach (object key in body.Locked.bonds)
+                {
+                    if (!(key is int id))
+                        continue;
+                    if (!bonds.TryGetValue(id, out List<Brick> members))
+                        bonds[id] = members = new List<Brick>();
+                    members.Add(body);
+                }
+            }
+            Mark("setting up locked groups");
+            foreach (List<Brick> members in bonds.Values)
+                Brick.BondTogether(members);
+
+            Mark("bonds");
+
+            // Saved partway through building a set from its bin: pick that back up.
+            string resumed = progress != null ? ResumeSet(progress, fromSet) : null;
+            if (resumed != null)
+            {
+                _partsBin.TakePieces(lockedPieces.Where(p => p.fromSet).Select(p => (p.part, p.colorCode)));
+            }
+
+            Mark("set bin + book");
+            StartCoroutine(LogLoad(title, placements.Count, lockedPieces.Count, stages, LockedBody.LastTimes));
+            // The save you're now working on: Save Everything offers to replace it.
+            _workingSave = path;
+            _workingTitle = title;
+            Destroy(bar.gameObject); // before the message, which sits in the same spot
+            ShowMessage(resumed != null
+                ? $"Loaded \"{title}\" and picked up {resumed} where you left off"
+                : missing == 0
+                ? $"Loaded \"{title}\""
+                : $"Loaded \"{title}\" ({missing} parts not imported yet)");
+        }
+        finally
+        {
+            if (bar != null)
+                Destroy(bar.gameObject);
+            _loading = false;
+        }
+    }
+
+    // Records how long a load took, stage by stage, then watches the next few seconds of frames (new bricks
+    // and bodies settling in), in Models/../load-times.txt so slow loads can be looked into.
+    System.Collections.IEnumerator LogLoad(string title, int parts, int locked, List<(string stage, float seconds)> stages,
+                                           string groupTimes)
+    {
+        float watchStart = Time.realtimeSinceStartup, slowest = 0f, slowTotal = 0f;
+        int slowFrames = 0;
+        float last = Time.realtimeSinceStartup;
+        while (Time.realtimeSinceStartup - watchStart < 5f)
+        {
+            yield return null;
+            float frame = Time.realtimeSinceStartup - last;
+            last = Time.realtimeSinceStartup;
+            slowest = Mathf.Max(slowest, frame);
+            if (frame > 0.05f)
+            {
+                slowFrames++;
+                slowTotal += frame;
             }
         }
 
-        ShowMessage(resumed != null
-            ? $"Loaded \"{title}\" and picked up {resumed} where you left off"
-            : missing == 0
-            ? $"Loaded \"{title}\""
-            : $"Loaded \"{title}\" ({missing} parts not imported yet)");
+        var text = new System.Text.StringBuilder();
+        text.AppendLine($"{System.DateTime.Now:yyyy-MM-dd HH:mm:ss}  \"{title}\": {parts} parts, {locked} locked, " +
+                        $"total {stages.Sum(s => s.seconds):0.0} s");
+        foreach ((string stage, float seconds) in stages)
+            text.AppendLine($"  {stage}: {seconds:0.00} s");
+        if (locked > 0)
+            text.AppendLine($"  locked groups work: {groupTimes}");
+        text.AppendLine($"  next 5 s: slowest frame {slowest * 1000f:0} ms, {slowFrames} frames over 50 ms ({slowTotal:0.0} s)");
+        try
+        {
+            System.IO.File.AppendAllText(System.IO.Path.Combine(Application.persistentDataPath, "load-times.txt"), text.ToString());
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("Couldn't write the load-time log: " + e.Message);
+        }
+        Debug.Log(text.ToString());
     }
 
     // Reopens a set's parts bin with the loaded set parts already taken out, and its instructions at the saved

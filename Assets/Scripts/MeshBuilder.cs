@@ -90,4 +90,26 @@ public class MeshBuilder
         ApplyTo(mesh);
         return mesh;
     }
+
+    static Mesh s_unitCylinder;
+
+    /// <summary>A shared cylinder of radius 1 and height 1, standing on the origin along +Y (scale it to size).</summary>
+    public static Mesh UnitCylinder()
+    {
+        if (s_unitCylinder == null)
+        {
+            var builder = new MeshBuilder();
+            builder.AddCylinder(Vector3.zero, 1f, 1f, 16);
+            // (AddCylinder leaves the bottom open, as brick studs sit on a surface; markers are seen from all sides.)
+            for (int s = 0; s < 16; s++)
+            {
+                float a0 = s * Mathf.PI * 2f / 16, a1 = (s + 1) * Mathf.PI * 2f / 16;
+                var b0 = new Vector3(Mathf.Cos(a0), 0f, Mathf.Sin(a0));
+                var b1 = new Vector3(Mathf.Cos(a1), 0f, Mathf.Sin(a1));
+                builder.AddTriangle(Vector3.zero, b0, b1, Vector3.down, Vector3.down, Vector3.down, Vector3.down);
+            }
+            s_unitCylinder = builder.ToMesh("Unit Cylinder");
+        }
+        return s_unitCylinder;
+    }
 }
