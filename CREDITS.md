@@ -36,6 +36,8 @@ also under CC BY 2.0:
 
 Set parts lists (for Build It Yourself and sets downloaded in the game) come from
 [Rebrickable](https://rebrickable.com), through its API. Each player uses their own Rebrickable API key.
+Rebrickable's terms don't allow its content to be used to train AI models; that applies to the parts lists here
+(in `Assets/Resources/Sets`) too.
 
 ## Unity resources
 
